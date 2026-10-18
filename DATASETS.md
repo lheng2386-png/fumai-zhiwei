@@ -1,0 +1,39 @@
+# Public photovoltaic datasets: inventory and use plan
+
+This file tracks the public data acquired or identified for model development. Raw archives and images stay out of Git; keep the upstream citation and license with every local copy. Public benchmark performance is not evidence of production readiness or performance on a new plant.
+
+## Acquired locally
+
+| Dataset | Contents | Intended use | Important limits | Source / license |
+| --- | --- | --- | --- | --- |
+| Costa/Lazzaretti PV fault data | Two-string field system; electrical and ambient measurements; normal, short circuit, degradation, open circuit, and shading labels | Time-series fault classification and cross-source checks | Small plant/system; several faults were injected; preserve original chronological groups | [Upstream repository](https://github.com/clayton-h-costa/pv_fault_dataset); see `data/raw/costa2020/LICENSE` |
+| TECNALIA PV performance benchmark | Five module-specific CSVs with synchronized weather/electrical fields; the accompanying paper describes field-characterized defects and simulated resistance faults | Normal-behavior and cross-module robustness experiments while fault-to-file mapping is verified | The downloaded tables do not contain a fault-label column; do not assign the paper's fault labels to CSVs without the mapping. Five modules in this archive, despite seven mentioned in related work. Data run Nov 2024–Jul 2025 at 5/10-minute intervals, not the stale metadata dates. | [Zenodo record 18306410](https://doi.org/10.5281/zenodo.18306410), CC BY 4.0. Archive at `data/raw/tecnalia/TECNALIA.rar`; extracted CSVs under `data/raw/tecnalia/extracted/` |
+| La Réunion rooftop PV shading-fault data | One faulted inverter with labeled healthy/shading operating modes, one control inverter, electrical and separate high-rate meteorological streams | Strongest acquired public source for labeled time-series experiments and faulted-vs-control comparisons | Latest faulted stream has 2,988,814 rows, 6 missing labels, and extreme class imbalance; one 4 kW rooftop plant. Labels cover shading scenarios, not general equipment failures. Weather/electrical clocks and rates need careful alignment. | [Latest Zenodo version 7828879](https://doi.org/10.5281/zenodo.7828879), CC BY 4.0; download status below |
+| InfraredSolarModules (RaptorMaps) | 20,000 published 24×40 grayscale module thermograms, 12 labels | Infrared anomaly classification; class imbalance, calibration, and cross-label hierarchy studies | Tiny grayscale crops; not radiometric temperatures; image-level labels only; plant/flight IDs not verified | [Upstream repository](https://github.com/RaptorMaps/InfraredSolarModules); upstream license is included locally |
+| ELPV | 2,624 electroluminescence cell images with soft defect probabilities and cell technology | EL image classification / soft-label learning; separate from outdoor thermal inspection | Cell-level EL images, not module-level drone imagery; no verified independent-module split; non-commercial share-alike license | [Upstream repository](https://github.com/zae-bayern/elpv-dataset); CC BY-NC-SA 4.0 |
+| sUAS Infrared PV Fault Classification | 3,675 cropped grayscale modules (cell, multi-cell, open/short circuit variants and normal) | External infrared image benchmark; test domain transfer against RaptorMaps | Severe class imbalance and only two samples for one class; source is one orthomosaic/array, so do not random-split tiles across train/test | [Zenodo 20860870](https://doi.org/10.5281/zenodo.20860870), CC BY 4.0; downloaded archive and checksum recorded alongside data |
+
+## Identified for acquisition / verification
+
+| Dataset | Why it may help | Status / caveat | Source |
+| --- | --- | --- | --- |
+| SolarFCD | 3,742 RGB/UAV and thermal module images in four classes, with supplied train/validation/test partitions | Downloaded and extracted. Exact-byte audit found 259 duplicate groups crossing splits (761 files) and 29 groups whose duplicate copies have conflicting labels. Do not trust the supplied split for final metrics until duplicates are regrouped/quarantined. Repository code is MIT; dataset image terms are not independently clear, so do not assume the code license covers images or commercial use. | [Project and data link](https://github.com/VS-EYE/SolarFCD); local audit at `data/raw/solarfcd/manifest.json` and `duplicate_groups.csv` |
+| Sandia PV-IV-EL | 613 paired module IV and EL measurements from fielded modules, with module metadata and exposure history | Public files are available under CC BY 4.0. Useful for paired electrical/image representation learning, but not a ready-made fault-class label set. Download only after estimating archive sizes and defining a module-level split. | [DOE data.gov catalog](https://catalog.data.gov/dataset/photovoltaic-module-current-voltage-and-electroluminescence-image-data-pv-iv-el) |
+| NREL PVDAQ | Longitudinal, multi-system PV performance and environmental data | Useful for normal-operation robustness and forecasting; fault labels are not guaranteed and must not be fabricated from anomalies. | [DOE PVDAQ catalog](https://catalog.data.gov/dataset/photovoltaic-data-acquisition-pvdaq-public-datasets) |
+
+## Download status
+
+- TECNALIA archive extracted and verified against Zenodo MD5 `15daed06b32f5debc9f3d81f0afe31d4`.
+- sUAS archive downloaded; MD5 verified against the Zenodo record (`9f8a4dc88a5e1474c4dd30697079286bf`); extracted image count and class folders match the record.
+- SolarFCD 5.34 GB bundle passed ZIP CRC validation; the 3,742-image final set was extracted. Cross-split duplicates are audited in `data/raw/solarfcd/duplicate_groups.csv`.
+- La Réunion latest version 7828879 faulted/control electrical CSVs and metadata are downloaded and MD5-verified. The fault stream has 2,988,814 rows, including six missing labels; counts and checksums are in `data/raw/la_reunion/manifest.json`. The 2.24 GB weather CSV has not been fetched; the older 1.54 GB version's partial file is retained under `versions/7291380/`.
+- SolarFCD archive download is in progress and must be verified/extracted before it is marked acquired.
+
+## Training and evaluation rules
+
+1. Treat each source as its own domain first. Do not concatenate incompatible labels, sensor definitions, units, sampling periods, or image modalities.
+2. For time series, split by plant/module and chronological period before making windows. Adjacent/overlapping windows must never cross split boundaries.
+3. For imagery, split by plant, flight, module, or source image where identifiers permit; deduplicate exact and near-identical crops before splitting.
+4. Keep a source-specific label map and distinguish measured, field-confirmed, injected, simulated, and weak labels.
+5. Fit normalization, augmentation statistics, thresholds, and model selection using training/validation data only. Reserve an untouched external source for final domain-shift evaluation.
+6. Cite each dataset and comply with its own license. Do not put raw datasets in the Git repository.
