@@ -1,9 +1,10 @@
 """Self-contained HTML report: escaped data, offline filters, review notes."""
 import html
 import json
+import math
 
 
-def render_report(events, summary, path):
+def render_report(events, summary, path, details=False):
     escaped = lambda value: html.escape(str(value), quote=True)
     labels = {'device_specific_candidate': '单机偏离同群',
               'shared_or_model_candidate': '同群共性或模型偏差',
@@ -15,13 +16,18 @@ def render_report(events, summary, path):
                '平均同群比值差','偏离同群采样数','证据','参考电量差 kWh','复核状态','复核说明']
     rows = []
     for _, e in events.iterrows():
-        gap = '—' if e.mean_peer_gap is None else f'{e.mean_peer_gap:.3f}'
+        gap = ('—' if e.mean_peer_gap is None or e.mean_peer_gap == ''
+               or not math.isfinite(float(e.mean_peer_gap)) else f'{float(e.mean_peer_gap):.3f}')
         cells = [e.event_id, e.inverter, e.start_local, e.samples,
                  f'{e.mean_actual_kw:.2f} / {e.mean_reference_kw:.2f}', gap, e.peer_flag_samples,
                  labels.get(e.evidence, e.evidence),
                  f'{e.reference_shortfall_kwh:.2f}', statuses.get(e.review_status,e.review_status), e.get('note', '')]
-        rows.append('<tr>'+''.join(f'<td data-label="{escaped(h)}">{escaped(v)}</td>'
-                                  for h,v in zip(headers,cells))+'</tr>')
+        rendered = [escaped(v) for v in cells]
+        if details:
+            from event_details import safe_id
+            rendered[0] = f'<a href="details/{safe_id(e.event_id)}.html">{escaped(e.event_id)} · 查看详情</a>'
+        rows.append('<tr>'+''.join(f'<td data-label="{escaped(h)}">{v}</td>'
+                                  for h,v in zip(headers,rendered))+'</tr>')
     page = '''<!doctype html><html lang="zh-CN"><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>伏脉智维 · 运维事件回放</title><style>
@@ -48,4 +54,6 @@ td:before{content:attr(data-label);color:#52697c;flex-shrink:0}td:first-child{fo
 function update(){let n=0;const q=input.value.toLowerCase();for(const row of rows){row.hidden=!row.textContent.toLowerCase().includes(q);if(!row.hidden)n++;}document.getElementById('count').textContent=`显示 ${n} / ${rows.length} 条事件`;}
 input.addEventListener('input',update);update();</script></html>'''
     info = ' · '.join(f'{escaped(k)}：{escaped(v)}' for k,v in summary.items())
+    if details:
+        info += '<p><a href="review_queue.csv" download>下载待复核清单 CSV</a> · 按证据和设备轮转选取，供复核排程使用，不能作为无偏准确率评估集。</p>'
     path.write_text(page.replace('SUMMARY', info).replace('ROWS', '\n'.join(rows)), encoding='utf-8')

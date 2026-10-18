@@ -65,7 +65,9 @@ def replay(data, model_path, output, start, end, db=None):
                'rules': {'min_samples':3, 'cadence_minutes':5, 'min_other_peers':5, 'peer_margin':.20},
                'limitations': 'Unlabelled screening; no precision/recall. Peer cohort compatibility not independently validated.'}
     (output/'summary.json').write_text(json.dumps(summary,ensure_ascii=False,indent=2))
-    render_report(events, {'设备':len(parts), '日间时刻':len(d), '候选事件':len(events)}, output/'index.html')
+    from event_details import build_details
+    build_details(events, samples, output)
+    render_report(events, {'设备':len(parts), '日间时刻':len(d), '候选事件':len(events)}, output/'index.html', details=True)
     return summary
 
 
