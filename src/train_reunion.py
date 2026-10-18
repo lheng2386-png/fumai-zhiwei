@@ -77,16 +77,18 @@ def predict(model, x, device, batch_size):
     return np.concatenate(chunks)
 
 
-def train_one(name, seed, train, validation, output, device, args):
+def train_one(name, seed, train, validation, output, device, args, initial_state=None):
     seed_all(seed)
     model = make_model(name, train["x"].shape[1]).to(device)
+    if initial_state is not None:
+        model.load_state_dict(initial_state)
     optimizer = torch.optim.AdamW(model.parameters(), lr=args.lr, weight_decay=1e-3)
     counts = np.bincount(train["y"], minlength=2).astype(np.float32)
     weights = torch.tensor(1 / np.sqrt(np.maximum(counts, 1)), device=device)
     weights = weights / weights.mean()
     x = torch.from_numpy(train["x"]).to(device)
     y = torch.from_numpy(train["y"]).long().to(device)
-    best_ap, stale, history = -1.0, 0, []
+    best_ap, best_epoch, stale, history = -1.0, 0, 0, []
     tag = f"{name}_seed{seed}"
     started = time.monotonic()
     for epoch in range(args.epochs):
@@ -113,7 +115,7 @@ def train_one(name, seed, train, validation, output, device, args):
         history.append(row)
         print(json.dumps({"candidate": tag, **row}), flush=True)
         if ap > best_ap:
-            best_ap, stale = ap, 0
+            best_ap, best_epoch, stale = ap, epoch + 1, 0
             torch.save({"architecture": name, "channels": x.shape[1], "seed": seed,
                         "state_dict": {key: value.detach().cpu().clone()
                                        for key, value in model.state_dict().items()}},
@@ -125,7 +127,8 @@ def train_one(name, seed, train, validation, output, device, args):
             break
     return {"tag": tag, "architecture": name, "seed": seed,
             "parameters": sum(p.numel() for p in model.parameters()),
-            "validation_ap": best_ap, "epochs_run": len(history),
+            "validation_ap": best_ap, "best_epoch": best_epoch,
+            "epochs_run": len(history),
             "elapsed_seconds": time.monotonic() - started, "history": history}
 
 
