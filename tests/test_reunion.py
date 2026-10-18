@@ -9,6 +9,7 @@ import pandas as pd
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 from prepare_reunion import FEATURES, WEATHER_FEATURES, make_windows, read_weather_minutes, split_for_date
 from backtest_reunion import fold_data
+from compare_reunion_physics import augment
 from train_arch_compare import TransformerPV
 
 
@@ -95,6 +96,25 @@ class ReunionProtocolTests(unittest.TestCase):
             self.assertEqual(len(set(days["train_days"] + days["tuning_days"] +
                                      days["evaluation_days"])), 3)
             self.assertGreater(float(outer["x"].min()), 900.0)
+
+    def test_physical_channels_fit_scaler_on_train_only(self):
+        train_x = np.zeros((2, 18, 2), dtype=np.float32)
+        train_x[:, 0, :] = [[100, 200], [300, 400]]
+        train_x[:, 6, :] = [[150, 250], [350, 450]]
+        train_x[:, 15, :] = 900
+        train_x[:, 16, :] = 25
+        train_x[:, 17, :] = [[35, 40], [45, 50]]
+        validation_x = train_x[:1].copy()
+        validation_x[:, 0, :] = 1000
+        validation_x[:, 17, :] = 100
+        train, validation, fitted = augment(
+            {"x": train_x}, {"x": validation_x},
+            {"mean": np.zeros(18, dtype=np.float32),
+             "scale": np.ones(18, dtype=np.float32)})
+        np.testing.assert_allclose(train["x"][:, 18:].mean(axis=(0, 2)), 0, atol=1e-6)
+        self.assertGreater(float(validation["x"][0, 18].min()), 3.0)
+        self.assertGreater(float(validation["x"][0, 20].min()), 3.0)
+        self.assertEqual(fitted["fit"], "all train windows only")
 
 
 if __name__ == "__main__":
