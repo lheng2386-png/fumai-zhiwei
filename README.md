@@ -11,6 +11,8 @@
 - 正常、组串短路、模拟退化、组串开路和遮挡五分类基线。
 - 基于 RDTools 公开预训练模型的削顶识别调用。
 - 模型保存、CSV 推理和输入完整性检查。
+- 同群设备比值对比、连续候选事件合并及证据导出。
+- 离线事件筛选报告和保留历史的本地人工复核记录。
 
 ## 安装与运行
 
@@ -32,6 +34,26 @@ python src/run_baselines.py --data-dir data/input
 python src/check_pretrained_clipping.py --data-dir data/input
 python src/predict_fault.py reports/fault_inference_sample.csv --output reports/fault_predictions.csv
 ```
+
+## 运维事件回放与复核
+
+完成基线训练后，可直接使用保存的功率模型回放 2023 年留出数据：
+
+```bash
+python src/replay.py --data-dir data/input --start 2023-01-01 --end 2024-01-01
+```
+
+打开 `reports/replay/index.html` 筛选候选事件；逐点证据、事件和输入/模型 SHA256 分别保存在 `evidence.csv`、`events.csv` 和 `summary.json`。暂定同群仅适用于 2107 场站，其他场站需要重新适配和验证。时间沿用场站本地墙上时钟 PST8PDT，结束日期不包含在回放区间内。
+
+用报告中的真实事件 ID 保存复核；状态可为 `confirmed_fault`、`expected_operation`、`data_issue` 或 `needs_investigation`。确认故障应记录现场、工单等实际证据。
+
+```bash
+python src/review.py --event-id EVENT_ID --status needs_investigation --note "记录需要核实的现象"
+python src/replay.py --data-dir data/input --reviews-db reports/reviews.sqlite
+python -m unittest discover -s tests -v
+```
+
+复核仅写本地数据库，不会自动改变训练标签。回放覆盖生成的报告文件，人工复核数据库保留。规则、回放结果与限制见 [研发记录](DEVELOPMENT.md)。
 
 ## 评估范围
 
