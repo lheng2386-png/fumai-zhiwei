@@ -17,6 +17,7 @@
         search: '<circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/>',
         help: '<circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 0 1 5 .5c0 1.5-2.5 2-2.5 3.5m0 3h.01"/>',
         menu: '<path d="M4 6h16M4 12h16M4 18h16"/>',
+        sidebar: '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 4v16m7-11-3 3 3 3"/>',
         calendar: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4m10-4v4M3 11h18m-11 4h3"/>',
         download: '<path d="M12 3v12m-4-4 4 4 4-4M4 16v4a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-4"/>',
         'arrow-up-right': '<path d="M6 18 18 6M6 6h12v12"/>',
@@ -46,6 +47,15 @@
     } catch { storageAvailable = false; }
     const state = { page: 'overview', query: '', status: 'all', evidence: 'all', device: 'all', range: 'day', deviceFilter: 'all' };
     const charts = new Map();
+    const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
+    const mobileLayout = matchMedia('(max-width: 600px)');
+    const sidebarPreference = 'fumai-sidebar-collapsed-v1';
+    let displayedPage = null;
+    let routeSequence = 0;
+    let pageAnimation = null;
+    let sidebarMotionTimer;
+    let sidebarCollapsed = false;
+    try { sidebarCollapsed = localStorage.getItem(sidebarPreference) === 'true'; } catch { /* Keep the in-memory preference when storage is unavailable. */ }
     let toastTimer;
     function toast(message) {
         const el = document.querySelector('#toast');
@@ -193,30 +203,86 @@
         charts.clear();
         const views = { overview, events: eventsPage, devices: devicesPage, reviews: reviewsPage, models: modelsPage };
         main.innerHTML = views[state.page]();
-        main.className = 'view-enter';
+        main.dataset.view = state.page;
         document.querySelector('#breadcrumb-title').textContent = pageNames[state.page];
         document.title = `${pageNames[state.page]} · 伏脉智维`;
-        document.querySelectorAll('[data-nav]').forEach(a => {
-            a.classList.toggle('active', a.dataset.nav === state.page);
-            if (a.dataset.nav === state.page) a.setAttribute('aria-current', 'page');
-            else a.removeAttribute('aria-current');
-        });
+        updateNavigation(state.page);
         document.querySelector('#nav-count').textContent = getEvents().filter(e => e.review_status === 'unreviewed').length;
         bindCharts(main);
     }
-    function closeNav() {
-        const insideNav = document.querySelector('#sidebar').contains(document.activeElement);
-        document.querySelector('#sidebar').classList.remove('open');
-        document.querySelector('#nav-scrim').classList.remove('open');
-        document.querySelector('#mobile-menu').setAttribute('aria-expanded', 'false');
-        if (insideNav && matchMedia('(max-width: 600px)').matches) document.querySelector('#mobile-menu').focus();
+    function updateNavigation(page) {
+        document.querySelectorAll('[data-nav]').forEach(a => {
+            a.classList.toggle('active', a.dataset.nav === page);
+            if (a.dataset.nav === page) a.setAttribute('aria-current', 'page');
+            else a.removeAttribute('aria-current');
+        });
     }
-    function route(focus = false) {
+    function applySidebarPreference() {
+        document.body.classList.toggle('sidebar-collapsed', sidebarCollapsed);
+        const button = document.querySelector('#sidebar-toggle');
+        const label = sidebarCollapsed ? '展开侧栏' : '收起侧栏';
+        button.setAttribute('aria-expanded', String(!sidebarCollapsed));
+        button.setAttribute('aria-label', label);
+        button.title = label;
+    }
+    function setMobileNav(isOpen) {
+        const sidebar = document.querySelector('#sidebar');
+        const insideNav = sidebar.contains(document.activeElement);
+        if (!isOpen && insideNav && mobileLayout.matches) document.querySelector('#mobile-menu').focus();
+        sidebar.classList.toggle('open', isOpen);
+        sidebar.inert = mobileLayout.matches && !isOpen;
+        document.querySelector('#nav-scrim').classList.toggle('open', isOpen);
+        const button = document.querySelector('#mobile-menu');
+        button.setAttribute('aria-expanded', String(isOpen));
+        button.setAttribute('aria-label', isOpen ? '关闭导航' : '打开导航');
+        if (isOpen) sidebar.querySelector('[aria-current="page"]')?.focus();
+    }
+    function closeNav() {
+        setMobileNav(false);
+    }
+    async function route(focus = false) {
+        const sequence = ++routeSequence;
         const key = location.hash.slice(1).split('?')[0];
-        state.page = Object.hasOwn(pageNames, key) ? key : 'overview';
-        render();
+        const nextPage = Object.hasOwn(pageNames, key) ? key : 'overview';
+        const shouldAnimate = displayedPage !== null && displayedPage !== nextPage && !reducedMotion.matches;
+        const visual = getComputedStyle(main);
+        const start = { opacity: visual.opacity, transform: visual.transform };
+        pageAnimation?.cancel();
+        updateNavigation(nextPage);
+        document.querySelector('#breadcrumb-title').textContent = pageNames[nextPage];
         closeNav();
-        if (focus) { main.focus({ preventScroll: true }); window.scrollTo(0, 0); }
+        main.setAttribute('aria-busy', 'true');
+        main.inert = shouldAnimate;
+        document.querySelector('.topbar').classList.toggle('is-navigating', shouldAnimate);
+        if (shouldAnimate) {
+            pageAnimation = main.animate([start, { opacity: 0, transform: 'translateY(-6px)' }], {
+                duration: 110, easing: 'cubic-bezier(.4,0,1,1)', fill: 'forwards',
+            });
+            try { await pageAnimation.finished; } catch { if (sequence !== routeSequence) return; }
+        }
+        if (sequence !== routeSequence) return;
+        pageAnimation?.cancel();
+        state.page = nextPage;
+        render();
+        displayedPage = nextPage;
+        main.inert = false;
+        if (focus) {
+            main.focus({ preventScroll: true });
+            window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+        }
+        if (shouldAnimate && !reducedMotion.matches) {
+            pageAnimation = main.animate([
+                { opacity: 0, transform: 'translateY(10px)' },
+                { opacity: 1, transform: 'translateY(0)' },
+            ], { duration: 220, easing: 'cubic-bezier(.22,1,.36,1)', fill: 'forwards' });
+            try { await pageAnimation.finished; } catch { if (sequence !== routeSequence) return; }
+        }
+        if (sequence !== routeSequence) return;
+        pageAnimation?.cancel();
+        pageAnimation = null;
+        main.setAttribute('aria-busy', 'false');
+        document.querySelector('.topbar').classList.remove('is-navigating');
+        document.querySelector('#route-announcer').textContent = `已切换到${pageNames[nextPage]}`;
     }
     function navigate(page) {
         if (location.hash === `#${page}`) route(true);
@@ -316,12 +382,15 @@
             toast('已保存演示复核草稿，仅当前浏览器可见。');
         }
     });
-    document.querySelector('#mobile-menu').addEventListener('click', () => {
-        const isOpen = document.querySelector('#sidebar').classList.toggle('open');
-        document.querySelector('#nav-scrim').classList.toggle('open', isOpen);
-        document.querySelector('#mobile-menu').setAttribute('aria-expanded', String(isOpen));
-        if (isOpen) document.querySelector('#sidebar [aria-current="page"]').focus();
+    document.querySelector('#sidebar-toggle').addEventListener('click', () => {
+        document.body.classList.add('sidebar-animating');
+        clearTimeout(sidebarMotionTimer);
+        sidebarCollapsed = !sidebarCollapsed;
+        applySidebarPreference();
+        sidebarMotionTimer = setTimeout(() => document.body.classList.remove('sidebar-animating'), 340);
+        try { localStorage.setItem(sidebarPreference, String(sidebarCollapsed)); } catch { /* The toggle still works without persistent browser storage. */ }
     });
+    document.querySelector('#mobile-menu').addEventListener('click', () => setMobileNav(!document.querySelector('#sidebar').classList.contains('open')));
     document.querySelector('#nav-scrim').addEventListener('click', closeNav);
     document.addEventListener('keydown', event => {
         if (event.key === 'Escape') closeNav();
@@ -338,7 +407,15 @@
         if (event.target === dialog && (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom)) dialog.close();
     });
     window.addEventListener('hashchange', () => route(true));
+    mobileLayout.addEventListener('change', () => {
+        clearTimeout(sidebarMotionTimer);
+        document.body.classList.remove('sidebar-animating');
+        closeNav();
+    });
+    reducedMotion.addEventListener('change', () => { if (reducedMotion.matches) pageAnimation?.finish(); });
     hydrateIcons(document);
+    applySidebarPreference();
+    closeNav();
     route();
     if (!storageAvailable) toast('已有复核记录暂时无法读取；新记录保存前请检查浏览器存储设置。');
 })();

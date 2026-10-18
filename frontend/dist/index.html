@@ -21,13 +21,13 @@
         </a>
         <div class="workspace-label">运维工作空间 <span>WORKSPACE</span></div>
         <nav id="navigation">
-            <a href="#overview" data-nav="overview"><span data-icon="grid"></span>电站概览</a>
-            <a href="#events" data-nav="events"><span data-icon="activity"></span>异常事件<span class="nav-count" id="nav-count">8</span></a>
-            <a href="#devices" data-nav="devices"><span data-icon="panel"></span>设备监测</a>
-            <a href="#reviews" data-nav="reviews"><span data-icon="clipboard"></span>复核记录</a>
+            <a href="#overview" data-nav="overview" aria-label="电站概览" title="电站概览"><span data-icon="grid"></span><span class="nav-label">电站概览</span></a>
+            <a href="#events" data-nav="events" aria-label="异常事件" title="异常事件"><span data-icon="activity"></span><span class="nav-label">异常事件</span><span class="nav-count" id="nav-count">8</span></a>
+            <a href="#devices" data-nav="devices" aria-label="设备监测" title="设备监测"><span data-icon="panel"></span><span class="nav-label">设备监测</span></a>
+            <a href="#reviews" data-nav="reviews" aria-label="复核记录" title="复核记录"><span data-icon="clipboard"></span><span class="nav-label">复核记录</span></a>
             <div class="nav-divider"></div>
             <div class="workspace-label nav-subtitle">项目资料</div>
-            <a href="#models" data-nav="models"><span data-icon="layers"></span>数据与模型</a>
+            <a href="#models" data-nav="models" aria-label="数据与模型" title="数据与模型"><span data-icon="layers"></span><span class="nav-label">数据与模型</span></a>
         </nav>
         <div class="sidebar-bottom">
             <div class="research-note"><span data-icon="leaf"></span><strong>让每一度电，有迹可循。</strong><p>从数据线索出发，<br>把判断交还给证据。</p><span class="version-tag">前端原型 · V0.1</span></div>
@@ -36,14 +36,17 @@
     </aside>
     <div class="app-shell">
         <header class="topbar">
+            <button class="icon-button sidebar-toggle" id="sidebar-toggle" aria-label="收起侧栏" title="收起侧栏" aria-expanded="true" aria-controls="sidebar"><span data-icon="sidebar"></span></button>
             <button class="icon-button mobile-menu" id="mobile-menu" aria-label="打开导航" aria-expanded="false"><span data-icon="menu"></span></button>
             <div class="breadcrumb">工作空间<span>/</span><strong id="breadcrumb-title">电站概览</strong></div>
             <form class="global-search" id="global-search" role="search"><span data-icon="search"></span><input id="global-query" aria-label="全局搜索设备或事件" placeholder="搜索设备、事件…"><kbd>↵</kbd></form>
             <span class="demo-badge"><i></i>演示数据</span>
             <button class="icon-button info-button" id="about-button" aria-label="查看演示与数据说明"><span data-icon="help"></span></button>
             <span class="header-avatar">ST</span>
+            <span class="route-progress" aria-hidden="true"></span>
         </header>
-        <main id="main" tabindex="-1"></main>
+        <span class="sr-only" id="route-announcer" aria-live="polite" aria-atomic="true"></span>
+        <main id="main" tabindex="-1" aria-busy="false"></main>
         <footer class="app-footer"><span>伏脉智维 <b>·</b> 光伏设备异常筛查与数字化运维</span><span>样例回放 / 2023.07.18 <i></i> 证据驱动 · 人工复核</span></footer>
     </div>
     <dialog id="event-dialog" class="detail-drawer" aria-labelledby="detail-title"></dialog>
