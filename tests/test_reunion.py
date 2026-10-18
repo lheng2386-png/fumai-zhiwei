@@ -7,12 +7,29 @@ import numpy as np
 import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
-from prepare_reunion import FEATURES, make_windows, split_for_date
+from prepare_reunion import FEATURES, WEATHER_FEATURES, make_windows, read_weather_minutes, split_for_date
 from backtest_reunion import fold_data
 from train_arch_compare import TransformerPV
 
 
 class ReunionProtocolTests(unittest.TestCase):
+    def test_weather_minute_median_spans_csv_chunks(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "weather.csv"
+            pd.DataFrame({"time": ["2022-01-01 00:00:00+00:00",
+                                   "2022-01-01 00:00:10+00:00",
+                                   "2022-01-01 00:01:00+00:00",
+                                   "2022-01-01 00:01:10+00:00",
+                                   "2022-01-01 00:01:20+00:00",
+                                   "2022-01-01 00:02:00+00:00"],
+                          **{name: [1, 3, 2, 4, 8, 10]
+                             for name in ("DTI", "GTI", "TA", "TPV")}}).to_csv(path, index=False)
+            weather = read_weather_minutes(path, chunksize=3)
+            self.assertEqual(weather.columns.tolist(), list(WEATHER_FEATURES))
+            self.assertEqual(len(weather), 3)
+            self.assertEqual(weather["weather_GTI"].tolist(), [2, 4, 10])
+            self.assertEqual(str(weather.index.tz), "Indian/Reunion")
+
     def test_date_boundaries_and_gap(self):
         self.assertEqual(split_for_date(pd.Timestamp("2022-03-11").date()), "train")
         self.assertIsNone(split_for_date(pd.Timestamp("2022-03-12").date()))

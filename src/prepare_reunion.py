@@ -23,6 +23,7 @@ SPLIT_DATES = {
 RAW_COLUMNS = ("Pg", "Ia", "Ig", "Va", "Vg", "Fg")
 FEATURES = tuple(f"{side}_{col}" for side in ("faulted", "control") for col in RAW_COLUMNS) + (
     "power_ratio", "dc_current_ratio")
+WEATHER_FEATURES = ("weather_DTI", "weather_GTI", "weather_TA", "weather_TPV")
 
 
 def split_for_date(date):
@@ -67,7 +68,44 @@ def read_minutes(raw_dir):
     return minute, {fault_path.name: file_hash(fault_path), control_path.name: file_hash(control_path)}
 
 
-def make_windows(minute, window=30, stride=5, min_control_power=100.0):
+def read_weather_minutes(path, chunksize=200_000):
+    """Aggregate high-rate weather to exact minutes without loading the 2.2 GB CSV.
+
+    Carry the last minute across chunks so its median uses every source row.
+    The source must be chronological; out-of-order timestamps fail loudly.
+    """
+    columns = ("DTI", "GTI", "TA", "TPV")
+    dtype = {column: "float32" for column in columns}
+    parts = []
+    carry = None
+    previous = None
+    for chunk in pd.read_csv(path, usecols=["time", *columns], dtype=dtype,
+                             chunksize=chunksize):
+        times = pd.to_datetime(chunk.pop("time"), utc=True, errors="raise")
+        if not times.is_monotonic_increasing or (previous is not None and times.iloc[0] < previous):
+            raise ValueError("Weather timestamps are not chronological")
+        previous = times.iloc[-1]
+        chunk.index = pd.DatetimeIndex(times.dt.floor("min"))
+        if carry is not None:
+            chunk = pd.concat([carry, chunk])
+        last_minute = chunk.index[-1]
+        carry = chunk.loc[chunk.index == last_minute]
+        complete = chunk.loc[chunk.index != last_minute]
+        if not complete.empty:
+            parts.append(complete.groupby(level=0).median())
+    if carry is None:
+        raise ValueError("Empty meteorological CSV")
+    parts.append(carry.groupby(level=0).median())
+    weather = pd.concat(parts)
+    if weather.index.has_duplicates:
+        raise ValueError("Weather chunking created duplicate minutes")
+    weather.index = weather.index.tz_convert("Indian/Reunion")
+    weather.columns = WEATHER_FEATURES
+    return weather
+
+
+def make_windows(minute, window=30, stride=5, min_control_power=100.0,
+                 features=FEATURES):
     if window < 2 or stride < 1:
         raise ValueError("window must be >= 2 and stride must be positive")
     records = {name: {"x": [], "y": [], "end_time_ns": []} for name in SPLIT_DATES}
@@ -78,7 +116,7 @@ def make_windows(minute, window=30, stride=5, min_control_power=100.0):
             if block["fault"].gt(0).any():
                 unseen_fault_days.append(day.isoformat())
             continue
-        values = block.loc[:, FEATURES].to_numpy(dtype=np.float32)
+        values = block.loc[:, features].to_numpy(dtype=np.float32)
         labels = block["fault"].to_numpy(dtype=np.float32)
         control = block["control_Pg"].to_numpy(dtype=np.float32)
         time_ns = block.index.asi8
@@ -113,17 +151,24 @@ def make_windows(minute, window=30, stride=5, min_control_power=100.0):
     return arrays
 
 
-def prepare(raw_dir, output, window=30, stride=5, min_control_power=100.0):
+def prepare(raw_dir, output, window=30, stride=5, min_control_power=100.0,
+            include_weather=False):
     if output.exists():
         raise FileExistsError(output)
     minute, hashes = read_minutes(raw_dir)
-    arrays = make_windows(minute, window, stride, min_control_power)
+    features = FEATURES
+    if include_weather:
+        weather_path = raw_dir / "dt1_solar_and_meteorological_measurement.csv"
+        minute = minute.join(read_weather_minutes(weather_path), how="left")
+        features += WEATHER_FEATURES
+        hashes[weather_path.name] = file_hash(weather_path)
+    arrays = make_windows(minute, window, stride, min_control_power, features)
     train = arrays["train"]["x"]
     mean = train.mean(axis=(0, 2), dtype=np.float64).astype(np.float32)
     scale = train.std(axis=(0, 2), dtype=np.float64).astype(np.float32)
     scale = np.maximum(scale, 1e-4)
     output.mkdir(parents=True)
-    np.savez(output / "normalization.npz", mean=mean, scale=scale, features=np.asarray(FEATURES))
+    np.savez(output / "normalization.npz", mean=mean, scale=scale, features=np.asarray(features))
     stats = {}
     for split, items in arrays.items():
         normalized = ((items["x"] - mean[None, :, None]) / scale[None, :, None]).astype(np.float32)
@@ -136,12 +181,16 @@ def prepare(raw_dir, output, window=30, stride=5, min_control_power=100.0):
                         "last_end_time": pd.Timestamp(items["end_time_ns"].max(), tz="UTC").isoformat()}
     manifest = {"source": "https://zenodo.org/records/7828879", "raw_sha256": hashes,
                 "protocol": "30-minute windows at 1-minute median cadence, 5-minute stride; whole-date, forward chronological train/validation/test; day boundaries never crossed; fixed gaps between partitions; last-minute binary label",
-                "split_dates_local": SPLIT_DATES, "features": FEATURES,
+                "split_dates_local": SPLIT_DATES, "features": features,
                 "window": window, "stride": stride, "min_control_power_w": min_control_power,
                 "normalization": "train windows only", "splits": stats,
+                "weather": ("same-minute median of DTI, GTI, TA, TPV; exact minute join; missing minutes reject windows"
+                            if include_weather else "not included"),
                 "limitations": ["One 4 kW rooftop plant, not cross-plant validation.",
                                 "All faults are shading experiments; some subtypes have only one episode.",
                                 "The 2022-05-10 and later 3.1 shading subtype is absent from training.",
+                                "Weather is unavailable at some dates/minutes; windows with missing values are excluded."
+                                if include_weather else
                                 "Meteorological stream is not yet included; the second inverter is used as a peer reference."]}
     (output / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n")
     return manifest
@@ -154,6 +203,7 @@ if __name__ == "__main__":
     parser.add_argument("--window", type=int, default=30)
     parser.add_argument("--stride", type=int, default=5)
     parser.add_argument("--min-control-power", type=float, default=100.0)
+    parser.add_argument("--include-weather", action="store_true")
     args = parser.parse_args()
     print(json.dumps(prepare(args.raw_dir, args.output, args.window, args.stride,
-                             args.min_control_power), indent=2), flush=True)
+                             args.min_control_power, args.include_weather), indent=2), flush=True)
