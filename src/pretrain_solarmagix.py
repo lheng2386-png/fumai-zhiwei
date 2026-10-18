@@ -115,6 +115,9 @@ def run(args):
     model.load_state_dict(checkpoint["state_dict"])
     result = {"source": manifest["source"], "task": "masked reconstruction",
               "data_sha256": hashlib.sha256(data_bytes).hexdigest(),
+              "array_sha256": {name: hashlib.sha256(values.numpy().tobytes()).hexdigest()
+                               for name, values in (("train", train), ("validation", validation),
+                                                    ("test", test))},
               "device": device, "seed": args.seed, "parameters": sum(p.numel() for p in model.parameters()),
               "train_windows": len(train), "validation_windows": len(validation),
               "test_windows": len(test), "best_epoch": best_epoch,

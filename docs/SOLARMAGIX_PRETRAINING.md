@@ -33,3 +33,24 @@ python3 src/pretrain_solarmagix.py --data data/processed/solarmagix_8h.npz --out
 如果显存不足，改用 `--batch-size 128`；若仍不足，依次减小 `--width`，并记录不同配置。输出的 `best.pt` 含编码器、特征顺序和训练区归一化参数，`results.json` 含验证与留出电站误差、零填充基线、训练轮次及数据文件哈希。只克隆 Git 仓库不足以复现，须先执行下载命令或上传已校验的原始 CSV。
 
 本机 Apple GPU 上，宽度 32/深度 2 的 3 轮**流程检查**用约 6 秒训练；不能据此推断 A10 的实际时长或完整实验效果。实际 A10 用时以服务器日志为准。迁移到 La Réunion 故障模型还需要特征适配器和严格的验证协议，不能直接把重建误差当作故障性能提升。
+
+## A10G 第一轮结果（2026-10-18）
+
+在 **NVIDIA A10G 24 GB**、PyTorch 2.8.0+cu128 上按上述默认配置训练，模型有 **126,444 个参数**，30 轮约 **17 秒**，第 25 轮验证误差最低。原始 8 个文件在服务器重新通过 SHA-256 校验，服务器数据切分与本机一致；检查点 `reports/solarmagix_ssl_a10_v1/best.pt` 已从实例取回本机保存。GPU 训练输出保存在本地忽略目录 `reports/solarmagix_ssl_a10_v1/`，未把权重提交到 Git。
+
+| 遮挡输入重建 MSE（归一化尺度） | 验证电站 | 留出电站 |
+| --- | ---: | ---: |
+| 零填充 | 0.2780 | 0.2679 |
+| 时间线性插值 | 0.1431 | 0.1439 |
+| 自研多尺度 CNN | **0.0275** | **0.0260** |
+
+线性插值基线在整条传感器通道被遮挡时只能回退为零，因此这个比较考察了跨传感器重建能力，不能外推为故障分类优势。留出电站分数在本轮已经读取，后续改模型时不能继续称同一电站为全新独立测试。复现插值基线：
+
+```bash
+python3 src/compare_solarmagix_baselines.py \
+  --data data/processed/solarmagix_8h.npz \
+  --results reports/solarmagix_ssl_a10_v1/results.json \
+  --output reports/solarmagix_ssl_a10_v1/baselines.json
+```
+
+这次训练记录的是 **NPZ 字节哈希**；不同 NumPy 版本重新写出的压缩包可能字节不同，即使数组相同。以上结果用从 A10G 取回的原始 NPZ 对齐计算，并核对了两端各分区的数组内容哈希。后续脚本同时记录数组内容哈希，避免压缩包元数据造成误判。

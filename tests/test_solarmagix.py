@@ -8,6 +8,7 @@ import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 from prepare_solarmagix import FEATURES, fit_scaler, make_windows, prepare
+from compare_solarmagix_baselines import linear_interpolation_mse
 
 
 def rows(device, station, start, count, power):
@@ -21,6 +22,11 @@ def rows(device, station, start, count, power):
 
 
 class SolarMagixPreparationTests(unittest.TestCase):
+    def test_interpolation_baseline_uses_only_visible_neighbors(self):
+        data = np.asarray([[[0.0, 1.0, 2.0, 3.0, 4.0]]], dtype=np.float32)
+        mask = np.asarray([[[False, True, True, False, False]]])
+        self.assertAlmostEqual(linear_interpolation_mse(data, mask), 0.0)
+
     def test_windows_do_not_bridge_nights_or_devices(self):
         data = pd.concat([rows("a", "s", "2025-01-01 08:00", 5, 1.0),
                           rows("a", "s", "2025-01-02 08:00", 5, 2.0),
