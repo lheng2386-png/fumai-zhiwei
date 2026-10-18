@@ -1,0 +1,10 @@
+{
+    "name": "fumai-zhiwei-frontend",
+    "version": "0.1.0",
+    "private": true,
+    "description": "伏脉智维光伏运维前端交互原型",
+    "scripts": {
+        "check": "node --check dist/app.js && node --check dist/data.js",
+        "start": "node serve.mjs"
+    }
+}
