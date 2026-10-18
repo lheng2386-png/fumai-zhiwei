@@ -64,8 +64,9 @@ def run(args):
     arrays = np.load(args.data)
     train = torch.from_numpy(arrays["train"].copy())
     validation = torch.from_numpy(arrays["validation"].copy())
-    test = torch.from_numpy(arrays["test"].copy())
-    if any(x.ndim != 3 or x.shape[1:] != train.shape[1:] for x in (train, validation, test)):
+    test = None if args.validation_only else torch.from_numpy(arrays["test"].copy())
+    included = (train, validation) if test is None else (train, validation, test)
+    if any(x.ndim != 3 or x.shape[1:] != train.shape[1:] for x in included):
         raise ValueError("Inconsistent split tensor shapes")
     manifest = json.loads(args.data.with_suffix(".json").read_text())
     if manifest["splits"]["train"]["windows"] != len(train):
@@ -73,7 +74,7 @@ def run(args):
     model = MultiscalePV(channels=train.shape[1], width=args.width, depth=args.depth).to(device)
     optimizer = torch.optim.AdamW(model.parameters(), lr=args.lr, weight_decay=1e-3)
     val_mask = eval_mask(validation.shape, args.seed+1)
-    test_mask = eval_mask(test.shape, args.seed+2)
+    test_mask = None if test is None else eval_mask(test.shape, args.seed+2)
     args.output.mkdir(parents=True, exist_ok=False)
     best = float("inf")
     best_epoch = 0
@@ -116,19 +117,21 @@ def run(args):
     result = {"source": manifest["source"], "task": "masked reconstruction",
               "data_sha256": hashlib.sha256(data_bytes).hexdigest(),
               "array_sha256": {name: hashlib.sha256(values.numpy().tobytes()).hexdigest()
-                               for name, values in (("train", train), ("validation", validation),
-                                                    ("test", test))},
+                               for name, values in (("train", train), ("validation", validation))
+                               + (() if test is None else (("test", test),))},
               "device": device, "seed": args.seed, "parameters": sum(p.numel() for p in model.parameters()),
               "train_windows": len(train), "validation_windows": len(validation),
-              "test_windows": len(test), "best_epoch": best_epoch,
+              "test_windows": None if test is None else len(test), "best_epoch": best_epoch,
               "validation": evaluate(model, validation, val_mask, args.batch_size, device),
-              "heldout_station_test": evaluate(model, test, test_mask, args.batch_size, device),
               "history": history,
               "limitations": ["Reconstruction is not fault classification or field-fault detection.",
                               "Only one held-out station; confirm with repeated station folds.",
                               "Input features differ from the La Reunion model; transfer requires an adapter."]}
+    if test is not None:
+        result["heldout_station_test"] = evaluate(model, test, test_mask, args.batch_size, device)
     (args.output/"results.json").write_text(json.dumps(result, indent=2)+"\n")
-    print(json.dumps({k: result[k] for k in ("best_epoch", "validation", "heldout_station_test")}), flush=True)
+    print(json.dumps({k: result[k] for k in ("best_epoch", "validation", "heldout_station_test")
+                      if k in result}), flush=True)
 
 
 if __name__ == "__main__":
@@ -143,6 +146,8 @@ if __name__ == "__main__":
     parser.add_argument("--depth", type=int, default=3)
     parser.add_argument("--seed", type=int, default=2026)
     parser.add_argument("--device", choices=["auto", "cpu", "mps", "cuda"], default="auto")
+    parser.add_argument("--validation-only", action="store_true",
+                        help="Do not load or score the held-out station")
     args = parser.parse_args()
     if min(args.epochs, args.patience, args.batch_size, args.lr) <= 0:
         parser.error("Training controls must be positive")

@@ -29,7 +29,7 @@ def compare(data_path: Path, results_path: Path) -> dict:
     with np.load(data_path) as data:
         if "array_sha256" in results:
             hashes = {name: hashlib.sha256(data[name].tobytes()).hexdigest()
-                      for name in ("train", "validation", "test")}
+                      for name in results["array_sha256"]}
             if hashes != results["array_sha256"]:
                 raise ValueError("Prepared arrays changed since model training")
         elif digest != results["data_sha256"]:
@@ -38,6 +38,8 @@ def compare(data_path: Path, results_path: Path) -> dict:
     with np.load(data_path) as data:
         for split, key, offset in (("validation", "validation", 1),
                                    ("test", "heldout_station_test", 2)):
+            if key not in results:
+                continue
             values = data[split]
             mask = eval_mask(values.shape, results["seed"]+offset).numpy()
             linear = linear_interpolation_mse(values, mask)

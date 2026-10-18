@@ -54,3 +54,11 @@ python3 src/compare_solarmagix_baselines.py \
 ```
 
 这次训练记录的是 **NPZ 字节哈希**；不同 NumPy 版本重新写出的压缩包可能字节不同，即使数组相同。以上结果用从 A10G 取回的原始 NPZ 对齐计算，并核对了两端各分区的数组内容哈希。后续脚本同时记录数组内容哈希，避免压缩包元数据造成误判。
+
+后续架构、容量与随机种子比较统一加 `--validation-only`，该模式不加载或评分留出电站；只用验证电站选择候选。例如：
+
+```bash
+python3 src/pretrain_solarmagix.py --data data/processed/solarmagix_8h.npz \
+  --output reports/solarmagix_ssl_a10_width128_seed2027 \
+  --device cuda --width 128 --depth 4 --seed 2027 --validation-only
+```
