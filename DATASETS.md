@@ -31,6 +31,7 @@ This file tracks the public data acquired or identified for model development. R
 - La Réunion latest version 7828879 faulted/control electrical CSVs and metadata are downloaded and MD5-verified. The fault stream has 2,988,814 rows, including six missing labels; counts and checksums are in `data/raw/la_reunion/manifest.json`. The 2.24 GB weather CSV has not been fetched; the older 1.54 GB version's partial file is retained under `versions/7291380/`.
 - PV-Fault-DS226 raw and labeled CSVs downloaded and verified against both published MD5 values. All measurement columns match exactly between files; no missing values or duplicate timestamps. Class/day counts and power-sign checks are in `data/raw/pv_fault_ds226/audit.json`.
 - SolarMagix selected hourly, metadata, and state-mapping files downloaded and SHA-256 verified against Mendeley file metadata. Detailed quality checks are in `data/raw/solarmagix/audit.json`. The full high-rate telemetry files have not been downloaded.
+- SolarMagix 8-hour, station-held-out self-supervised input is built with `src/prepare_solarmagix.py` (12,169/1,932/2,743 windows). The preparation/training protocol is in `docs/SOLARMAGIX_PRETRAINING.md`; reconstruction scores are not fault-detection scores.
 
 ## Training and evaluation rules
 
