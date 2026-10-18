@@ -49,9 +49,9 @@ def fold_data(prepared, train_through, tune_from, tune_through,
     scale = raw[train_mask].std(axis=(0, 2), dtype=np.float64).astype(np.float32)
     scale = np.maximum(scale, 1e-4)
     normalized = ((raw - mean[None, :, None]) / scale[None, :, None]).astype(np.float32)
-    return ({"x": normalized[train_mask], "y": y[train_mask]},
-            {"x": normalized[tune_mask], "y": y[tune_mask]},
-            {"x": normalized[eval_mask], "y": y[eval_mask]},
+    return ({"x": normalized[train_mask], "y": y[train_mask], "end_time_ns": time_ns[train_mask]},
+            {"x": normalized[tune_mask], "y": y[tune_mask], "end_time_ns": time_ns[tune_mask]},
+            {"x": normalized[eval_mask], "y": y[eval_mask], "end_time_ns": time_ns[eval_mask]},
             {"mean": mean, "scale": scale},
             {"train_days": sorted(set(dates[train_mask])),
              "tuning_days": sorted(set(dates[tune_mask])),

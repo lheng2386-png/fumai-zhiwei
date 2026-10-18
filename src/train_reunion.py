@@ -77,7 +77,22 @@ def predict(model, x, device, batch_size):
     return np.concatenate(chunks)
 
 
-def train_one(name, seed, train, validation, output, device, args, initial_state=None):
+def classification_loss(logits, target, weights, hard_negative_alpha=0.0):
+    """Emphasize training normals currently mistaken for faults, if requested."""
+    if hard_negative_alpha == 0:
+        return F.cross_entropy(logits, target, weight=weights)
+    if hard_negative_alpha < 0:
+        raise ValueError("hard_negative_alpha must be nonnegative")
+    cross_entropy = F.cross_entropy(logits, target, weight=weights, reduction="none")
+    fault_probability = logits.detach().softmax(-1)[:, 1]
+    emphasis = torch.where(target == 0,
+                           1.0 + hard_negative_alpha * fault_probability.square(),
+                           torch.ones_like(fault_probability))
+    return (cross_entropy * emphasis).sum() / (weights[target] * emphasis).sum()
+
+
+def train_one(name, seed, train, validation, output, device, args,
+              initial_state=None, hard_negative_alpha=0.0):
     seed_all(seed)
     model = make_model(name, train["x"].shape[1]).to(device)
     if initial_state is not None:
@@ -101,7 +116,8 @@ def train_one(name, seed, train, validation, output, device, args, initial_state
             context = torch.autocast("cuda", dtype=torch.bfloat16) if device.type == "cuda" else nullcontext()
             with context:
                 logits = model(batch).float()
-                loss = F.cross_entropy(logits, y[indices], weight=weights)
+                loss = classification_loss(logits, y[indices], weights,
+                                           hard_negative_alpha)
             if not torch.isfinite(loss):
                 raise FloatingPointError(tag)
             loss.backward()

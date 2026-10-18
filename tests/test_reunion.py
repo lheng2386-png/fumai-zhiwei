@@ -10,6 +10,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 from prepare_reunion import FEATURES, WEATHER_FEATURES, make_windows, read_weather_minutes, split_for_date
 from backtest_reunion import fold_data
 from compare_reunion_physics import augment
+from train_reunion import classification_loss
 from train_arch_compare import TransformerPV
 
 
@@ -115,6 +116,20 @@ class ReunionProtocolTests(unittest.TestCase):
         self.assertGreater(float(validation["x"][0, 18].min()), 3.0)
         self.assertGreater(float(validation["x"][0, 20].min()), 3.0)
         self.assertEqual(fitted["fit"], "all train windows only")
+
+    def test_hard_negative_loss_preserves_baseline_and_emphasizes_errors(self):
+        import torch
+        from torch.nn import functional as F
+        logits = torch.tensor([[0.0, 3.0], [3.0, 0.0], [0.5, 1.0]],
+                              requires_grad=True)
+        target = torch.tensor([0, 0, 1])
+        weights = torch.tensor([0.7, 1.3])
+        baseline = classification_loss(logits, target, weights)
+        self.assertTrue(torch.allclose(baseline, F.cross_entropy(logits, target, weight=weights)))
+        emphasized = classification_loss(logits, target, weights, 4.0)
+        self.assertGreater(float(emphasized.detach()), float(baseline.detach()))
+        emphasized.backward()
+        self.assertTrue(torch.isfinite(logits.grad).all())
 
 
 if __name__ == "__main__":
