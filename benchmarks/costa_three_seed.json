@@ -1,0 +1,83 @@
+{
+  "seeds": [
+    2026,
+    2027,
+    2028
+  ],
+  "models": {
+    "extra_trees_matched": {
+      "accuracy": {
+        "per_seed": [
+          0.9829605033205173,
+          0.985232436211115,
+          0.9845333799370849
+        ],
+        "mean": 0.9842421064895723,
+        "sample_std": 0.0011636365114434336
+      },
+      "macro_f1": {
+        "per_seed": [
+          0.9680615161459685,
+          0.9711070268521528,
+          0.9697752764048179
+        ],
+        "mean": 0.9696479398009797,
+        "sample_std": 0.0015267432080669579
+      }
+    },
+    "scratch_temporal_cnn": {
+      "accuracy": {
+        "per_seed": [
+          0.9851450541768613,
+          0.9975533030408948,
+          0.9960678084585809
+        ],
+        "mean": 0.9929220552254456,
+        "sample_std": 0.006775911932779468
+      },
+      "macro_f1": {
+        "per_seed": [
+          0.9506323341891699,
+          0.9874202355428361,
+          0.9844688294260688
+        ],
+        "mean": 0.9741737997193582,
+        "sample_std": 0.020440845114581437
+      }
+    },
+    "masked_pretrained_temporal_cnn": {
+      "accuracy": {
+        "per_seed": [
+          0.9937084935337295,
+          0.9956308982873121,
+          0.9972911569381335
+        ],
+        "mean": 0.9955435162530583,
+        "sample_std": 0.0017929294415137335
+      },
+      "macro_f1": {
+        "per_seed": [
+          0.983261019778532,
+          0.9874719402450592,
+          0.9870846555125101
+        ],
+        "mean": 0.9859392051787005,
+        "sample_std": 0.0023274460561467543
+      }
+    }
+  },
+  "validation_selected_models": [
+    "masked_pretrained_temporal_cnn",
+    "masked_pretrained_temporal_cnn",
+    "scratch_temporal_cnn"
+  ],
+  "protocol": "raw ordered rows 75/5/20; 100-row boundary purge; nonoverlapping 24-row windows; last-row label; train-only scaling and pretraining; validation-only checkpoint/model selection",
+  "test_windows": 11444,
+  "limitations": [
+    "Single-plant row-ordered evaluation, no verified independent event/day or cross-plant generalization.",
+    "Raw rows have no timestamps: 24 rows are not asserted to represent a particular duration.",
+    "New protocol differs from earlier 80/20 baseline; compare only the matched baselines here.",
+    "Domain pretraining uses this dataset training partition only, not a general foundation model."
+  ],
+  "selection": "All specified seeds included; no test-based seed selection."
+}
