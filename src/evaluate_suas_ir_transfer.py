@@ -36,7 +36,7 @@ def md5_file(path):
 def load_suas(archive):
     if md5_file(archive) != EXPECTED_SUAS_MD5:
         raise ValueError("sUAS archive checksum mismatch")
-    images, labels, counts = [], [], Counter()
+    images, labels, class_ids, counts = [], [], [], Counter()
     with zipfile.ZipFile(archive) as source:
         for name in sorted(source.namelist()):
             if not name.lower().endswith(".jpg"):
@@ -49,10 +49,12 @@ def load_suas(archive):
                 images.append(np.asarray(resized, dtype=np.uint8))
             label = int(pieces[1])
             labels.append(int(label != 8))
+            class_ids.append(label)
             counts[label] += 1
     if len(images) != 3675 or set(counts) != set(range(1, 9)):
         raise ValueError("sUAS image inventory differs from published record")
-    return np.stack(images), np.asarray(labels, dtype=np.int64), counts
+    return (np.stack(images), np.asarray(labels, dtype=np.int64),
+            np.asarray(class_ids, dtype=np.int64), counts)
 
 
 @torch.no_grad()
@@ -101,7 +103,7 @@ def run(args):
                           "mps" if torch.backends.mps.is_available() else "cpu")
     validation_scores = anomaly_scores(validation_images, members, args.batch_size, device)
     threshold = choose_binary_threshold(validation_labels, validation_scores)
-    images, labels, counts = load_suas(args.suas_archive)
+    images, labels, class_ids, counts = load_suas(args.suas_archive)
     scores = anomaly_scores(images, members, args.batch_size, device)
     predicted = scores >= threshold
     report = {"protocol": "RaptorMaps-selected model and validation-selected binary threshold, one-shot sUAS transfer",
@@ -113,6 +115,11 @@ def run(args):
               "suas_source": "https://zenodo.org/records/20860870",
               "suas_archive_md5": EXPECTED_SUAS_MD5,
               "suas_class_counts": {str(key): value for key, value in sorted(counts.items())},
+              "suas_by_class": {str(label): {
+                  "samples": int((class_ids == label).sum()),
+                  "mean_anomaly_score": float(scores[class_ids == label].mean()),
+                  "predicted_anomalous": int(predicted[class_ids == label].sum())}
+                  for label in sorted(counts)},
               "suas_binary_ap": float(average_precision_score(labels, scores)),
               "suas_binary_roc_auc": float(roc_auc_score(labels, scores)),
               "suas_binary_macro_f1_at_raptor_threshold": float(f1_score(labels, predicted, average="macro")),
