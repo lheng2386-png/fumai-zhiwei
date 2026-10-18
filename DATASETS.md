@@ -26,7 +26,7 @@ This file tracks the public data acquired or identified for model development. R
 ## Download status
 
 - TECNALIA archive extracted and verified against Zenodo MD5 `15daed06b32f5debc9f3d81f0afe31d4`.
-- sUAS archive downloaded; MD5 verified against the Zenodo record (`9f8a4dc88a5e1474c4dd30697079286bf`); extracted image count and class folders match the record.
+- sUAS archive downloaded; MD5 verified against the Zenodo record (`9f8a4dc88a5e1474cdd30697079286bf`); extracted image count and class folders match the record. All images come from one orthomosaic, so this is a distinct capture-domain check rather than proof of generalization across sites.
 - SolarFCD 5.34 GB bundle passed ZIP CRC validation; the 3,742-image final set was extracted. Cross-split duplicates are audited in `data/raw/solarfcd/duplicate_groups.csv`.
 - La Réunion latest version 7828879 faulted/control electrical CSVs, metadata, and the 2.24 GB meteorological CSV are downloaded and MD5-verified. The fault stream has 2,988,814 rows, including six missing labels; counts and checksums are in the local `data/raw/la_reunion/manifest.json`. The older 1.54 GB version's partial file is retained under `versions/7291380/`.
 - PV-Fault-DS226 raw and labeled CSVs downloaded and verified against both published MD5 values. All measurement columns match exactly between files; no missing values or duplicate timestamps. Class/day counts and power-sign checks are in `data/raw/pv_fault_ds226/audit.json`.
