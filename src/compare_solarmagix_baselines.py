@@ -41,7 +41,8 @@ def compare(data_path: Path, results_path: Path) -> dict:
             if key not in results:
                 continue
             values = data[split]
-            mask = eval_mask(values.shape, results["seed"]+offset).numpy()
+            mask_seed = results.get(f"{split}_mask_seed", results["seed"]+offset)
+            mask = eval_mask(values.shape, mask_seed).numpy()
             linear = linear_interpolation_mse(values, mask)
             output["splits"][split] = {
                 "model_masked_mse": results[key]["masked_mse"],

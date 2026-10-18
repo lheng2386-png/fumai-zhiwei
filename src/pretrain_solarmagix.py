@@ -16,6 +16,9 @@ import torch
 
 from multiscale_model import MultiscalePV
 
+VALIDATION_MASK_SEED = 4101
+TEST_MASK_SEED = 4102
+
 
 def eval_mask(shape, seed):
     count, channels, length = shape
@@ -73,8 +76,8 @@ def run(args):
         raise ValueError("Manifest/data mismatch")
     model = MultiscalePV(channels=train.shape[1], width=args.width, depth=args.depth).to(device)
     optimizer = torch.optim.AdamW(model.parameters(), lr=args.lr, weight_decay=1e-3)
-    val_mask = eval_mask(validation.shape, args.seed+1)
-    test_mask = None if test is None else eval_mask(test.shape, args.seed+2)
+    val_mask = eval_mask(validation.shape, VALIDATION_MASK_SEED)
+    test_mask = None if test is None else eval_mask(test.shape, TEST_MASK_SEED)
     args.output.mkdir(parents=True, exist_ok=False)
     best = float("inf")
     best_epoch = 0
@@ -120,6 +123,8 @@ def run(args):
                                for name, values in (("train", train), ("validation", validation))
                                + (() if test is None else (("test", test),))},
               "device": device, "seed": args.seed, "parameters": sum(p.numel() for p in model.parameters()),
+              "validation_mask_seed": VALIDATION_MASK_SEED,
+              "test_mask_seed": None if test is None else TEST_MASK_SEED,
               "train_windows": len(train), "validation_windows": len(validation),
               "test_windows": None if test is None else len(test), "best_epoch": best_epoch,
               "validation": evaluate(model, validation, val_mask, args.batch_size, device),
