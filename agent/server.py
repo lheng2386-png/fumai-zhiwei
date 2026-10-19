@@ -17,7 +17,7 @@ from pathlib import Path
 from urllib.parse import urlsplit
 
 from .core import InputError, Snapshot
-from .model import ResponsesModel
+from .config import configured_model
 from .store import Store
 
 
@@ -215,10 +215,7 @@ def main():
     parser.add_argument("--static-root", help="Only for local development")
     args = parser.parse_args()
     snapshot = Snapshot.load(args.snapshot, os.getenv("AGENT_MODE", "demo"))
-    key, model_name = os.getenv("OPENAI_API_KEY"), os.getenv("AGENT_MODEL")
-    if bool(key) != bool(model_name):
-        raise ValueError("Set both OPENAI_API_KEY and AGENT_MODEL, or neither")
-    model = ResponsesModel(key, model_name, os.getenv("AGENT_RESPONSES_URL", "https://api.openai.com/v1/responses")) if key else None
+    model = configured_model()
     marker = Path(".agent-release")
     release = os.getenv("AGENT_RELEASE") or (marker.read_text().strip() if marker.is_file() else "development")
     app = Application(snapshot, Store(args.database), os.environ["AGENT_ORIGIN"], json.loads(os.getenv("AGENT_USERS_JSON", "{}")), model,

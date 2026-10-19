@@ -93,15 +93,29 @@ AGENT_ORIGIN=http://your-authorized-host
 
 首次演练可复制 `agent/demo-snapshot.json` 到 `/var/lib/fumai-agent/snapshot.json`，归 `fumai-agent` 所有。后续部署不能覆盖已有快照、数据库或环境配置。
 
-可选模型配置：
+模型接入只作用于 `/agent-api/` 运维证据助手，其他业务后端由各模块负责人接入。当前 Qwen 使用学校 GPUStack 的 Chat Completions 接口，服务器配置：
 
 ```text
-OPENAI_API_KEY=<由管理员安全配置>
-AGENT_MODEL=<该 API 账号有权使用的模型标识>
+AGENT_MODEL_API=chat_completions
+AGENT_BASE_URL=https://ai.wust.edu.cn/gpustack/v1
+AGENT_MODEL=Qwen3-30B-A3B-Instruct-2507
+AGENT_API_KEY=<服务端密钥>
+```
+
+配置示例见根目录 `.env.example`。API 根地址不能附带 `/chat/completions`；适配器自动拼接该路径。密钥只放在 `/etc/fumai-agent.env`（0600），不放进前端、Git 或日志。旧的 `OPENAI_API_KEY` 仍兼容，但优先使用 `AGENT_API_KEY`。本地 `.env.local` 受 Git 忽略；服务本身从进程环境读取，不自动加载 dotenv。
+
+保留原 Responses 配置：
+
+```text
+AGENT_MODEL_API=responses
+OPENAI_API_KEY=<服务端密钥>
+AGENT_MODEL=<可用模型>
 AGENT_RESPONSES_URL=https://api.openai.com/v1/responses
 ```
 
-必须同时设置 key 与模型，否则启动失败；未配置两者时正常运行规则模式。兼容服务必须支持相同 Responses 请求/工具/JSON Schema 协议，仅兼容 Chat Completions 的服务不能直接填写此 URL。模型端点仅由管理员配置，要求 HTTPS，禁止重定向。不把密钥发给浏览器、不写入仓库、不输出供应商原始错误。实测数据传给模型前需完成该供应商的数据授权与存储政策评审。`store=false` 不是所有供应商日志/保留政策的保证。
+协议默认 `responses`，避免改变已有部署。必须同时设置密钥与模型，否则启动失败；两者均未配置时使用规则分析。Chat Completions 使用 system/user/assistant/tool 消息进行最多 3 轮、6 次只读工具调用，最后一轮强制结束工具调用并生成 JSON。整体模型处理预算为 55 秒，低于网页和 nginx 的 65 秒等待时间；第三轮仍调用工具、输出截断、非法工具或无法验证的证据引用均降级为规则分析，不当成模型成功。输出字段和证据引用会在后端再次校验，模型不能修改设备、数据快照或确认工单。
+
+模型端点仅由管理员配置，要求 HTTPS，禁止重定向。模型分析成功时返回 `engine=chat_completions`（或 `responses`）、`model_status=connected` 和实际配置模型名；`model_configured=true` 仅说明配置存在，不能代表真实调用成功。输入是当前事件证据与用户问题；当前部署使用构造样例，尚未接入真实电站采集系统。
 
 实测模式另需：
 
@@ -121,7 +135,7 @@ python3 /srv/fumai-zhiwei/ops/deploy_agent.py --commit <完整40位已推送提�
 
 下载精确提交、限制并检查归档路径、运行后端单测、原子切换智能体版本、systemd 重启、核对后端版本，再用已有流程部署前端。失败恢复代码版本；配置/快照/审计持久保留。当前表结构为初版，未来涉及破坏性数据库变更时必须另做迁移、备份及恢复演练，不能依赖代码回退恢复数据。
 
-检查 `/agent-api/health` 与 `/deployment.json` 提交一致，再验证分析、证据卡和人工确认。health 的 `model_configured` 只表示配置存在，不表示模型请求成功；只有真实请求返回 `engine=responses,model_status=connected` 才算该次调用成功。没有密钥时不能声称模型联调通过。
+检查 `/agent-api/health` 与 `/deployment.json` 提交一致，再验证分析、证据卡和人工确认。health 的 `model_configured` 只表示配置存在，不表示模型请求成功；只有真实请求返回 `model_status=connected` 且含通过校验的 `model_analysis` 才算该次调用成功。没有密钥时不能声称模型联调通过。
 
 ## 工业现场试运行前仍需完成
 

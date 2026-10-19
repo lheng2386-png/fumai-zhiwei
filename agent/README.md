@@ -1,6 +1,6 @@
 # 运维证据助手
 
-Python 3.12，无第三方服务端依赖。当前默认运行构造样例和规则分析；可配置 Responses 模型与实测事件快照。
+Python 3.12，无第三方服务端依赖。当前默认运行构造样例和规则分析；可配置 Qwen 等 Chat Completions 兼容模型、Responses 模型与实测事件快照。
 
 运行、数据合同、模型接入、认证、部署和现场试运行条件见 [完整说明](../docs/INDUSTRIAL_AGENT.md)。
 

@@ -1,5 +1,6 @@
-"""Optional Responses API adapter. Bounded, read-only tools; no SDK dependency."""
+"""Optional model adapters. Bounded, read-only tools; no SDK dependency."""
 import json
+import time
 import urllib.error
 import urllib.request
 
@@ -28,6 +29,51 @@ INSTRUCTIONS = """你是伏脉智维的光伏运维证据助手。只读工具�
 引用必须来自已提供或已查询事件标识。summary 是建议性解释，数字以独立证据卡为准。
 输出指定 JSON，不使用 Markdown。模型输出不修改状态、工单、复核标签或设备。
 """
+
+
+def strict_json(text):
+    def object_pairs(pairs):
+        result = {}
+        for key, value in pairs:
+            if key in result:
+                raise ValueError("Duplicate JSON field")
+            result[key] = value
+        return result
+
+    def reject_constant(_):
+        raise ValueError("Invalid JSON constant")
+
+    try:
+        return json.loads(text, object_pairs_hook=object_pairs, parse_constant=reject_constant)
+    except (ValueError, TypeError) as exc:
+        raise ValueError("Invalid model JSON") from None
+
+
+def validate_analysis(text, allowed):
+    analysis = strict_json(text)
+    if (not isinstance(analysis, dict) or set(analysis) != set(SCHEMA["required"])
+            or not isinstance(analysis["summary"], str) or not analysis["summary"].strip()
+            or len(analysis["summary"]) > 2000):
+        raise ValueError("Invalid model shape")
+    for key in ("hypotheses", "checks", "unknowns", "evidence_ids"):
+        if (not isinstance(analysis[key], list) or len(analysis[key]) > 15
+                or any(not isinstance(s, str) or len(s) > 800 for s in analysis[key])):
+            raise ValueError("Invalid model fields")
+    if not set(analysis["evidence_ids"]).issubset(allowed) or (allowed and not analysis["evidence_ids"]):
+        raise ValueError("Unverified model citations")
+    return analysis
+
+
+def record_tool_result(answer, name, result, allowed):
+    events = answer.get("events", []) if isinstance(answer, dict) else []
+    if isinstance(answer, dict) and "event_id" in answer:
+        events = [answer]
+    for event in events:
+        allowed.add(event["event_id"])
+        if event["event_id"] not in result["evidence_ids"]:
+            result["events"].append(event)
+            result["evidence_ids"].append(event["event_id"])
+    result["trace"].append({"tool": name, "status": "ok", "result_count": len(events) or 1})
 
 
 class NoRedirect(urllib.request.HTTPRedirectHandler):
@@ -85,16 +131,127 @@ class ResponsesModel:
                     items.append({"type": "function_call_output", "call_id": item["call_id"], "output": json.dumps(answer, ensure_ascii=False)})
                 continue
             text = "".join(c.get("text", "") for item in output if item.get("type") == "message" for c in item.get("content", []) if c.get("type") == "output_text")
-            analysis = json.loads(text)
-            if set(analysis) != set(SCHEMA["required"]) or not isinstance(analysis["summary"], str) or not 1 <= len(analysis["summary"]) <= 2000:
-                raise ValueError("Invalid model shape")
-            for key in ("hypotheses", "checks", "unknowns", "evidence_ids"):
-                if not isinstance(analysis[key], list) or len(analysis[key]) > 15 or any(not isinstance(s, str) or len(s) > 800 for s in analysis[key]):
-                    raise ValueError("Invalid model fields")
-            if not set(analysis["evidence_ids"]).issubset(allowed) or (allowed and not analysis["evidence_ids"]):
-                raise ValueError("Unverified model citations")
+            analysis = validate_analysis(text, allowed)
             # Keep deterministic facts, limitations and runbooks; model prose is a separate, labelled supplement.
             result["model_analysis"] = analysis
             result.update(engine="responses", model_status="connected", model_name=self.model)
+            return result
+        raise ValueError("Model turn budget exhausted")
+
+
+class ChatCompletionsModel(ResponsesModel):
+    """OpenAI-compatible chat tool loop with one deadline per analysis request."""
+    total_timeout = 55
+    response_limit = 1024 * 1024
+
+    def __init__(self, key, model, endpoint, transport=None):
+        super().__init__(key, model, endpoint, transport)
+        # The optional transport is for deterministic tests. Deadlines are local to
+        # enrich(), since Application shares this model across concurrent requests.
+        self.transport = transport
+
+    @staticmethod
+    def remaining(deadline):
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            raise TimeoutError("Model time budget exhausted")
+        return remaining
+
+    def request(self, payload, deadline=None):
+        deadline = deadline if deadline is not None else time.monotonic() + self.total_timeout
+        request = urllib.request.Request(
+            self.endpoint, data=json.dumps(payload, ensure_ascii=False, allow_nan=False).encode(),
+            headers={"Authorization": f"Bearer {self.key}", "Content-Type": "application/json"}, method="POST")
+        try:
+            with urllib.request.build_opener(NoRedirect()).open(request, timeout=self.remaining(deadline)) as response:
+                chunks, size = [], 0
+                while True:
+                    timeout = self.remaining(deadline)
+                    # read1 performs at most one underlying read; refresh its socket
+                    # timeout so a slow body cannot reset the entire analysis budget.
+                    sock = getattr(getattr(getattr(response, "fp", None), "raw", None), "_sock", None)
+                    if sock is not None:
+                        sock.settimeout(timeout)
+                    chunk = response.read1(min(65536, self.response_limit + 1 - size))
+                    self.remaining(deadline)
+                    if not chunk:
+                        break
+                    size += len(chunk)
+                    if size > self.response_limit:
+                        raise ValueError("Model response too large")
+                    chunks.append(chunk)
+                return strict_json(b"".join(chunks))
+        except TimeoutError:
+            raise TimeoutError("Model time budget exhausted") from None
+        except (OSError, ValueError):
+            # Never propagate supplier response bodies, headers or credentials.
+            raise ValueError("Model request failed") from None
+
+    def enrich(self, snapshot, message, result):
+        deadline = time.monotonic() + self.total_timeout
+        messages = [
+            {"role": "system", "content": INSTRUCTIONS + "\n最终回答必须是符合以下 JSON Schema 的 JSON 对象，必须包含所有字段：\n" + json.dumps(SCHEMA, ensure_ascii=False)},
+            {"role": "user", "content": json.dumps({"question": message, "evidence_bundle": result}, ensure_ascii=False)},
+        ]
+        tools = [{"type": "function", "function": {k: item[k] for k in ("name", "description", "parameters")}} for item in TOOLS]
+        allowed, call_ids, calls = set(result["evidence_ids"]), set(), 0
+        for round_number in range(3):
+            self.remaining(deadline)
+            payload = {"model": self.model, "messages": messages,
+                       "response_format": {"type": "json_object"}, "temperature": 0.1, "max_tokens": 1800}
+            if round_number < 2:
+                payload.update(tools=tools, tool_choice="auto", parallel_tool_calls=False)
+            else:
+                # Some compatible gateways ignore tool_choice=none when tools
+                # are still advertised. Remove them for the bounded final turn.
+                payload["messages"] = messages + [{"role": "system", "content": "工具查询阶段已结束。请仅根据已有证据输出符合指定 JSON Schema 的最终 JSON 分析，不再调用工具。缺失的信息填入 unknowns。"}]
+            response = self.transport(payload) if self.transport is not None else self.request(payload, deadline)
+            self.remaining(deadline)
+            if not isinstance(response, dict) or not isinstance(response.get("choices"), list) or len(response["choices"]) != 1:
+                raise ValueError("Invalid model response")
+            choice = response["choices"][0]
+            if not isinstance(choice, dict) or choice.get("finish_reason") not in {"stop", "tool_calls"}:
+                raise ValueError("Incomplete model response")
+            assistant = choice.get("message")
+            if not isinstance(assistant, dict) or assistant.get("role") != "assistant" or assistant.get("refusal"):
+                raise ValueError("Invalid model message")
+            tool_calls = assistant.get("tool_calls") or []
+            if not isinstance(tool_calls, list):
+                raise ValueError("Invalid model tool calls")
+            if tool_calls:
+                if choice["finish_reason"] != "tool_calls" or round_number == 2 or calls + len(tool_calls) > 6:
+                    raise ValueError("Tool budget exhausted")
+                validated = []
+                for item in tool_calls:
+                    if not isinstance(item, dict) or item.get("type") != "function":
+                        raise ValueError("Rejected model tool call")
+                    call_id, function_call = item.get("id"), item.get("function")
+                    if (not isinstance(call_id, str) or not 1 <= len(call_id) <= 128 or call_id in call_ids
+                            or not isinstance(function_call, dict) or function_call.get("name") not in {tool["name"] for tool in TOOLS}
+                            or not isinstance(function_call.get("arguments"), str) or len(function_call["arguments"]) > 16384):
+                        raise ValueError("Rejected model tool call")
+                    arguments = strict_json(function_call["arguments"])
+                    if not isinstance(arguments, dict):
+                        raise ValueError("Rejected model tool call")
+                    call_ids.add(call_id)
+                    validated.append((call_id, function_call["name"], arguments))
+                messages.append({"role": "assistant", "content": None, "tool_calls": tool_calls})
+                for call_id, name, arguments in validated:
+                    self.remaining(deadline)
+                    try:
+                        answer = snapshot.tool(name, arguments)
+                    except (InputError, ValueError, TypeError, KeyError):
+                        raise ValueError("Rejected model tool call") from None
+                    self.remaining(deadline)
+                    calls += 1
+                    record_tool_result(answer, name, result, allowed)
+                    messages.append({"role": "tool", "tool_call_id": call_id, "content": json.dumps(answer, ensure_ascii=False, allow_nan=False)})
+                continue
+            if choice["finish_reason"] != "stop" or not isinstance(assistant.get("content"), str):
+                raise ValueError("Incomplete model response")
+            analysis = validate_analysis(assistant["content"], allowed)
+            self.remaining(deadline)
+            result["model_analysis"] = analysis
+            result.update(engine="chat_completions", model_status="connected", model_name=self.model)
             return result
         raise ValueError("Model turn budget exhausted")
