@@ -93,6 +93,9 @@ def run(source, checkpoint, output, device, imgsz, batch_size, conf, nms_iou, mo
     empty_images = {image["id"] for image in coco.dataset["images"]}
     empty_images -= {item["image_id"] for item in coco.dataset["annotations"]}
     empty_image_detections = 0
+    fixed_confidences = (0.25, 0.50)
+    empty_detections_at_confidence = {threshold: 0 for threshold in fixed_confidences}
+    empty_images_with_detection_at_confidence = {threshold: 0 for threshold in fixed_confidences}
     started = time.monotonic()
     for image in coco.dataset["images"]:
         path = source / "val" / "images" / image["file_name"]
@@ -115,12 +118,20 @@ def run(source, checkpoint, output, device, imgsz, batch_size, conf, nms_iou, mo
                     continue
                 boxes.append(full_box)
                 scores.append(float(score))
+        empty_image_hits = {threshold: 0 for threshold in fixed_confidences}
         for index in nms(boxes, scores, threshold=nms_iou):
             x1, y1, x2, y2 = boxes[index]
             predictions.append({"image_id": image["id"], "category_id": 0,
                                 "bbox": [x1, y1, x2 - x1, y2 - y1],
                                 "score": scores[index]})
-            empty_image_detections += image["id"] in empty_images
+            if image["id"] in empty_images:
+                empty_image_detections += 1
+                for threshold in fixed_confidences:
+                    if scores[index] >= threshold:
+                        empty_image_hits[threshold] += 1
+                        empty_detections_at_confidence[threshold] += 1
+        for threshold in fixed_confidences:
+            empty_images_with_detection_at_confidence[threshold] += int(empty_image_hits[threshold] > 0)
     if not predictions:
         raise ValueError("Detector produced no validation predictions")
     inference_seconds = time.monotonic() - started
@@ -141,6 +152,12 @@ def run(source, checkpoint, output, device, imgsz, batch_size, conf, nms_iou, mo
               "map_small": float(evaluation.stats[3]), "recall_100": float(evaluation.stats[8]),
               "empty_label_images": len(empty_images),
               "detections_on_empty_label_images": empty_image_detections,
+              "empty_label_detections_at_fixed_confidence": {
+                  str(threshold): empty_detections_at_confidence[threshold]
+                  for threshold in fixed_confidences},
+              "empty_label_images_with_detection_at_fixed_confidence": {
+                  str(threshold): empty_images_with_detection_at_confidence[threshold]
+                  for threshold in fixed_confidences},
               "seconds_per_original_image": inference_seconds / len(coco.dataset["images"]),
               "limitations": ["Validation is from one collection with proxy capture groups.",
                               "Empty labels are not certified healthy images.",
