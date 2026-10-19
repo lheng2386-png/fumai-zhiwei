@@ -5,7 +5,7 @@
 | 模型线 | 当前主候选 | 必须保留的对照 | 选择依据与现状 |
 | --- | --- | --- | --- |
 | 时序故障诊断 | 轻量 Transformer，同时继续多尺度 CNN/TCN | ExtraTrees、CNN/TCN、普通 RNN、双向 LSTM、等权种子与跨架构集成 | La Réunion 同站验证 AP 中 Transformer 单模型最高；普通 RNN 次之，LSTM 与已试等权集成都未改善。留出事件测试 AP 0.734、正常日期误报较多，滚动回测入选架构也不一致。不能宣布 Transformer 普遍最优或已可生产。见 [时序报告](REUNION_EXPERIMENT.md)。 |
-| 红外裁图分类 | 多来源训练的公开预训练视觉骨干（先比较 ResNet/ConvNeXt 量级），以自主 CNN 为基线 | 当前随机初始化 CNN、遮挡预训练 CNN、不同归一化策略 | 当前 CNN 内部 12 类宏平均 F1 0.706，但外部正常样本 2,803/2,835 误报。首先解决采集域与阈值转移问题。见 [红外报告](INFRARED_EXPERIMENT.md)。 |
+| 红外裁图分类 | 多来源训练的公开预训练视觉骨干（先比较 ResNet/ConvNeXt 量级），以自主 CNN 为基线 | 当前随机初始化 CNN、遮挡预训练 CNN、不同归一化策略 | RaptorMaps CNN 内部 12 类宏平均 F1 0.706，但外部正常样本 2,803/2,835 误报。新 PVF-10 日期隔离验证上，ImageNet ResNet18 最佳种子宏 F1 0.572，优于自主 CNN 的 0.422，但少数类仍弱；两套数据的类别定义不同，不能直接合并分数。见 [红外报告](INFRARED_EXPERIMENT.md)和 [PVF-10 实验](PVF10_EXPERIMENT.md)。 |
 | 组件缺陷目标检测 | [D-FINE](https://github.com/Peterande/D-FINE) 的小/中型预训练检测器，针对缺陷框微调 | [Ultralytics YOLO](https://docs.ultralytics.com/tasks/detect) 同数据、同分辨率、同预算基线 | D-FINE 官方实现提供预训练权重和 Apache-2.0 代码许可；YOLO 有成熟训练/部署工具，但其代码/权重许可须按具体版本核对。COCO 排名不等于光伏效果，必须在缺陷框数据上实际比较。 |
 
 ## 先选框架，再微调
