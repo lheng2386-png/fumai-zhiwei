@@ -4,6 +4,7 @@ Compare random initialization and train-only masked image pretraining. The
 grouped image test is not an independent-site deployment evaluation.
 """
 import argparse
+from contextlib import nullcontext
 import json
 import math
 from pathlib import Path
@@ -46,29 +47,35 @@ def augment(x):
 
 
 def train(args):
-    if not torch.cuda.is_available():
-        raise RuntimeError('CUDA is required; refusing CPU fallback')
+    device = torch.device(args.device if args.device != 'auto' else
+                          'cuda' if torch.cuda.is_available() else
+                          'mps' if torch.backends.mps.is_available() else 'cpu')
+    if device.type == 'cpu':
+        raise RuntimeError('A GPU is required for full infrared training')
     args.output.mkdir(parents=True, exist_ok=False)
     torch.set_num_threads(8)
-    torch.backends.cudnn.benchmark = True
+    if device.type == 'cuda':
+        torch.backends.cudnn.benchmark = True
     data = np.load(args.data, allow_pickle=False)
     classes = data['classes'].tolist()
     split = data['split']
     train_pixels = data['images'][split == 'train'].astype(np.float32)/255
     mean = float(train_pixels.mean())
     std = max(float(train_pixels.std()), 1e-5)
-    x = [torch.from_numpy((data['images'][split == s].astype(np.float32)/255-mean)/std)[:, None].cuda()
+    x = [torch.from_numpy((data['images'][split == s].astype(np.float32)/255-mean)/std)[:, None].to(device)
          for s in ['train', 'validation']]
-    y = [torch.from_numpy(data['labels'][split == s]).long().cuda() for s in ['train', 'validation']]
+    y = [torch.from_numpy(data['labels'][split == s]).long().to(device) for s in ['train', 'validation']]
     manifest = {'source': 'https://github.com/RaptorMaps/InfraredSolarModules',
                 'task': '12-class image classification, not detection or temperature estimation',
                 'architecture': 'InfraredPV, trained from random initialization with optional own-domain masked pretraining',
                 'parameters': sum(p.numel() for p in InfraredPV(len(classes)).parameters()),
                 'classes': classes, 'normalization': {'mean': mean, 'std': std, 'fit': 'train only'},
                 'seeds': args.seeds, 'epochs': args.epochs, 'pretrain_epochs': args.pretrain_epochs,
+                'validation_only': args.validation_only,
                 'patience': args.patience, 'batch_size': args.batch_size,
                 'selection': 'Mean validation macro F1 chooses scratch/pretrained; validation selects single seed or three-seed mean.',
-                'torch': str(torch.__version__), 'gpu': torch.cuda.get_device_name(0),
+                'torch': str(torch.__version__), 'device': str(device),
+                'gpu': torch.cuda.get_device_name(0) if device.type == 'cuda' else 'Apple MPS',
                 'limitations': ['Exact pixel duplicates grouped; near duplicates not fully ruled out.',
                                 'No independent plant/module/flight identifiers verified.',
                                 'Low-resolution grayscale crops do not represent calibrated thermography.']}
@@ -82,7 +89,7 @@ def train(args):
         for pretrained in [False, True]:
             tag = f"{'pretrained' if pretrained else 'scratch'}_seed{seed}"
             seed_all(seed)
-            model = InfraredPV(len(classes)).cuda()
+            model = InfraredPV(len(classes)).to(device)
             best, best_epoch = -1., 0
             history = []
             started = time.time()
@@ -93,13 +100,15 @@ def train(args):
                     lr = 1e-5 + .5*(1e-3-1e-5)*(1+math.cos(math.pi*epoch/max(epochs-1, 1)))
                     for group in optimizer.param_groups:
                         group['lr'] = lr
-                    loss_sum = torch.zeros((), device='cuda')
-                    for indices in torch.randperm(len(x[0]), device='cuda').split(args.batch_size):
+                    loss_sum = torch.zeros((), device=device)
+                    for indices in torch.randperm(len(x[0]), device=device).split(args.batch_size):
                         batch = augment(x[0][indices])
                         optimizer.zero_grad(set_to_none=True)
-                        with torch.autocast('cuda', dtype=torch.bfloat16):
+                        context = (torch.autocast('cuda', dtype=torch.bfloat16)
+                                   if device.type == 'cuda' else nullcontext())
+                        with context:
                             if stage == 'pretrain':
-                                mask = F.interpolate((torch.rand(len(batch), 1, 8, 6, device='cuda') < .3).float(),
+                                mask = F.interpolate((torch.rand(len(batch), 1, 8, 6, device=device) < .3).float(),
                                                      size=batch.shape[-2:], mode='nearest').bool()
                                 prediction = model(batch.masked_fill(mask, 0), reconstruct=True)
                                 loss = F.smooth_l1_loss(prediction[mask], batch[mask])
@@ -146,10 +155,13 @@ def train(args):
     selection = {'recipe_validation_macro_f1': recipe_scores, 'pretrained': recipe, 'members': selected,
                  'ensemble_validation_macro_f1': score}
     write_json(args.output/'selection.json', selection)
-    test_x = torch.from_numpy((data['images'][split == 'test'].astype(np.float32)/255-mean)/std)[:, None].cuda()
+    if args.validation_only:
+        print(json.dumps(selection), flush=True)
+        return selection
+    test_x = torch.from_numpy((data['images'][split == 'test'].astype(np.float32)/255-mean)/std)[:, None].to(device)
     outputs = []
     for tag in selected:
-        model = InfraredPV(len(classes)).cuda()
+        model = InfraredPV(len(classes)).to(device)
         model.load_state_dict(torch.load(args.output/f'{tag}.pt', map_location='cpu', weights_only=True)['state_dict'])
         outputs.append(probabilities(model, test_x, args.batch_size))
     predicted = np.mean(outputs, axis=0).argmax(1)
@@ -170,6 +182,8 @@ if __name__ == '__main__':
     parser.add_argument('--pretrain-epochs', type=int, default=40)
     parser.add_argument('--patience', type=int, default=12)
     parser.add_argument('--batch-size', type=int, default=256)
+    parser.add_argument('--device', choices=('auto', 'cuda', 'mps'), default='auto')
+    parser.add_argument('--validation-only', action='store_true')
     parser.add_argument('--seeds', type=int, nargs='+', default=[2026, 2027, 2028])
     args = parser.parse_args()
     if min(args.epochs, args.pretrain_epochs, args.patience, args.batch_size) < 1:
