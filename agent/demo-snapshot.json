@@ -1,0 +1,337 @@
+{
+  "schema_version": 1,
+  "site_id": "DEMO-2107",
+  "source": "constructed_demo",
+  "dataset_version": "demo-2023-07-18-v1",
+  "screening_version": "demo-fixtures-v1",
+  "timezone": "America/Los_Angeles",
+  "observed_at": "2023-07-19T01:00:00Z",
+  "devices": [
+    {
+      "id": "inv_01",
+      "peer_group": "2107_ac_reference_ratio"
+    },
+    {
+      "id": "inv_02",
+      "peer_group": "2107_ac_reference_ratio"
+    },
+    {
+      "id": "inv_03",
+      "peer_group": "2107_ac_reference_ratio"
+    },
+    {
+      "id": "inv_04",
+      "peer_group": "2107_ac_reference_ratio"
+    },
+    {
+      "id": "inv_05",
+      "peer_group": "2107_ac_reference_ratio"
+    },
+    {
+      "id": "inv_06",
+      "peer_group": "2107_ac_reference_ratio"
+    },
+    {
+      "id": "inv_07",
+      "peer_group": "2107_ac_reference_ratio"
+    },
+    {
+      "id": "inv_08",
+      "peer_group": "2107_ac_reference_ratio"
+    },
+    {
+      "id": "inv_09",
+      "peer_group": "2107_ac_reference_ratio"
+    },
+    {
+      "id": "inv_10",
+      "peer_group": "2107_ac_reference_ratio"
+    },
+    {
+      "id": "inv_11",
+      "peer_group": "2107_ac_reference_ratio"
+    },
+    {
+      "id": "inv_12",
+      "peer_group": "2107_ac_reference_ratio"
+    },
+    {
+      "id": "inv_13",
+      "peer_group": "2107_ac_reference_ratio"
+    },
+    {
+      "id": "inv_14",
+      "peer_group": "2107_ac_reference_ratio"
+    },
+    {
+      "id": "inv_15",
+      "peer_group": "2107_ac_reference_ratio"
+    },
+    {
+      "id": "inv_16",
+      "peer_group": "2107_ac_reference_ratio"
+    },
+    {
+      "id": "inv_17",
+      "peer_group": "2107_ac_reference_ratio"
+    },
+    {
+      "id": "inv_18",
+      "peer_group": "2107_ac_reference_ratio"
+    },
+    {
+      "id": "inv_19",
+      "peer_group": "2107_ac_reference_ratio"
+    },
+    {
+      "id": "inv_20",
+      "peer_group": "2107_ac_reference_ratio"
+    },
+    {
+      "id": "inv_21",
+      "peer_group": "2107_ac_reference_ratio"
+    },
+    {
+      "id": "inv_22",
+      "peer_group": "2107_ac_reference_ratio"
+    },
+    {
+      "id": "inv_23",
+      "peer_group": "2107_ac_reference_ratio"
+    },
+    {
+      "id": "inv_24",
+      "peer_group": "2107_ac_reference_ratio"
+    }
+  ],
+  "events": [
+    {
+      "event_id": "DEMO-2107-001",
+      "inverter": "inv_07",
+      "peer_group": "2107_ac_reference_ratio",
+      "start_local": "2023-07-18 10:40:00",
+      "last_sample_local": "2023-07-18 11:05:00",
+      "samples": 6,
+      "observed_span_minutes": 25,
+      "mean_actual_kw": 9.4,
+      "mean_reference_kw": 27.8,
+      "threshold_kw": 6.1,
+      "reference_shortfall_kwh": 7.67,
+      "peer_flag_samples": 6,
+      "min_peer_count": 23,
+      "mean_peer_gap": 0.25,
+      "evidence": "device_specific_candidate",
+      "review_status": "unreviewed",
+      "note": ""
+    },
+    {
+      "event_id": "DEMO-2107-002",
+      "inverter": "inv_12",
+      "peer_group": "2107_ac_reference_ratio",
+      "start_local": "2023-07-18 11:15:00",
+      "last_sample_local": "2023-07-18 11:35:00",
+      "samples": 5,
+      "observed_span_minutes": 20,
+      "mean_actual_kw": 16.2,
+      "mean_reference_kw": 26.5,
+      "threshold_kw": 6.1,
+      "reference_shortfall_kwh": 3.43,
+      "peer_flag_samples": 5,
+      "min_peer_count": 23,
+      "mean_peer_gap": 0.26,
+      "evidence": "device_specific_candidate",
+      "review_status": "unreviewed",
+      "note": ""
+    },
+    {
+      "event_id": "DEMO-2107-003",
+      "inverter": "inv_19",
+      "peer_group": "2107_ac_reference_ratio",
+      "start_local": "2023-07-18 09:25:00",
+      "last_sample_local": "2023-07-18 09:40:00",
+      "samples": 4,
+      "observed_span_minutes": 15,
+      "mean_actual_kw": 13.6,
+      "mean_reference_kw": 22.4,
+      "threshold_kw": 6.1,
+      "reference_shortfall_kwh": 2.2,
+      "peer_flag_samples": 4,
+      "min_peer_count": 23,
+      "mean_peer_gap": 0.26,
+      "evidence": "device_specific_candidate",
+      "review_status": "unreviewed",
+      "note": ""
+    },
+    {
+      "event_id": "DEMO-2107-004",
+      "inverter": "inv_03",
+      "peer_group": "2107_ac_reference_ratio",
+      "start_local": "2023-07-18 13:05:00",
+      "last_sample_local": "2023-07-18 13:35:00",
+      "samples": 7,
+      "observed_span_minutes": 30,
+      "mean_actual_kw": 18.7,
+      "mean_reference_kw": 29.2,
+      "threshold_kw": 6.1,
+      "reference_shortfall_kwh": 5.25,
+      "peer_flag_samples": 0,
+      "min_peer_count": 23,
+      "mean_peer_gap": 0.08,
+      "evidence": "shared_or_model_candidate",
+      "review_status": "unreviewed",
+      "note": ""
+    },
+    {
+      "event_id": "DEMO-2107-005",
+      "inverter": "inv_16",
+      "peer_group": "2107_ac_reference_ratio",
+      "start_local": "2023-07-18 13:05:00",
+      "last_sample_local": "2023-07-18 13:35:00",
+      "samples": 7,
+      "observed_span_minutes": 30,
+      "mean_actual_kw": 17.9,
+      "mean_reference_kw": 28.4,
+      "threshold_kw": 6.1,
+      "reference_shortfall_kwh": 5.25,
+      "peer_flag_samples": 0,
+      "min_peer_count": 23,
+      "mean_peer_gap": 0.08,
+      "evidence": "shared_or_model_candidate",
+      "review_status": "unreviewed",
+      "note": ""
+    },
+    {
+      "event_id": "DEMO-2107-006",
+      "inverter": "inv_22",
+      "peer_group": "2107_ac_reference_ratio",
+      "start_local": "2023-07-18 14:10:00",
+      "last_sample_local": "2023-07-18 14:20:00",
+      "samples": 3,
+      "observed_span_minutes": 10,
+      "mean_actual_kw": 10.1,
+      "mean_reference_kw": 21.3,
+      "threshold_kw": 6.1,
+      "reference_shortfall_kwh": 1.87,
+      "peer_flag_samples": 0,
+      "min_peer_count": 3,
+      "mean_peer_gap": 0.08,
+      "evidence": "insufficient_peers",
+      "review_status": "unreviewed",
+      "note": ""
+    },
+    {
+      "event_id": "DEMO-2107-007",
+      "inverter": "inv_09",
+      "peer_group": "2107_ac_reference_ratio",
+      "start_local": "2023-07-18 08:35:00",
+      "last_sample_local": "2023-07-18 08:50:00",
+      "samples": 4,
+      "observed_span_minutes": 15,
+      "mean_actual_kw": 5.8,
+      "mean_reference_kw": 16.7,
+      "threshold_kw": 6.1,
+      "reference_shortfall_kwh": 2.72,
+      "peer_flag_samples": 4,
+      "min_peer_count": 23,
+      "mean_peer_gap": 0.28,
+      "evidence": "device_specific_candidate",
+      "review_status": "unreviewed",
+      "note": ""
+    },
+    {
+      "event_id": "DEMO-2107-008",
+      "inverter": "inv_04",
+      "peer_group": "2107_ac_reference_ratio",
+      "start_local": "2023-07-18 15:20:00",
+      "last_sample_local": "2023-07-18 15:40:00",
+      "samples": 5,
+      "observed_span_minutes": 20,
+      "mean_actual_kw": 8.2,
+      "mean_reference_kw": 15.4,
+      "threshold_kw": 6.1,
+      "reference_shortfall_kwh": 2.4,
+      "peer_flag_samples": 0,
+      "min_peer_count": 23,
+      "mean_peer_gap": 0.08,
+      "evidence": "shared_or_model_candidate",
+      "review_status": "unreviewed",
+      "note": ""
+    },
+    {
+      "event_id": "DEMO-2107-009",
+      "inverter": "inv_07",
+      "peer_group": "2107_ac_reference_ratio",
+      "start_local": "2023-07-18 08:10:00",
+      "last_sample_local": "2023-07-18 08:20:00",
+      "samples": 3,
+      "observed_span_minutes": 10,
+      "mean_actual_kw": 4.6,
+      "mean_reference_kw": 14.7,
+      "threshold_kw": 6.1,
+      "reference_shortfall_kwh": 1.68,
+      "peer_flag_samples": 3,
+      "min_peer_count": 23,
+      "mean_peer_gap": 0.29,
+      "evidence": "device_specific_candidate",
+      "review_status": "needs_investigation",
+      "note": "【示例复核】已加入后续核查清单，等待现场记录。"
+    },
+    {
+      "event_id": "DEMO-2107-010",
+      "inverter": "inv_14",
+      "peer_group": "2107_ac_reference_ratio",
+      "start_local": "2023-07-18 12:20:00",
+      "last_sample_local": "2023-07-18 12:35:00",
+      "samples": 4,
+      "observed_span_minutes": 15,
+      "mean_actual_kw": 19.3,
+      "mean_reference_kw": 29.6,
+      "threshold_kw": 6.1,
+      "reference_shortfall_kwh": 2.58,
+      "peer_flag_samples": 0,
+      "min_peer_count": 23,
+      "mean_peer_gap": 0.08,
+      "evidence": "shared_or_model_candidate",
+      "review_status": "expected_operation",
+      "note": "【示例复核】核对后属于计划限发，仍需正式工单确认。"
+    },
+    {
+      "event_id": "DEMO-2107-011",
+      "inverter": "inv_21",
+      "peer_group": "2107_ac_reference_ratio",
+      "start_local": "2023-07-18 07:40:00",
+      "last_sample_local": "2023-07-18 07:50:00",
+      "samples": 3,
+      "observed_span_minutes": 10,
+      "mean_actual_kw": 2.1,
+      "mean_reference_kw": 10.8,
+      "threshold_kw": 6.1,
+      "reference_shortfall_kwh": 1.45,
+      "peer_flag_samples": 0,
+      "min_peer_count": 3,
+      "mean_peer_gap": 0.08,
+      "evidence": "insufficient_peers",
+      "review_status": "data_issue",
+      "note": "【示例复核】同群观测缺失，建议核对通信与测点。"
+    },
+    {
+      "event_id": "DEMO-2107-012",
+      "inverter": "inv_02",
+      "peer_group": "2107_ac_reference_ratio",
+      "start_local": "2023-07-18 14:45:00",
+      "last_sample_local": "2023-07-18 15:00:00",
+      "samples": 4,
+      "observed_span_minutes": 15,
+      "mean_actual_kw": 8.4,
+      "mean_reference_kw": 18.7,
+      "threshold_kw": 6.1,
+      "reference_shortfall_kwh": 2.58,
+      "peer_flag_samples": 0,
+      "min_peer_count": 23,
+      "mean_peer_gap": 0.08,
+      "evidence": "shared_or_model_candidate",
+      "review_status": "needs_investigation",
+      "note": "【示例复核】已加入后续核查清单，等待现场记录。"
+    }
+  ]
+}
