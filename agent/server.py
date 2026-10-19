@@ -18,6 +18,7 @@ from urllib.parse import urlsplit
 
 from .core import InputError, Snapshot
 from .config import configured_model
+from .intent import classify_question, direct_answer, informational_intent, normalized
 from .store import Store
 from .tasks import AnalysisTasks, TaskBusy, TERMINAL
 
@@ -46,9 +47,18 @@ class Application:
         self.tasks = AnalysisTasks(store, self.slots, self.analyze)
 
     def analyze(self, owner, body, progress=None):
+        intent = self.request_intent(body)
+        if intent != "maintenance":
+            if progress:
+                progress("answering")
+            return self.store.save_run(owner, body["message"], direct_answer(intent, self.model))
         if progress:
             progress("evidence")
         result = self.snapshot.analyze(body.get("message"), body.get("event_id"), body.get("device_id"))
+        result.update(response_type="analysis", intent="maintenance")
+        introduction = informational_intent(normalized(body["message"]))
+        if introduction:
+            result["introduction"] = direct_answer(introduction, self.model)["summary"]
         if self.model:
             try:
                 if progress:
@@ -62,6 +72,10 @@ class Application:
         if progress:
             progress("saving")
         return self.store.save_run(owner, body["message"], result)
+
+    @staticmethod
+    def request_intent(body):
+        return classify_question(body.get("message"), bool(body.get("event_id") or body.get("device_id")))
 
     def identity(self, headers, write=False):
         origin = headers.get("Origin")
@@ -124,6 +138,8 @@ class Application:
         if method == "POST" and path == "/agent-api/analyze":
             if set(body) - {"message", "event_id", "device_id"}:
                 raise InputError("未知分析参数")
+            if self.request_intent(body) != "maintenance":
+                return self.analyze(owner, body)
             if not self.slots.acquire(blocking=False):
                 raise HTTPError(503, "模型正在处理其他任务，请稍后重试")
             try:
@@ -133,9 +149,11 @@ class Application:
         if method == "POST" and path == "/agent-api/analysis-tasks":
             if set(body) - {"message", "event_id", "device_id", "request_id"}:
                 raise InputError("未知分析参数")
-            snapshot.analyze(body.get("message"), body.get("event_id"), body.get("device_id"))
+            maintenance = self.request_intent(body) == "maintenance"
+            if maintenance:
+                snapshot.analyze(body.get("message"), body.get("event_id"), body.get("device_id"))
             try:
-                return self.tasks.submit(owner, body)
+                return self.tasks.submit(owner, body, reserve_model_slot=maintenance)
             except TaskBusy as exc:
                 raise HTTPError(503, str(exc)) from None
         if method == "GET" and path.startswith("/agent-api/analysis-tasks/"):
@@ -150,6 +168,8 @@ class Application:
             if snapshot.mode == "live" and snapshot.stale:
                 raise HTTPError(409, "当前快照已过期，请更新数据后重新分析")
             run = self.store.get_run(owner, body["run_id"])
+            if run.get("response_type") == "direct":
+                raise InputError("普通问答没有设备事件证据，不能生成核查草稿")
             if run["metadata"]["fingerprint"] != snapshot.meta["fingerprint"]:
                 raise HTTPError(409, "数据版本已变化，请重新分析")
             return self.store.draft(owner, body["run_id"], body["event_id"])
@@ -226,7 +246,7 @@ class Handler(BaseHTTPRequestHandler):
                 return
             if self.command == "GET" and not path.startswith("/agent-api/") and app.static_root:
                 # Development only. nginx serves static assets in deployment.
-                allowed = {"/": "index.html", "/index.html": "index.html", "/app.js": "app.js", "/agent.js": "agent.js", "/agent.css": "agent.css", "/data.js": "data.js", "/styles.css": "styles.css", "/favicon.svg": "favicon.svg"}
+                allowed = {"/": "index.html", "/index.html": "index.html", "/app.js": "app.js", "/intent.js": "intent.js", "/agent.js": "agent.js", "/agent.css": "agent.css", "/data.js": "data.js", "/styles.css": "styles.css", "/favicon.svg": "favicon.svg"}
                 if path not in allowed:
                     raise HTTPError(404, "页面不存在")
                 file = app.static_root / allowed[path]
