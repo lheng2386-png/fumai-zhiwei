@@ -123,6 +123,22 @@ python src/prepare_reunion.py --raw-dir data/raw/la_reunion --output data/proces
 
 显式掩码没有在这轮合成压力下超过通道失活模型，尤其是对照机通道缺测时误报上升。因此暂不把它升为主模型；保留代码作为后续有真实通信故障标签时的候选，主流程继续使用完整窗口 Transformer 和质量闸门拒判。
 
+### 质量闸门集成推理与事件输出
+
+新增 `src/reunion_ensemble.py` 作为统一的影子推理入口。它可以加载一个或多个相同 14 通道契约的 Transformer 检查点，先执行 `reunion_quality_gate.py`，只有完整窗口才调用模型；缺测、非有限值、时间断点和低对照功率都保留为拒判状态。对满足阈值的窗口，入口还按连续窗口聚合事件：默认需要连续 2 个五分钟窗口，任何拒判或低于阈值都会重置事件计数。这样模型概率、拒判原因和事件编号会出现在同一份 CSV 中，便于现场工单回填。
+
+验证集上，原始 Transformer 与通道失活 Transformer 的等权混合 AP 为 **0.97524**，低于原始 `transformer_seed2032` 的 **0.97737**；因此集成器是部署和审计接口，不是经过验证的性能提升。后续新的场站盲测可以通过 `--checkpoint` 重复传入多个冻结权重，在同一接口下比较单模型、等权集成和事件级指标。
+
+示例：
+
+```bash
+PYTHONPATH=src python src/reunion_ensemble.py input.csv \
+  --prepared data/processed/la_reunion_v1 \
+  --checkpoint reports/reunion_v1_mps/transformer_seed2032.pt \
+  --checkpoint reports/reunion_channel_dropout_mps_v1/channel_dropout/transformer_seed2032.pt \
+  --threshold 0.05 --min-consecutive 2 --output shadow_predictions.csv
+```
+
 ### Transformer 正常窗口自监督预训练：负结果
 
 又做了遮盖重建预训练：只取训练分区的正常窗口，随机遮盖输入点并重建原值，然后用训练区标签微调 Transformer；验证集只参与微调早停，旧测试和正常压力分区没有读取。代码为 `src/train_reunion_pretraining.py`。重建损失从约 **0.113** 降到 **0.030**，说明预训练任务可以收敛，但三个种子的微调验证 AP 只有 **0.97574 / 0.97231 / 0.97339**，平均 **0.97381**，低于直接训练 Transformer 的三种子平均约 **0.9752**，也低于通道失活增强的 **0.97665**。因此当前数据规模和重建目标下没有分类收益，不把该预训练权重作为主模型；以后若有更长时间跨度、更多场站的无标签数据，再单独复评预训练价值。
