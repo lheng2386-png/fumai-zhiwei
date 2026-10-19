@@ -4,19 +4,19 @@
 
 ## 数据来源和问题
 
-[PV-HSD-2025 发布页](https://huggingface.co/datasets/MisakaMikoto128/PV-HSD-2025)提供 `PV-HSD-2025.zip`。固定版本 SHA `40748bc7c445cf9125f2cd25d115fa35bbeb17af`，下载归档 SHA-256 `3fac0ae8e3e345e9f3d1c45afb4251530f79bfda8d772aacd708799a32416c32`。ZIP CRC、图像与标签配对、全部 25,177 个单类 YOLO 框均已校验；没有发现无效坐标。原始归档含训练 2,808 张、验证 1,217 张。
+[PV-HSD-2025 发布页](https://huggingface.co/datasets/MisakaMikoto128/PV-HSD-2025)提供 `PV-HSD-2025.zip`。固定版本 SHA `40748bc7c445cf9125f2cd25d115fa35bbeb17af`，下载归档 SHA-256 `3fac0ae8e3e345e9f3d1c45afb4251530f79bfda8d772aacd708799a32416c32`。ZIP CRC、图像与标签配对、全部 25,177 个单类 YOLO 框均已校验；没有发现无效坐标。原始归档含训练 2,808 张、验证 1,217 张。其中 `62_2.JPG`、`62_3.JPG` 是 **4000×3000 可见光照片**，没有热斑框；其余图像是 640×512。两张可见光照片从红外检测训练集中隔离，并在清洗清单中留痕。
 
 发布方原始文件名形如 `0_1.JPG` / `0_2.JPG`，随包提供的原始路径映射可以还原 `check1/pack...`。按“原始目录＋数字前缀”暂作采集组，发现原始训练/验证共有 **745 个组**；原始验证图有 **1,108/1,217** 张与训练图共享组。没有发现跨集合完全同文件的 CRC+大小重复，但相邻帧可能高度相似。这个组定义仍需原始航次元数据确认，不能被解释为场站 ID。
 
-`src/prepare_pv_hsd.py` 将原始两部分合并后以固定种子 2026、组 ID 的 SHA-256 哈希重新划分：
+`src/prepare_pv_hsd.py` 将原始两部分合并、隔离两张异模态图片后，以固定种子 2026、组 ID 的 SHA-256 哈希重新划分：
 
 | 分区 | 图片 | 热斑框 | 空标签图片 | 采集代理组 |
 | --- | ---: | ---: | ---: | ---: |
-| 训练 | 2,870 | 19,077 | 131 | 873 |
+| 训练 | 2,868 | 19,077 | 129 | 873 |
 | 验证 | 571 | 3,201 | 47 | 179 |
 | 留出测试 | 584 | 2,899 | 49 | 184 |
 
-三个分区组 ID 不重叠。所有源路径都指向 `check1`，所以**仍是同一批采集数据**；留出测试只能检验这批数据中的分组泛化。空标签仅表示没有标注热斑，不等于已人工确认健康，且数量太少，工业误报率仍需要新的完整正常航次评估。
+三个分区组 ID 不重叠。严格的感知哈希和差分哈希联合筛查没有找到跨训练/验证或训练/测试的高相似度画面；这只是近重复启发式筛查。所有源路径都指向 `check1`，所以**仍是同一批采集数据**；留出测试只能检验这批数据中的分组泛化。空标签仅表示没有标注热斑，不等于已人工确认健康，且数量太少，工业误报率仍需要新的完整正常航次评估。
 
 数据卡元信息、嵌入的 YOLO YAML 和文字说明给出不一致的许可信息；正文明确限制学术研究，商业使用需联系作者。当前实验按研究用途处理，不把该数据或模型权重投入商业生产。
 
@@ -28,13 +28,15 @@
 
 ```bash
 python3 src/audit_pv_hsd.py --archive data/raw/pv_hsd_2025/PV-HSD-2025.zip --output data/raw/pv_hsd_2025/audit.json
-PYTHONPATH=src python3 src/prepare_pv_hsd.py --archive data/raw/pv_hsd_2025/PV-HSD-2025.zip --output data/processed/pv_hsd_grouped_v1
+PYTHONPATH=src python3 src/prepare_pv_hsd.py --archive data/raw/pv_hsd_2025/PV-HSD-2025.zip --output data/processed/pv_hsd_grouped_v2
 ```
 
 `src/train_pv_hsd_yolo.py train` 只使用训练和验证分区；`test` 是独立显式命令，须待架构与权重冻结后使用。原始图、处理结果和权重不上传 GitHub。
 
 CUDA 服务器上可运行 `PYTHON_BIN=/path/to/python bash scripts/run_pv_hsd_cuda.sh`。脚本先核对归档 SHA-256，再按固定规则准备分组数据，并以 COCO 预训练 YOLO26s 在 640 像素、batch 8、最多 80 轮下训练；早停耐心值为 20。训练元数据记录框架版本、预训练权重校验值、GPU 和耗时。留出测试不由该脚本执行。
 
+D-FINE-S 对照使用[官方实现](https://github.com/Peterande/D-FINE)，固定代码版本 `956d1709314c2c6a4df6f34de232054578a7449f` 和官方 COCO 预训练权重 `dfine_s_coco.pth`（本地 SHA-256 `48a6c8cc43eb57186843f752e2e8461ddd3326e0d3c575e71e6e960844683e89`）。`src/convert_pv_hsd_coco.py` 仅把训练/验证标签转成 COCO 格式；`src/configure_pv_hsd_dfine.py` 按同一图片划分生成单卡 640 像素、batch 8、80 轮配置。在官方代码和权重放入 `research/D-FINE` 并安装其依赖后，运行 `PYTHON_BIN=/path/to/python bash scripts/run_pv_hsd_dfine_cuda.sh`。D-FINE 保留其官方 EMA，学习率按单卡小 batch 下调。COCO 官方排行榜分数不能替代本数据集上的实际对照；两模型的增强、损失和训练计划不同，80 轮也不是绝对等算力比较，后续还需看收敛曲线和相近 GPU 时长。
+
 ## 训练流程试跑
 
-Apple M4 Pro 的 MPS 上用 COCO 预训练 YOLO26s、320 像素、batch 8 跑完 **1 个 epoch**，训练和验证共约 182 秒；验证 571 张图的 mAP50 为 **0.176**、mAP50-95 为 **0.0446**。这只证明数据加载、训练、保存和验证流程可执行。低分辨率单轮训练远未收敛，不能据此比较架构或宣称最终精度；正式比较将用 640 像素和足够训练轮次，并记录相同分组划分下的验证曲线。
+Apple M4 Pro 的 MPS 上用 COCO 预训练 YOLO26s、320 像素、batch 8 跑完 **1 个 epoch**，训练和验证共约 182 秒；验证 571 张图的 mAP50 为 **0.176**、mAP50-95 为 **0.0446**。这次流程试跑用的是尚未隔离两张可见光图的 v1 数据，因而不作为清洗版模型比较结果。它只证明数据加载、训练、保存和验证流程可执行。低分辨率单轮训练远未收敛，不能据此比较架构或宣称最终精度；正式比较将用 640 像素和足够训练轮次，并记录相同分组划分下的验证曲线。

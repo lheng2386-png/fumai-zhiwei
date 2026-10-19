@@ -16,7 +16,10 @@ def validate_grouping(data):
     groups = [set(manifest["groups"][split]) for split in ("train", "val", "test")]
     if any(groups[i] & groups[j] for i in range(3) for j in range(i + 1, 3)):
         raise ValueError("Capture group leakage in prepared data")
-    if sum(manifest["splits"][split]["images"] for split in ("train", "val", "test")) != 4025:
+    if manifest.get("source_images") != 4025:
+        raise ValueError("Unexpected source dataset size")
+    expected = manifest["source_images"] - len(manifest["excluded_non_thermal_size"])
+    if sum(manifest["splits"][split]["images"] for split in ("train", "val", "test")) != expected:
         raise ValueError("Unexpected prepared dataset size")
     return manifest
 

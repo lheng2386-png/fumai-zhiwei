@@ -7,6 +7,8 @@ import json
 from pathlib import Path
 import zipfile
 
+from PIL import Image
+
 
 SOURCE = "https://huggingface.co/datasets/MisakaMikoto128/PV-HSD-2025"
 
@@ -48,8 +50,15 @@ def audit(archive):
             empty_images = 0
             invalid = []
             pack_counts = Counter()
+            image_sizes = Counter()
+            non_thermal_size_images = []
             for info in images:
                 filename = Path(info.filename).name
+                with source.open(info.filename) as stream, Image.open(stream) as image:
+                    size = image.size
+                image_sizes[f"{size[0]}x{size[1]}"] += 1
+                if size != (640, 512):
+                    non_thermal_size_images.append(info.filename)
                 if filename not in raw_paths:
                     raise ValueError(f"No raw path for {filename}")
                 group = group_for(filename, raw_paths)
@@ -82,6 +91,8 @@ def audit(archive):
                                         "empty_label_images": empty_images,
                                         "capture_groups": len(set(group_ids)),
                                         "source_pack_counts": dict(sorted(pack_counts.items())),
+                                        "image_sizes": dict(sorted(image_sizes.items())),
+                                        "non_640x512_images": non_thermal_size_images,
                                         "invalid_boxes": invalid[:10],
                                         "invalid_box_count": len(invalid)}
         overlap = set(groups["train"]) & set(groups["valid"])

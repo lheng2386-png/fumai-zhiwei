@@ -13,6 +13,8 @@ from pathlib import Path
 import shutil
 import zipfile
 
+from PIL import Image
+
 from audit_pv_hsd import group_for, sha256
 
 
@@ -32,6 +34,7 @@ def prepare(args):
                 "limitations": ["Group prefix is a proxy for capture sequence, not a verified plant/flight ID.",
                                 "Original archive only describes check1 source paths; none of these splits is an independent-site evaluation.",
                                 "Empty hotspot labels do not certify a healthy module."],
+                "source_images": 0, "excluded_non_thermal_size": [],
                 "splits": {}, "groups": {}, "files": []}
     group_sets = defaultdict(set)
     counts = defaultdict(Counter)
@@ -42,7 +45,14 @@ def prepare(args):
                             if name.startswith(f"{original_split}/images/")
                             and name.lower().endswith(".jpg"))
             for image_path in images:
+                manifest["source_images"] += 1
                 filename = Path(image_path).name
+                with source.open(image_path) as stream, Image.open(stream) as image:
+                    size = image.size
+                if size != (640, 512):
+                    manifest["excluded_non_thermal_size"].append(
+                        {"image": image_path, "size": list(size)})
+                    continue
                 group = group_for(filename, raw_paths)
                 split = assignment(group, args.seed)
                 label_path = f"{original_split}/labels/{Path(filename).stem}.txt"
