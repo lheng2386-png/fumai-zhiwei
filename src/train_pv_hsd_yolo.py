@@ -5,8 +5,10 @@ entrypoint after architecture and weights are frozen.
 """
 
 import argparse
+import hashlib
 import json
 from pathlib import Path
+import time
 
 
 def validate_grouping(data):
@@ -20,13 +22,19 @@ def validate_grouping(data):
 
 
 def run(args):
+    import torch
+    import ultralytics
     from ultralytics import YOLO
 
     manifest = validate_grouping(args.data)
     if args.mode == "train":
         if args.output.exists():
             raise FileExistsError(args.output)
+        pretrained_path = Path(args.pretrained)
+        pretrained_sha256 = (hashlib.sha256(pretrained_path.read_bytes()).hexdigest()
+                              if pretrained_path.is_file() else None)
         model = YOLO(args.pretrained)
+        start = time.monotonic()
         model.train(data=str((args.data / "data.yaml").resolve()),
                     project=str(args.output.parent.resolve()), name=args.output.name,
                     exist_ok=False, epochs=args.epochs, patience=args.patience,
@@ -34,10 +42,15 @@ def run(args):
                     workers=args.workers, seed=args.seed, deterministic=True,
                     cache=False, amp=args.device == "cuda", plots=False,
                     pretrained=True, save=True, val=True)
+        elapsed_seconds = time.monotonic() - start
         (args.output / "protocol.json").write_text(json.dumps({
             "source_archive_sha256": manifest["archive_sha256"],
             "prepared_data": str(args.data.resolve()),
-            "model": args.pretrained, "seed": args.seed,
+            "model": args.pretrained, "pretrained_sha256": pretrained_sha256,
+            "torch_version": torch.__version__, "ultralytics_version": ultralytics.__version__,
+            "cuda_version": torch.version.cuda,
+            "gpu_name": torch.cuda.get_device_name(0) if args.device == "cuda" else None,
+            "elapsed_seconds": round(elapsed_seconds, 1), "seed": args.seed,
             "epochs": args.epochs, "patience": args.patience,
             "imgsz": args.imgsz, "batch_size": args.batch_size,
             "device": args.device, "test_status": "not evaluated",

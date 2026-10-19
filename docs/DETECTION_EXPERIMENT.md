@@ -33,6 +33,8 @@ PYTHONPATH=src python3 src/prepare_pv_hsd.py --archive data/raw/pv_hsd_2025/PV-H
 
 `src/train_pv_hsd_yolo.py train` 只使用训练和验证分区；`test` 是独立显式命令，须待架构与权重冻结后使用。原始图、处理结果和权重不上传 GitHub。
 
+CUDA 服务器上可运行 `PYTHON_BIN=/path/to/python bash scripts/run_pv_hsd_cuda.sh`。脚本先核对归档 SHA-256，再按固定规则准备分组数据，并以 COCO 预训练 YOLO26s 在 640 像素、batch 8、最多 80 轮下训练；早停耐心值为 20。训练元数据记录框架版本、预训练权重校验值、GPU 和耗时。留出测试不由该脚本执行。
+
 ## 训练流程试跑
 
 Apple M4 Pro 的 MPS 上用 COCO 预训练 YOLO26s、320 像素、batch 8 跑完 **1 个 epoch**，训练和验证共约 182 秒；验证 571 张图的 mAP50 为 **0.176**、mAP50-95 为 **0.0446**。这只证明数据加载、训练、保存和验证流程可执行。低分辨率单轮训练远未收敛，不能据此比较架构或宣称最终精度；正式比较将用 640 像素和足够训练轮次，并记录相同分组划分下的验证曲线。
