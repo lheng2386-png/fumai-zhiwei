@@ -97,7 +97,8 @@ def classification_loss(logits, target, weights, hard_negative_alpha=0.0):
 
 
 def train_one(name, seed, train, validation, output, device, args,
-              initial_state=None, hard_negative_alpha=0.0):
+              initial_state=None, hard_negative_alpha=0.0,
+              channel_dropout=0.0, channel_dropout_span=1):
     seed_all(seed)
     model = make_model(name, train["x"].shape[1]).to(device)
     if initial_state is not None:
@@ -111,12 +112,28 @@ def train_one(name, seed, train, validation, output, device, args,
     best_ap, best_epoch, stale, history = -1.0, 0, 0, []
     tag = f"{name}_seed{seed}"
     started = time.monotonic()
+    if not 0 <= channel_dropout < 1:
+        raise ValueError("channel_dropout must be in [0, 1)")
+    if channel_dropout_span < 1:
+        raise ValueError("channel_dropout_span must be positive")
     for epoch in range(args.epochs):
         model.train()
         permutation = torch.randperm(len(x), device=device)
         loss_sum = 0.0
         for indices in permutation.split(args.batch_size):
             batch = x[indices] + torch.randn_like(x[indices]) * 0.01
+            if channel_dropout:
+                # Drop contiguous temporal spans for a channel. The model sees
+                # the training normalization value (zero) and learns a
+                # degraded-sensor representation without a fake alarm label.
+                drop = torch.rand((len(indices), x.shape[1], 1), device=device) < channel_dropout
+                if channel_dropout_span > 1:
+                    starts = torch.randint(0, x.shape[2] - channel_dropout_span + 1,
+                                           (len(indices), x.shape[1], 1), device=device)
+                    positions = torch.arange(x.shape[2], device=device)[None, None, :]
+                    span = (positions >= starts) & (positions < starts + channel_dropout_span)
+                    drop = drop & span
+                batch = batch.masked_fill(drop, 0.0)
             optimizer.zero_grad(set_to_none=True)
             context = torch.autocast("cuda", dtype=torch.bfloat16) if device.type == "cuda" else nullcontext()
             with context:
