@@ -1,4 +1,4 @@
-"""Validation-only LSTM comparison on the frozen La Reunion train/validation split.
+"""Validation-only recurrent comparison on the frozen La Reunion train/validation split.
 
 The held-out test and normal-stress files are never opened. This is exploratory
 because the development validation period has already informed prior research.
@@ -28,16 +28,16 @@ def run(args):
     train = load_split(args.prepared, "train")
     validation = load_split(args.prepared, "validation")
     manifest = {"protocol": "Original La Reunion train/validation only; no held-out test or stress access",
-                "architecture": "bidirectional two-layer LSTM with statistics branch",
+                "architecture": f"bidirectional two-layer {args.architecture.upper()} with statistics branch",
                 "device": str(device), "seeds": args.seeds, "epochs": args.epochs,
                 "patience": args.patience, "batch_size": args.batch_size,
                 "lr": args.lr, "selection": "validation AP only; exploratory reused validation period"}
     (args.output / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n")
     records = []
     for seed in args.seeds:
-        records.append(train_one("lstm", seed, train, validation, args.output, device, args))
+        records.append(train_one(args.architecture, seed, train, validation, args.output, device, args))
         (args.output / "progress.json").write_text(json.dumps(records, indent=2) + "\n")
-    ensemble = np.mean([np.load(args.output / f"lstm_seed{seed}_validation.npy")
+    ensemble = np.mean([np.load(args.output / f"{args.architecture}_seed{seed}_validation.npy")
                         for seed in args.seeds], axis=0)
     summary = {"mean_single_seed_validation_ap": float(np.mean([r["validation_ap"] for r in records])),
                "individual_validation_ap": {str(r["seed"]): r["validation_ap"] for r in records},
@@ -53,6 +53,7 @@ if __name__ == "__main__":
     parser.add_argument("--prepared", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--device", choices=("auto", "cuda", "mps"), default="auto")
+    parser.add_argument("--architecture", choices=("lstm", "rnn"), default="lstm")
     parser.add_argument("--seeds", type=int, nargs="+", default=[2031, 2032, 2033])
     parser.add_argument("--epochs", type=int, default=50)
     parser.add_argument("--patience", type=int, default=8)

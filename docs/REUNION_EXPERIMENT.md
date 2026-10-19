@@ -31,6 +31,12 @@ python src/prepare_reunion.py --raw-dir data/raw/la_reunion --output data/proces
 
 后来补做了两层双向 LSTM（约 21.1 万参数）对照：使用**同一训练/验证分区**、三个种子、最多 50 轮、早停耐心 8、批量 256、学习率 `8e-4`，只读取训练和验证文件。三种子验证 AP 为 **0.9671 / 0.9693 / 0.9681**，平均 **0.9682**，平均概率集成 **0.9686**；低于上表的 CNN/Transformer。LSTM 的结果属于已经多次使用过的开发验证期上的探索性比较，**没有读取留出测试或正常压力区**，不能因此重新挑模型再宣称旧测试是盲测。代码 `src/lstm_model.py`、`src/compare_reunion_lstm.py`，逐轮记录在本地 `reports/reunion_lstm_mps_v1/`。
 
+按同样条件还补做了**普通双向 RNN**：三个种子验证 AP **0.9761 / 0.9760 / 0.9687**，平均 **0.9736**，三种子均值集成 **0.9708**。最佳普通 RNN 略高于最佳 CNN，但仍低于最佳 Transformer；三个种子的波动也提示不能只看一个最优数。脚本仍为 `src/compare_reunion_lstm.py`，加 `--architecture rnn`；本地结果在 `reports/reunion_rnn_mps_v1/`。
+
+用已保存的验证分数又比较固定的等权集成，不重复训练或读取留出测试：Transformer 三种子平均 AP **0.9742**，CNN 三种子平均 **0.9734**，两者最佳单模型各占一半 **0.9751**，两种三种子均值各占一半 **0.9737**；均低于最佳 Transformer 单模型的 **0.9774**。按完整日期重采样 1,000 次，跨架构最佳单模型等权融合相对所选 Transformer 的 AP 差异中位数 **−0.0019**，95% 区间约 **[−0.0091, +0.0008]**。这个验证期只有 18 天且已经参与先前选择，故这里只说明**没有观察到稳定集成收益**，不通过反复调权重追求同一验证集分数。代码为 `src/compare_reunion_ensembles.py`，本地结果 `reports/reunion_ensemble_validation_v1.json`。
+
+加入循环模型后，最佳 Transformer+最佳 RNN 等权 AP **0.9759**，Transformer+CNN+RNN 等权 **0.9753**，四架构最佳单模型等权 **0.9741**，仍未超过单个 Transformer。完整对照在本地 `reports/reunion_ensemble_four_arch_v1.json`。上述“最佳”单模型已经由同一验证期挑选，集成分数因此也是探索性结果，不作为新的无偏选模依据。
+
 ## 留出测试与长期误报
 
 选定模型和阈值后，只进行了一次留出测试评估：

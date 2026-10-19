@@ -20,7 +20,7 @@ from sklearn.metrics import (average_precision_score, confusion_matrix, f1_score
 from torch.nn import functional as F
 
 from multiscale_model import MultiscalePV
-from lstm_model import LSTMPV
+from lstm_model import LSTMPV, RNNPV
 from train_arch_compare import TransformerPV
 from train_deep import seed_all
 
@@ -39,6 +39,8 @@ def load_split(prepared, split):
 def make_model(name, channels):
     if name == "lstm":
         return LSTMPV(channels=channels, width=64, layers=2, classes=2)
+    if name == "rnn":
+        return RNNPV(channels=channels, width=64, layers=2, classes=2)
     spec = ARCHITECTURES[name]
     if name == "multiscale_cnn":
         return MultiscalePV(channels=channels, width=spec["width"], depth=spec["depth"], classes=2)
