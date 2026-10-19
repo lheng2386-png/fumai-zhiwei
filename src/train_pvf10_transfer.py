@@ -10,13 +10,15 @@ import json
 import math
 from pathlib import Path
 import time
+from urllib.parse import urlsplit
 
 import numpy as np
 import torch
 from torch import nn
 from torch.nn import functional as F
 from sklearn.metrics import f1_score
-from torchvision.models import ResNet18_Weights, resnet18
+from torchvision.models import (ConvNeXt_Tiny_Weights, EfficientNet_B0_Weights,
+                                ResNet18_Weights, convnext_tiny, efficientnet_b0, resnet18)
 import torchvision
 
 from train_deep import seed_all
@@ -48,6 +50,27 @@ def predict(model, images, batch_size):
                       for batch in images.split(batch_size)]).numpy()
 
 
+def build_model(architecture, classes):
+    if architecture == "resnet18":
+        weights = ResNet18_Weights.IMAGENET1K_V1
+        model = resnet18(weights=weights)
+        model.fc = nn.Linear(model.fc.in_features, classes)
+        head_prefix = "fc."
+    elif architecture == "efficientnet_b0":
+        weights = EfficientNet_B0_Weights.IMAGENET1K_V1
+        model = efficientnet_b0(weights=weights)
+        model.classifier[1] = nn.Linear(model.classifier[1].in_features, classes)
+        head_prefix = "classifier.1."
+    elif architecture == "convnext_tiny":
+        weights = ConvNeXt_Tiny_Weights.IMAGENET1K_V1
+        model = convnext_tiny(weights=weights)
+        model.classifier[2] = nn.Linear(model.classifier[2].in_features, classes)
+        head_prefix = "classifier.2."
+    else:
+        raise ValueError(f"Unknown architecture: {architecture}")
+    return model, weights, head_prefix
+
+
 def run(args):
     if args.output.exists():
         raise FileExistsError(args.output)
@@ -64,10 +87,9 @@ def run(args):
         raise ValueError("Manifest class map mismatch")
     device = torch.device(args.device)
     seed_all(args.seed)
-    model = resnet18(weights=ResNet18_Weights.IMAGENET1K_V1)
-    weight_cache = Path(torch.hub.get_dir()) / "checkpoints" / "resnet18-f37072fd.pth"
+    model, weights_enum, head_prefix = build_model(args.architecture, len(classes))
+    weight_cache = Path(torch.hub.get_dir()) / "checkpoints" / Path(urlsplit(weights_enum.url).path).name
     pretrained_sha256 = hashlib.sha256(weight_cache.read_bytes()).hexdigest()
-    model.fc = nn.Linear(model.fc.in_features, len(classes))
     model = model.to(device)
     args.output.mkdir(parents=True)
     x_train = torch.from_numpy(train_images.transpose(0, 3, 1, 2).astype(np.float32) / 255).to(device)
@@ -77,9 +99,10 @@ def run(args):
     weights = counts.rsqrt()
     weights /= weights.mean()
     optimizer = torch.optim.AdamW([
-        {"params": (p for name, p in model.named_parameters() if not name.startswith("fc.")),
+        {"params": (p for name, p in model.named_parameters() if not name.startswith(head_prefix)),
          "lr": args.backbone_lr, "base_lr": args.backbone_lr},
-        {"params": model.fc.parameters(), "lr": args.head_lr, "base_lr": args.head_lr}],
+        {"params": (p for name, p in model.named_parameters() if name.startswith(head_prefix)),
+         "lr": args.head_lr, "base_lr": args.head_lr}],
         weight_decay=1e-3)
     history, best, best_epoch = [], -1.0, 0
     started = time.monotonic()
@@ -110,15 +133,17 @@ def run(args):
             torch.save({"state_dict": {name: value.cpu().clone() for name, value in model.state_dict().items()},
                         "classes": classes, "seed": args.seed, "validation_macro_f1": best,
                         "archive_sha256": manifest["archive_sha256"],
-                        "pretrained": "torchvision ResNet18_Weights.IMAGENET1K_V1"}, args.output / "best.pt")
+                        "architecture": args.architecture,
+                        "pretrained": str(weights_enum)}, args.output / "best.pt")
             np.save(args.output / "best_validation_probabilities.npy", probabilities)
         if epoch + 1 - best_epoch >= args.patience:
             break
-    report = {"protocol": "PVF-10 date-disjoint pretrained ResNet18; test untouched",
+    report = {"protocol": "PVF-10 date-disjoint ImageNet transfer; test untouched",
               "archive_sha256": manifest["archive_sha256"], "seed": args.seed,
               "device": str(device), "torch_version": torch.__version__,
               "torchvision_version": torchvision.__version__,
-              "pretrained": "ResNet18_Weights.IMAGENET1K_V1", "input_size": [112, 112],
+              "architecture": args.architecture, "pretrained": str(weights_enum),
+              "input_size": [112, 112],
               "pretrained_sha256": pretrained_sha256,
               "model_parameters": sum(p.numel() for p in model.parameters()),
               "train_images": len(train_images), "validation_images": len(val_images),
@@ -133,6 +158,8 @@ def run(args):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--data", type=Path, default=Path("data/processed/pvf10_date_v1"))
+    parser.add_argument("--architecture", choices=("resnet18", "efficientnet_b0", "convnext_tiny"),
+                        default="resnet18")
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--device", choices=("mps", "cuda"), default="mps")
     parser.add_argument("--seed", type=int, default=2026)

@@ -25,6 +25,8 @@ ResNet18 使用 torchvision `IMAGENET1K_V1` 权重，下载文件 SHA-256 为 `f
 
 按照预先固定的“最强单模型对比三种子等权集成”规则，选中 **ResNet18 种子 2027**；三种子集成没有增益。三种子单模型均优于自主 CNN，但从 0.497 到 0.572 的波动明显。2027 模型对 `healthy panel` 和 `hot cell` 的 F1 分别为 0.863、0.801；`short circuit panel` 只有 **0.188**（验证 12 张），`string short circuit` 为 **0.372**（30 张），`junction box heat` 为 **0.381**（9 张）。这些少数类和跨日期变化仍阻止生产使用。论文在其划分上的总体准确率与我们的日期隔离宏 F1 不是同一指标，不能直接对比或宣称超过论文方法。
 
+同一日期划分、种子 2027 和训练设置下，另用 torchvision 的 ImageNet **EfficientNet-B0** 权重做了一次骨干网络对照。25 轮（约 165 秒）中，最高验证宏 F1 为 **0.4454**，明显低于配对 ResNet18 的 **0.5724**；因此不继续为这个设置增加随机种子，也不替换当前入选模型。该结果只排除本次输入分辨率与超参数组合，不能断言 EfficientNet 在其他训练策略下普遍较差。实验结果在本地 `reports/pvf10_efficientnet_b0_mps_seed2027_v1/`，测试日期仍未读取。
+
 结果和权重保存在本地 `reports/pvf10_date_mps_seed2026_v1/`、`reports/pvf10_resnet18_mps_seed202{6,7,8}_v1/` 和 `reports/pvf10_date_selection_v1.json`。约 102 秒的自主 CNN 训练、42/77/57 秒的 ResNet18 训练不包含数据整理和人工审计；这些时间只是本机 MPS 实测，不是服务器训练估时。
 
 ```bash
