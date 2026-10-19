@@ -1,6 +1,6 @@
 # 组件热斑目标检测：数据审计与首轮基线
 
-这是**目标检测**任务：输入 640×512 的巡检红外整图，输出热斑边界框。它与低分辨率组件裁图的 12 类分类不是同一个模型。当前已完成数据审计、分组划分和一次低分辨率训练流程试跑；完整分辨率检测训练进行中，尚不能用于工业告警。
+这是**目标检测**任务：输入 640×512 的巡检红外整图，输出热斑边界框。它与低分辨率组件裁图的 12 类分类不是同一个模型。当前已完成数据审计、分组划分和 640 像素 YOLO 基线；仍不能用于工业告警。
 
 ## 数据来源和问题
 
@@ -58,3 +58,27 @@ Apple M4 Pro 的 MPS 上用 COCO 预训练 YOLO26s、320 像素、batch 8 跑完
 | 推理速度 | 2.0 ms/image（3090，640 像素，不含数据采集） |
 
 结果文件位于 GPU 服务器 `reports/pv_hsd_yolo26s_cuda_v2_test/one_shot_test.json`，权重为 `reports/pv_hsd_yolo26s_cuda_v2/weights/best.pt`。该测试仍来自一批采集数据，原始图像没有独立场站或完整正常航次；空标签图数量也不足以估计工业假阳性率。因此这是当前目标检测基线，不是生产验收结果。下一步比较 D-FINE-S、局部切图/高分辨率小目标方案，并记录每幅完整正常图的假阳性和现场复核结果。
+
+## 小目标切图候选：数据和整图评估入口
+
+为放大约 10×8 像素的热斑，`src/prepare_pv_hsd_tiles.py` 将每张 640×512 原图切成四张 384×320 的重叠图块，水平和垂直重叠均为 128 像素。输入到 640 像素训练时，热斑在模型输入中的尺寸约增至原来的 1.67 倍。重叠区的目标会重复标注；被图块边缘截断但可见至少 2×2 像素的框会裁剪后标注。切图只处理原始分组划分的训练和验证两部分，留出测试保持原样。
+
+本地已生成 `data/processed/pv_hsd_tiles_384_v1/` 并逐框核对：训练 **11,472** 张图块、**32,034** 个图块框实例，验证 **2,284** 张图块、**5,369** 个图块框实例；原始训练 **19,077/19,077** 和验证 **3,201/3,201** 个热斑都至少完整落入一个图块，丢失 **0** 个。图块文件约 **794 MB**，不提交 Git。采集代理组沿用原始划分，不能因重复切图而重新随机分组。
+
+候选训练入口为 `src/train_pv_hsd_tiled_yolo.py`，沿用 YOLO26s、640 输入、batch 8、最多 80 轮和相同预训练权重。训练时的图块验证 mAP **不能直接和整图基线 mAP 比较**。训练后使用 `src/evaluate_pv_hsd_tiled.py` 在原始 571 张验证整图上做四图块推理，将框映射回 640×512 坐标，过滤图块内部边缘的截断框，按整图 NMS 合并，再由 COCOeval 计算 mAP、召回、空标签图上的检测数和整图耗时。只有这个整图验证结果才可用于判断切图方案是否优于基线。切图模型尚未完成 GPU 训练，因此这里不报告检测精度增益。
+
+```bash
+PYTHONPATH=src python src/prepare_pv_hsd_tiles.py \
+  --source data/processed/pv_hsd_grouped_v2 \
+  --output data/processed/pv_hsd_tiles_384_v1
+PYTHONPATH=src python src/train_pv_hsd_tiled_yolo.py \
+  --source data/processed/pv_hsd_grouped_v2 \
+  --tiles data/processed/pv_hsd_tiles_384_v1 \
+  --output reports/pv_hsd_yolo26s_tiles_cuda_v1 --device cuda
+PYTHONPATH=src python src/evaluate_pv_hsd_tiled.py \
+  --source data/processed/pv_hsd_grouped_v2 \
+  --checkpoint reports/pv_hsd_yolo26s_tiles_cuda_v1/weights/best.pt \
+  --output reports/pv_hsd_yolo26s_tiles_full_val_v1.json --device cuda
+```
+
+当前 GPU 网关连续主动断开 SSH，因此该候选尚未在服务器训练。待连接恢复，应先在同一原始验证整图上重算基线和切图模型的 COCO 指标，再冻结选择；旧留出测试已被 YOLO 基线读取过，之后的比较不能称为全新盲测。
