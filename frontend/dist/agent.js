@@ -8,7 +8,57 @@
     try { session = sessionStorage.getItem('fumai-agent-session') || uuid(); sessionStorage.setItem('fumai-agent-session', session); } catch { session = uuid(); }
     const state = { ready:false, connected:false, busy:false, bootstrap:null, messages:[], selected:'', error:'', token:'', draft:null, tab:'chat', question:'', history:[], connectionError:'' };
     const kinds = {device_specific_candidate:'单机偏离同群',shared_or_model_candidate:'同群共性变化',insufficient_peers:'同群证据不足'};
-    let controller;
+    const taskStorageKey='fumai-agent-active-task';
+    const stages={creating:'正在提交分析任务',queued:'任务已排队，等待分析',running:'正在分析',reading_evidence:'正在查询异常证据',evidence:'正在查询异常证据',model_analysis:'模型正在整理核查建议',model:'模型正在整理核查建议',tool_call:'正在查询工具证据',tools:'正在查询工具证据',validating:'正在校验分析与原文证据',saving:'正在保存分析记录',model_round_1:'模型正在进行第 1 轮分析',model_round_2:'模型正在进行第 2 轮分析',model_round_3:'模型正在进行第 3 轮分析',tool_list_events:'正在查询异常事件列表',tool_get_event:'正在读取事件详细证据',tool_get_runbook:'正在查询核查规程',completed:'分析已完成',failed:'分析失败',interrupted:'任务已中断'};
+    let clockTimer=null,monitoring=false;
+    function loadTask() {
+        try {
+            const saved=JSON.parse(sessionStorage.getItem(taskStorageKey)||'null');
+            if(saved && /^[0-9a-f-]{36}$/i.test(saved.request_id) && typeof saved.question==='string' && saved.question.length<=2000 && (!saved.task_id || typeof saved.task_id==='string' && saved.task_id.length<=128)) {
+                return {...saved,elapsedBase:Math.max(0,Number(saved.elapsed_seconds)||0),elapsedAt:Number(saved.saved_at)||Date.now(),transport:'恢复上次分析任务',paused:true};
+            }
+        } catch { /* Storage may be unavailable in private browsing. */ }
+        return null;
+    }
+    state.task=loadTask();
+    if(state.task) state.messages.push({role:'user',text:state.task.question});
+    function elapsedSeconds(task=state.task) { return task?Math.max(0,Math.floor(task.elapsedBase+(Date.now()-task.elapsedAt)/1000)):0; }
+    function persistTask() {
+        try {
+            if(!state.task) sessionStorage.removeItem(taskStorageKey);
+            else sessionStorage.setItem(taskStorageKey,JSON.stringify({...state.task,elapsed_seconds:elapsedSeconds(),saved_at:Date.now()}));
+        } catch { /* The running request still works when browser storage is disabled. */ }
+    }
+    function tickClock() { for(const node of document.querySelectorAll('[data-agent-elapsed]')) node.textContent=`已用时 ${elapsedSeconds()} 秒`; }
+    function startClock() { if(!clockTimer) clockTimer=setInterval(tickClock,1000); tickClock(); }
+    function stopClock() { if(clockTimer) clearInterval(clockTimer); clockTimer=null; }
+    function taskProgress() {
+        if(!state.task) return '';
+        return `<div class="agent-pending${state.task.paused?' paused':''}" role="status"><span class="agent-pending-dot"></span><div><strong data-agent-stage>${esc(stages[state.task.stage]||'正在整理核查路径')}</strong><small data-agent-transport>${esc(state.task.transport||'任务在服务器处理，离开页面后可恢复')}</small></div><b data-agent-elapsed>已用时 ${elapsedSeconds()} 秒</b>${state.task.paused?'<button class="agent-link" data-agent-action="resume-task">恢复任务</button>':''}</div>`;
+    }
+    function updateProgress(transport) {
+        if(!state.task) return;
+        if(transport) state.task.transport=transport;
+        for(const node of document.querySelectorAll('[data-agent-stage]')) node.textContent=stages[state.task.stage]||'正在整理核查路径';
+        for(const node of document.querySelectorAll('[data-agent-transport]')) node.textContent=state.task.transport||'';
+        tickClock();
+    }
+    function requestError(message,status=0,retryable=true) { return Object.assign(new Error(message),{status,retryable}); }
+    function requestHeaders(body=false) {
+        const headers={'X-Fumai-Session':session};
+        if(state.token) headers.Authorization='Bearer '+state.token;
+        if(body) headers['Content-Type']='application/json';
+        return headers;
+    }
+    async function checkedResponse(response) {
+        const type=response.headers.get('content-type')||'';
+        if(!response.ok) {
+            const data=type.includes('application/json')?await response.json().catch(()=>({})):{};
+            const message=response.status===401?'实测工作空间需要访问令牌，请点击“连接服务”后恢复任务。':data.error||'服务暂时不可用，正在等待恢复。';
+            throw requestError(message,response.status,response.status>=500||response.status===408||response.status===429);
+        }
+        return type;
+    }
     const drawer = document.createElement('dialog');
     drawer.id = 'agent-dialog'; drawer.className = 'agent-dialog'; drawer.setAttribute('aria-label','伏脉运维助手');
     const draftDialog = document.createElement('dialog');
@@ -22,22 +72,21 @@
     const events = () => state.bootstrap?.events || demoEvents();
     const mode = () => state.bootstrap?.mode === 'live' ? '实测快照' : '样例演练';
     const engine = () => state.bootstrap?.model_configured ? '模型已配置 · 待请求验证' : '规则分析 · 模型未接入';
-    async function api(path, body) {
-        const signal = controller?.signal;
-        const headers = {'X-Fumai-Session':session};
-        if(state.token) headers.Authorization='Bearer '+state.token;
-        if(body) headers['Content-Type']='application/json';
-        const response = await fetch('/agent-api/'+path,{method:body?'POST':'GET',headers,body:body?JSON.stringify(body):undefined,signal,cache:'no-store'});
-        const type=response.headers.get('content-type') || '';
-        if(!type.includes('application/json')) throw new Error('当前站点未连接智能体服务。');
-        const data=await response.json();
-        if(!response.ok) { if(response.status===401) throw new Error('实测工作空间需要访问令牌，请点击“连接服务”。'); throw new Error(data.error || '请求失败，请重试。'); }
-        return data;
+    async function api(path,body) {
+        const requestController=new AbortController();
+        const timeout=setTimeout(()=>requestController.abort(),15000);
+        try {
+            const response=await fetch('/agent-api/'+path,{method:body?'POST':'GET',headers:requestHeaders(Boolean(body)),body:body?JSON.stringify(body):undefined,signal:requestController.signal,cache:'no-store'});
+            const type=await checkedResponse(response);
+            if(!type.includes('application/json')) throw requestError('当前站点未连接智能体服务。',0,false);
+            return await response.json();
+        } finally { clearTimeout(timeout); }
     }
     async function connect() {
         try { state.bootstrap=await api('bootstrap'); state.connected=true; state.history=state.bootstrap.history; state.connectionError=''; }
         catch(error) { state.connected=false; state.connectionError=error.message; }
         state.ready=true; paint();
+        if(state.connected && state.task && !monitoring) resumeTask();
     }
     function welcome(compact=false) {
         return `<div class="agent-welcome"><div class="agent-orbit">${glyph}<span></span></div><span class="eyebrow">FUMAI INTELLIGENCE</span><h2>让证据，先于判断。</h2><p>把异常线索变成清晰的核查路径。<br>从你关心的设备或事件开始。</p><div class="agent-prompts">${['梳理待复核事件，给出核查顺序','分析 inv_07 的异常证据','同群证据不足时应该先查什么？'].map((p,i)=>`<button data-agent-prompt="${esc(p)}"><span>0${i+1}</span>${esc(p)}<b>↗</b></button>`).join('')}</div>${compact?'':'<div class="agent-capabilities"><span>可追溯证据</span><span>分步核查</span><span>人工确认</span></div>'}</div>`;
@@ -45,12 +94,12 @@
     function messageHtml(message) {
         if(message.role==='user') return `<article class="agent-message user"><span class="agent-message-avatar">我</span><div><small>你的问题</small><p>${esc(message.text)}</p></div></article>`;
         const r=message.result;
-        return `<article class="agent-message assistant"><span class="agent-message-avatar">${glyph}</span><div class="agent-answer"><div class="agent-answer-meta"><strong>伏脉运维助手</strong><span>${r.model_status==='connected'?'模型辅助分析':'规则分析'} · ${r.metadata.source==='measured'?'实测证据':'构造样例'}</span></div><p class="agent-answer-summary">${esc(r.summary)}</p><div class="agent-boundary">${esc(r.boundary)}</div>${r.model_analysis?`<section class="agent-model-text"><h4>模型辅助解释 <small>需人工复核</small></h4><p>${esc(r.model_analysis.summary)}</p>${list(r.model_analysis.hypotheses,'推测，待验证')}${list(r.model_analysis.checks,'模型建议')}${list(r.model_analysis.unknowns,'模型提示的未知项')}</section>`:''}${list(r.hypotheses,'证据指向')}${list(r.checks,'建议核查路径',true)}<details class="agent-evidence" open><summary>引用证据 <b>${r.events.length}</b></summary>${r.events.map(e=>`<div class="agent-evidence-card"><div><strong>${esc(e.inverter)}</strong><span>${esc(kinds[e.evidence])}</span></div><small>${esc(e.event_id)} · ${esc(e.start_local)}</small><div class="agent-fact-grid"><span>实测均值<b>${esc(e.mean_actual_kw)} <small>kW</small></b></span><span>参考均值<b>${esc(e.mean_reference_kw)} <small>kW</small></b></span><span>有效其他同群<b>${esc(e.min_peer_count)} <small>台</small></b></span></div><p>${esc(e.samples)} 个采样点 · 跨度 ${esc(e.observed_span_minutes)} 分钟 · 参考电量差 ${esc(e.reference_shortfall_kwh)} kWh</p><button class="agent-link" data-agent-draft="${esc(e.event_id)}" data-agent-run="${esc(r.run_id||'')}" ${!r.run_id?'disabled':''}>生成核查工单草稿 ↗</button></div>`).join('') || '<p>当前范围无登记事件，不能据此判断设备正常。</p>'}</details>${list(r.unknowns,'仍需补充的信息')}<details class="agent-audit"><summary>查看工具记录与数据版本</summary><p>数据版本：${esc(r.metadata.dataset_version)}<br>筛查版本：${esc(r.metadata.screening_version)}<br>时区：${esc(r.metadata.timezone)}<br>快照观测时间：${esc(r.metadata.observed_at)}<br>审计编号：${esc(r.run_id||'本地预览，未保存服务端审计')}</p>${r.trace.map(t=>`<span>${esc(t.tool)} · ${esc(t.status)} · ${esc(t.result_count)} 条</span>`).join('')}</details></div></article>`;
+        return `<article class="agent-message assistant"><span class="agent-message-avatar">${glyph}</span><div class="agent-answer"><div class="agent-answer-meta"><strong>伏脉运维助手</strong><span>${r.model_status==='connected'?'模型辅助分析':'规则分析'} · ${r.metadata.source==='measured'?'实测证据':'构造样例'}${Number.isFinite(message.elapsedSeconds)?' · 用时 '+message.elapsedSeconds+' 秒':''}</span></div><p class="agent-answer-summary">${esc(r.summary)}</p><div class="agent-boundary">${esc(r.boundary)}</div>${r.model_analysis?`<section class="agent-model-text"><h4>模型辅助解释 <small>需人工复核</small></h4><p>${esc(r.model_analysis.summary)}</p>${list(r.model_analysis.hypotheses,'推测，待验证')}${list(r.model_analysis.checks,'模型建议')}${list(r.model_analysis.unknowns,'模型提示的未知项')}</section>`:''}${list(r.hypotheses,'证据指向')}${list(r.checks,'建议核查路径',true)}<details class="agent-evidence" open><summary>引用证据 <b>${r.events.length}</b></summary>${r.events.map(e=>`<div class="agent-evidence-card"><div><strong>${esc(e.inverter)}</strong><span>${esc(kinds[e.evidence])}</span></div><small>${esc(e.event_id)} · ${esc(e.start_local)}</small><div class="agent-fact-grid"><span>实测均值<b>${esc(e.mean_actual_kw)} <small>kW</small></b></span><span>参考均值<b>${esc(e.mean_reference_kw)} <small>kW</small></b></span><span>有效其他同群<b>${esc(e.min_peer_count)} <small>台</small></b></span></div><p>${esc(e.samples)} 个采样点 · 跨度 ${esc(e.observed_span_minutes)} 分钟 · 参考电量差 ${esc(e.reference_shortfall_kwh)} kWh</p><button class="agent-link" data-agent-draft="${esc(e.event_id)}" data-agent-run="${esc(r.run_id||'')}" ${!r.run_id?'disabled':''}>生成核查工单草稿 ↗</button></div>`).join('') || '<p>当前范围无登记事件，不能据此判断设备正常。</p>'}</details>${list(r.unknowns,'仍需补充的信息')}<details class="agent-audit"><summary>查看工具记录与数据版本</summary><p>数据版本：${esc(r.metadata.dataset_version)}<br>筛查版本：${esc(r.metadata.screening_version)}<br>时区：${esc(r.metadata.timezone)}<br>快照观测时间：${esc(r.metadata.observed_at)}<br>审计编号：${esc(r.run_id||'本地预览，未保存服务端审计')}</p>${r.trace.map(t=>`<span>${esc(t.tool)} · ${esc(t.status)} · ${esc(t.result_count)} 条</span>`).join('')}</details></div></article>`;
     }
     function list(items,title,ordered=false) { return items?.length?`<section class="agent-answer-section"><h4>${esc(title)}</h4><${ordered?'ol':'ul'}>${items.map(x=>`<li>${esc(x)}</li>`).join('')}</${ordered?'ol':'ul'}></section>`:''; }
     function chat(compact=false) {
         const banner=!state.ready?'正在检查服务连接…':!state.connected?'服务未连接 · 可使用本地样例预览':`${mode()} · ${engine()}`;
-        return `<section class="agent-chat"><div class="agent-chat-top"><div><i class="${state.connected?'connected':''}"></i><strong>运维分析会话</strong></div><span>${state.connected?'服务在线':'本地预览'}</span><button class="agent-link" data-agent-action="clear" ${state.busy?'disabled':''}>新会话 ＋</button></div><div class="agent-mode-banner">${esc(banner)}${!state.connected?'<button class="agent-link" data-agent-action="reconnect">连接服务</button>':''}</div><div class="agent-transcript" role="log" aria-label="运维助手对话" aria-busy="${state.busy}">${state.messages.length?state.messages.map(messageHtml).join(''):welcome(compact)}${state.busy?'<div class="agent-pending" role="status"><span></span>正在查询证据并整理核查路径…</div>':''}</div><div class="agent-input-area">${state.error?`<p class="agent-error" role="alert">${esc(state.error)}</p>`:''}<form class="agent-compose"><label class="sr-only" for="${compact?'drawer':'workbench'}-question">输入运维问题</label><textarea id="${compact?'drawer':'workbench'}-question" name="question" rows="2" maxlength="2000" placeholder="问一条异常，或描述你想核查的问题…" ${state.busy?'disabled':''}>${esc(state.question)}</textarea><div class="agent-compose-bottom"><span>${state.selected?esc(state.selected):'本站证据 · 只读分析'}</span><button type="submit" class="agent-send" ${state.busy?'disabled':''} aria-label="发送问题">${state.busy?'分析中…':'发送 ↑'}</button></div></form><small class="agent-input-note">${state.connected?'分析记录保存到服务端。工单需人工确认，尚未连接外部派单系统。':'本地预览仅使用构造样例，不调用模型，不保存服务端审计。'}</small></div></section>`;
+        return `<section class="agent-chat"><div class="agent-chat-top"><div><i class="${state.connected?'connected':''}"></i><strong>运维分析会话</strong></div><span>${state.connected?'服务在线':'本地预览'}</span><button class="agent-link" data-agent-action="clear" ${state.task||state.busy?'disabled':''}>新会话 ＋</button></div><div class="agent-mode-banner">${esc(banner)}${!state.connected?'<button class="agent-link" data-agent-action="reconnect">连接服务</button>':''}</div><div class="agent-transcript" role="log" aria-label="运维助手对话" aria-busy="${state.busy}">${state.messages.length?state.messages.map(messageHtml).join(''):welcome(compact)}${taskProgress()}</div><div class="agent-input-area">${state.error?`<p class="agent-error" role="alert">${esc(state.error)}</p>`:''}<form class="agent-compose"><label class="sr-only" for="${compact?'drawer':'workbench'}-question">输入运维问题</label><textarea id="${compact?'drawer':'workbench'}-question" name="question" rows="2" maxlength="2000" placeholder="问一条异常，或描述你想核查的问题…" ${state.task||state.busy?'disabled':''}>${esc(state.question)}</textarea><div class="agent-compose-bottom"><span>${state.selected?esc(state.selected):'本站证据 · 只读分析'}</span><button type="submit" class="agent-send" ${state.task||state.busy?'disabled':''} aria-label="发送问题">${state.task?(state.task.paused?'等待恢复':'分析中…'):'发送 ↑'}</button></div></form><small class="agent-input-note">${state.connected?'分析记录保存到服务端。工单需人工确认，尚未连接外部派单系统。':'本地预览仅使用构造样例，不调用模型，不保存服务端审计。'}</small></div></section>`;
     }
     function sidebar() {
         return `<aside class="agent-context"><span class="eyebrow">WORK CONTEXT</span><h3>从现场线索开始</h3><p>选择一个事件，把提问聚焦到具体证据。</p><label for="agent-context-event">当前关注事件</label><select id="agent-context-event"><option value="">全部登记事件</option>${events().map(e=>`<option value="${esc(e.event_id)}" ${state.selected===e.event_id?'selected':''}>${esc(e.inverter)} / ${esc(e.event_id)}</option>`).join('')}</select><div class="agent-side-section"><h4>本次工作边界</h4><div class="agent-scope-row"><span>数据来源</span><b>${mode()}</b></div><div class="agent-scope-row"><span>模型服务</span><b>${state.bootstrap?.model_configured?'已配置，待验证':'未接入'}</b></div><div class="agent-scope-row"><span>设备控制</span><b>无权限</b></div></div><div class="agent-side-section"><h4>最近分析</h4>${state.history.length?state.history.slice(0,5).map(h=>`<button class="agent-history" data-agent-history="${esc(h.run_id)}"><span>${esc(h.question)}</span><small>${esc(new Date(h.created_at).toLocaleString('zh-CN'))}</small></button>`).join(''):'<p class="agent-muted">完成一次分析后，<br>在这里回看证据与记录。</p>'}</div><div class="agent-side-foot">${glyph}<strong>每个建议，都有来处。</strong><p>候选证据 → 核查建议<br>→ 人工复核 → 留档追溯</p></div></aside>`;
@@ -70,16 +119,112 @@
         if(!rows.length) rows=data.events.slice(0,3);
         return {summary:`已整理 ${rows.length} 条构造样例证据。此结果用于流程预览。`,hypotheses:[...new Set(rows.map(e=>kinds[e.evidence]+'，需要结合运行背景复核。'))],checks:['核对限发、检修和通信记录。','检查同群设备可比性、缺失观测与时间对齐。','由有资质人员按现场规程补充核查材料。'],unknowns:['当前未连接后端和模型；没有真实电站数据。','参考电量差不能解释为可挽回损失。'],events:rows,metadata:{source:'constructed_demo',dataset_version:'demo-2023-07-18-v1',screening_version:'demo-fixtures-v1',timezone:'America/Los_Angeles',observed_at:'2023-07-19T01:00:00Z'},trace:[{tool:'browser_demo_lookup',status:'ok',result_count:rows.length}],boundary:'候选证据需人工复核；当前为本地样例预览。',engine:'rules'};
     }
-    async function send(question) {
-        if(state.busy || !question.trim()) return;
-        state.question=question; state.busy=true; state.error=''; state.messages.push({role:'user',text:question}); paint();
-        controller=new AbortController(); const timeout=setTimeout(()=>controller.abort(),65000);
+    function validResult(result) {
+        const texts=value=>Array.isArray(value)&&value.every(x=>typeof x==='string');
+        return result && typeof result==='object' && typeof result.run_id==='string' && typeof result.summary==='string' && typeof result.boundary==='string' &&
+            texts(result.hypotheses)&&texts(result.checks)&&texts(result.unknowns) && Array.isArray(result.events)&&result.events.every(e=>e&&typeof e==='object'&&typeof e.event_id==='string') &&
+            result.metadata&&typeof result.metadata==='object' && Array.isArray(result.trace)&&result.trace.every(t=>t&&typeof t==='object') &&
+            (!result.model_analysis || typeof result.model_analysis.summary==='string'&&texts(result.model_analysis.hypotheses)&&texts(result.model_analysis.checks)&&texts(result.model_analysis.unknowns));
+    }
+    function finishTask(data) {
+        const question=state.task.question;
+        if(data.status==='completed'&&!validResult(data.result)) throw requestError('分析结果格式不完整，尚未展示。请恢复任务重新查询。',0,false);
+        if(data.status==='completed') {
+            const result=data.result;
+            state.messages.push({role:'assistant',result,elapsedSeconds:elapsedSeconds()});
+            if(!state.history.some(h=>h.run_id===result.run_id)) state.history.unshift({run_id:result.run_id,question,created_at:result.created_at});
+            state.question='';state.error='';
+        } else { state.error=data.error||'本次分析失败，请稍后重新提交。';state.question=question; }
+        state.task=null;state.busy=false;persistTask();stopClock();paint();
+    }
+    function consumeTask(data) {
+        if(!state.task) return;
+        if(!data||typeof data.task_id!=='string'||!['queued','running','completed','failed'].includes(data.status)||state.task.task_id&&state.task.task_id!==data.task_id) throw requestError('任务状态格式异常，正在重新查询。');
+        state.task.task_id=data.task_id;
+        state.task.status=data.status;
+        state.task.stage=typeof data.stage==='string'?data.stage:data.status;
+        state.task.elapsedBase=Math.max(elapsedSeconds(),Number(data.elapsed_seconds)||0);
+        state.task.elapsedAt=Date.now();
+        if(data.created_at) state.task.created_at=data.created_at;
+        persistTask();
+        if(data.status==='completed'||data.status==='failed') finishTask(data);
+        else updateProgress();
+    }
+    // Parse chunks incrementally: UTF-8 characters and SSE lines can span network reads.
+    function sseParser(accept) {
+        let buffer='',event='',data=[];
+        return chunk=>{
+            buffer+=chunk;
+            if(buffer.length>1048576) throw requestError('任务通知过大，正在重新查询。');
+            let end;
+            while((end=buffer.indexOf('\n'))>=0) {
+                let line=buffer.slice(0,end);buffer=buffer.slice(end+1);
+                if(line.endsWith('\r')) line=line.slice(0,-1);
+                if(!line) { if(data.length && ['progress','done'].includes(event)) accept(JSON.parse(data.join('\n')));event='';data=[]; }
+                else if(line.startsWith('event:')) event=line.slice(6).trim();
+                else if(line.startsWith('data:')) data.push(line.slice(5).replace(/^ /,''));
+            }
+        };
+    }
+    async function streamTask(taskId) {
+        const streamController=new AbortController();
+        const timeout=setTimeout(()=>streamController.abort(),60000);
+        let reader;
         try {
-            const result=state.connected?await api('analyze',{message:question,event_id:state.selected||null}):localAnalysis(question);
-            state.messages.push({role:'assistant',result}); state.question='';
-            if(result.run_id) state.history.unshift({run_id:result.run_id,question,created_at:result.created_at});
-        } catch(error) { state.error=error.name==='AbortError'?'等待超时。服务端可能仍在处理，请先查看最近分析，避免重复提交。':error.message; }
-        finally { clearTimeout(timeout); controller=null; state.busy=false; paint(); }
+            const response=await fetch('/agent-api/analysis-tasks/'+encodeURIComponent(taskId)+'/events',{headers:{...requestHeaders(),Accept:'text/event-stream'},signal:streamController.signal,cache:'no-store'});
+            const type=await checkedResponse(response);
+            if(!type.includes('text/event-stream')||!response.body) throw requestError('进度连接不可用，正在查询任务状态。');
+            updateProgress('实时接收分析进度，结果校验完成后展示');
+            reader=response.body.getReader();
+            const decoder=new TextDecoder(),parse=sseParser(consumeTask);
+            while(state.task) {
+                const {value,done}=await reader.read();
+                if(done) {parse(decoder.decode());break;}
+                parse(decoder.decode(value,{stream:true}));
+            }
+        } finally { clearTimeout(timeout);streamController.abort();if(reader) await reader.cancel().catch(()=>{}); }
+    }
+    const waitForPoll=()=>new Promise(resolve=>setTimeout(resolve,2000));
+    async function resumeTask() {
+        if(monitoring||!state.task) return;
+        monitoring=true;state.busy=true;state.task.paused=false;state.error='';paint();startClock();
+        try {
+            while(state.task&&!state.task.task_id) {
+                try {
+                    const task=state.task;
+                    consumeTask(await api('analysis-tasks',{message:task.question,event_id:task.event_id||null,request_id:task.request_id}));
+                } catch(error) {
+                    if(error.retryable===false) throw error;
+                    updateProgress('提交响应暂未收到，正在用同一任务标识重试');await waitForPoll();
+                }
+            }
+            if(state.task) {
+                try { await streamTask(state.task.task_id); }
+                catch(error) { if(error.retryable===false) throw error; }
+            }
+            while(state.task) {
+                updateProgress('正在查询任务状态，服务器继续处理');await waitForPoll();
+                try { consumeTask(await api('analysis-tasks/'+encodeURIComponent(state.task.task_id))); }
+                catch(error) {
+                    if(error.retryable===false) throw error;
+                    updateProgress('连接暂时中断，正在自动重连；请勿重复提交');
+                }
+            }
+        } catch(error) {
+            state.busy=false;state.error=error.message;
+            if(state.task && [400,404,409,422].includes(error.status)) {state.question=state.task.question;state.task=null;persistTask();stopClock();}
+            if(state.task) {state.task.paused=true;state.task.transport='任务记录已保留，可点击恢复继续查询';persistTask();}
+            if(error.status===401||error.status===403) state.connected=false;
+            paint();
+        } finally { monitoring=false;if(!state.task) {state.busy=false;stopClock();} }
+    }
+    async function send(question) {
+        if(state.busy||state.task||typeof question!=='string'||!question.trim()) return;
+        state.error='';state.messages.push({role:'user',text:question});state.question='';
+        if(!state.connected) {state.messages.push({role:'assistant',result:localAnalysis(question)});paint();return;}
+        state.task={request_id:uuid(),question,event_id:state.selected||null,stage:'creating',elapsedBase:0,elapsedAt:Date.now(),transport:'正在提交，任务编号会自动保存'};
+        persistTask(); // Persist before POST, so a lost response or reload reuses the same request ID.
+        await resumeTask();
     }
     async function makeDraft(runId,eventId) {
         try {
@@ -103,10 +248,11 @@
         const prompt=event.target.closest('[data-agent-prompt]'); if(prompt) {send(prompt.dataset.agentPrompt);return;}
         const contextual=event.target.closest('[data-agent-context]'); if(contextual) {document.querySelector('#event-dialog')?.close();open(contextual.dataset.agentContext);return;}
         const draft=event.target.closest('[data-agent-draft]'); if(draft) {makeDraft(draft.dataset.agentRun,draft.dataset.agentDraft);return;}
-        const history=event.target.closest('[data-agent-history]'); if(history) {try {const result=await api('run',{run_id:history.dataset.agentHistory});state.messages=[{role:'assistant',result}];state.error='';paint();}catch(error){state.error=error.message;paint();}return;}
+        const history=event.target.closest('[data-agent-history]'); if(history && state.task) return; if(history) {try {const result=await api('run',{run_id:history.dataset.agentHistory});state.messages=[{role:'assistant',result}];state.error='';paint();}catch(error){state.error=error.message;paint();}return;}
         const action=event.target.closest('[data-agent-action]')?.dataset.agentAction;
         if(action==='close') drawer.close();
-        if(action==='clear'&&!state.busy) {state.messages=[];state.error='';state.question='';paint();}
+        if(action==='resume-task') resumeTask();
+        if(action==='clear'&&!state.busy&&!state.task) {state.messages=[];state.error='';state.question='';paint();}
         if(action==='close-draft') draftDialog.close();
         if(action==='close-login') login.close();
         if(action==='reconnect') {

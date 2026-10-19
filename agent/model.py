@@ -97,11 +97,13 @@ class ResponsesModel:
                 raise ValueError("Model response too large")
             return json.loads(raw)
 
-    def enrich(self, snapshot, message, result):
+    def enrich(self, snapshot, message, result, progress=None):
         items = [{"role": "user", "content": json.dumps({"question": message, "evidence_bundle": result}, ensure_ascii=False)}]
         allowed = set(result["evidence_ids"])
         calls = 0
         for round_number in range(3):
+            if progress:
+                progress("model_round_" + str(round_number + 1))
             response = self.transport({"model": self.model, "instructions": INSTRUCTIONS, "input": items,
                                        "tools": TOOLS, "parallel_tool_calls": False, "store": False, "max_output_tokens": 1800,
                                        "text": {"format": {"type": "json_schema", "name": "maintenance_analysis", "strict": True, "schema": SCHEMA}}})
@@ -187,7 +189,7 @@ class ChatCompletionsModel(ResponsesModel):
             # Never propagate supplier response bodies, headers or credentials.
             raise ValueError("Model request failed") from None
 
-    def enrich(self, snapshot, message, result):
+    def enrich(self, snapshot, message, result, progress=None):
         deadline = time.monotonic() + self.total_timeout
         messages = [
             {"role": "system", "content": INSTRUCTIONS + "\n最终回答必须是符合以下 JSON Schema 的 JSON 对象，必须包含所有字段：\n" + json.dumps(SCHEMA, ensure_ascii=False)},
@@ -197,6 +199,8 @@ class ChatCompletionsModel(ResponsesModel):
         allowed, call_ids, calls = set(result["evidence_ids"]), set(), 0
         for round_number in range(3):
             self.remaining(deadline)
+            if progress:
+                progress("model_round_" + str(round_number + 1))
             payload = {"model": self.model, "messages": messages,
                        "response_format": {"type": "json_object"}, "temperature": 0.1, "max_tokens": 1800}
             if round_number < 2:
@@ -238,6 +242,8 @@ class ChatCompletionsModel(ResponsesModel):
                 messages.append({"role": "assistant", "content": None, "tool_calls": tool_calls})
                 for call_id, name, arguments in validated:
                     self.remaining(deadline)
+                    if progress:
+                        progress("tool_" + name)
                     try:
                         answer = snapshot.tool(name, arguments)
                     except (InputError, ValueError, TypeError, KeyError):
@@ -249,6 +255,8 @@ class ChatCompletionsModel(ResponsesModel):
                 continue
             if choice["finish_reason"] != "stop" or not isinstance(assistant.get("content"), str):
                 raise ValueError("Incomplete model response")
+            if progress:
+                progress("validating")
             analysis = validate_analysis(assistant["content"], allowed)
             self.remaining(deadline)
             result["model_analysis"] = analysis

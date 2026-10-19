@@ -19,6 +19,7 @@ from urllib.parse import urlsplit
 from .core import InputError, Snapshot
 from .config import configured_model
 from .store import Store
+from .tasks import AnalysisTasks, TaskBusy, TERMINAL
 
 
 class HTTPError(Exception):
@@ -32,6 +33,7 @@ class Application:
         self.users, self.model, self.release = users or {}, model, release
         self.static_root = Path(static_root).resolve() if static_root else None
         self.slots = threading.BoundedSemaphore(3)
+        self.stream_slots = threading.BoundedSemaphore(8)
         self.rate_lock = threading.Lock()
         self.rates = defaultdict(deque)
         if urlsplit(self.origin).scheme not in {"http", "https"} or not urlsplit(self.origin).netloc:
@@ -41,6 +43,25 @@ class Application:
         for token, user in self.users.items():
             if len(token) < 32 or not isinstance(user, dict) or user.get("role") not in {"viewer", "operator"} or not re.fullmatch(r"[A-Za-z0-9_.-]{1,64}", user.get("id", "")):
                 raise ValueError("Invalid configured user token, id or role")
+        self.tasks = AnalysisTasks(store, self.slots, self.analyze)
+
+    def analyze(self, owner, body, progress=None):
+        if progress:
+            progress("evidence")
+        result = self.snapshot.analyze(body.get("message"), body.get("event_id"), body.get("device_id"))
+        if self.model:
+            try:
+                if progress:
+                    progress("model")
+                    result = self.model.enrich(self.snapshot, body["message"], copy.deepcopy(result), progress=progress)
+                else:
+                    result = self.model.enrich(self.snapshot, body["message"], copy.deepcopy(result))
+            except Exception:
+                result["model_status"] = "failed_fallback"
+                result["unknowns"].insert(0, "模型请求失败或输出未通过校验，以下为规则分析；可稍后重试。")
+        if progress:
+            progress("saving")
+        return self.store.save_run(owner, body["message"], result)
 
     def identity(self, headers, write=False):
         origin = headers.get("Origin")
@@ -66,7 +87,7 @@ class Application:
             raise HTTPError(400, "需要有效的演示会话") from None
         return "demo:" + session
 
-    def limit(self, key):
+    def limit(self, key, maximum=20):
         now = time.monotonic()
         with self.rate_lock:
             # Bounded memory; loopback proxy passes a sanitized client address.
@@ -78,7 +99,7 @@ class Application:
             queue = self.rates[key]
             while queue and now-queue[0] > 60:
                 queue.popleft()
-            if len(queue) >= 20:
+            if len(queue) >= maximum:
                 raise HTTPError(429, "请求过于频繁，请一分钟后再试")
             queue.append(now)
 
@@ -91,7 +112,10 @@ class Application:
         owner = self.identity(headers, write and path in {"/agent-api/drafts", "/agent-api/confirm"})
         if write and self.snapshot.mode == "demo" and headers.get("Origin") != self.origin:
             raise HTTPError(403, "提交需要同源页面")
-        self.limit(client)
+        if method == "GET" and path.startswith("/agent-api/analysis-tasks/"):
+            self.limit(client + ":task-poll", 120)
+        else:
+            self.limit(client)
         snapshot = self.snapshot
         if method == "GET" and path == "/agent-api/bootstrap":
             return {"metadata": snapshot.meta, "mode": snapshot.mode, "model_configured": self.model is not None,
@@ -100,20 +124,22 @@ class Application:
         if method == "POST" and path == "/agent-api/analyze":
             if set(body) - {"message", "event_id", "device_id"}:
                 raise InputError("未知分析参数")
-            result = snapshot.analyze(body.get("message"), body.get("event_id"), body.get("device_id"))
-            if self.model:
-                if not self.slots.acquire(blocking=False):
-                    raise HTTPError(503, "模型正在处理其他任务，请稍后重试")
-                try:
-                    enriched = self.model.enrich(snapshot, body["message"], copy.deepcopy(result))
-                    result = enriched
-                except Exception:
-                    # Do not log API headers, raw provider responses, keys or user content.
-                    result["model_status"] = "failed_fallback"
-                    result["unknowns"].insert(0, "模型请求失败或输出未通过校验，以下为规则分析；可稍后重试。")
-                finally:
-                    self.slots.release()
-            return self.store.save_run(owner, body["message"], result)
+            if not self.slots.acquire(blocking=False):
+                raise HTTPError(503, "模型正在处理其他任务，请稍后重试")
+            try:
+                return self.analyze(owner, body)
+            finally:
+                self.slots.release()
+        if method == "POST" and path == "/agent-api/analysis-tasks":
+            if set(body) - {"message", "event_id", "device_id", "request_id"}:
+                raise InputError("未知分析参数")
+            snapshot.analyze(body.get("message"), body.get("event_id"), body.get("device_id"))
+            try:
+                return self.tasks.submit(owner, body)
+            except TaskBusy as exc:
+                raise HTTPError(503, str(exc)) from None
+        if method == "GET" and path.startswith("/agent-api/analysis-tasks/"):
+            return self.tasks.get(owner, path.removeprefix("/agent-api/analysis-tasks/"))
         if method == "POST" and path == "/agent-api/run":
             if set(body) != {"run_id"}:
                 raise InputError("需要 run_id")
@@ -157,11 +183,47 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(raw)
 
+    def stream_task(self, app, task_id):
+        # Authenticate and check ownership before committing SSE response headers.
+        owner = app.identity(self.headers)
+        app.limit(self.headers.get("X-Real-IP") or self.client_address[0])
+        task = app.tasks.get(owner, task_id)
+        if not app.stream_slots.acquire(blocking=False):
+            raise HTTPError(503, "进度连接繁忙，请使用任务查询接口")
+        try:
+            self.send_response(200)
+            self.send_header("Content-Type", "text/event-stream; charset=utf-8")
+            self.send_header("Cache-Control", "no-store")
+            self.send_header("X-Accel-Buffering", "no")
+            self.send_header("Connection", "close")
+            self.send_header("X-Content-Type-Options", "nosniff")
+            self.end_headers()
+            self.close_connection = True
+            deadline = time.monotonic() + 60
+            while True:
+                event = "done" if task["status"] in TERMINAL else "progress"
+                data = json.dumps(task, ensure_ascii=False, allow_nan=False)
+                self.wfile.write(f"event: {event}\ndata: {data}\n\n".encode())
+                self.wfile.flush()
+                if event == "done" or time.monotonic() >= deadline:
+                    return
+                time.sleep(1)
+                task = app.tasks.get(owner, task_id)
+        except Exception:
+            # Headers are already sent: never append a second HTTP response.
+            # The client falls back to polling, and the worker keeps running.
+            return
+        finally:
+            app.stream_slots.release()
+
     def handle_request(self):
         request_id = str(uuid.uuid4())
         try:
             app = self.server.app
             path = urlsplit(self.path).path
+            if self.command == "GET" and path.startswith("/agent-api/analysis-tasks/") and path.endswith("/events"):
+                self.stream_task(app, path[len("/agent-api/analysis-tasks/"):-len("/events")])
+                return
             if self.command == "GET" and not path.startswith("/agent-api/") and app.static_root:
                 # Development only. nginx serves static assets in deployment.
                 allowed = {"/": "index.html", "/index.html": "index.html", "/app.js": "app.js", "/agent.js": "agent.js", "/agent.css": "agent.css", "/data.js": "data.js", "/styles.css": "styles.css", "/favicon.svg": "favicon.svg"}
@@ -218,12 +280,16 @@ def main():
     model = configured_model()
     marker = Path(".agent-release")
     release = os.getenv("AGENT_RELEASE") or (marker.read_text().strip() if marker.is_file() else "development")
-    app = Application(snapshot, Store(args.database), os.environ["AGENT_ORIGIN"], json.loads(os.getenv("AGENT_USERS_JSON", "{}")), model,
-                      release, args.static_root)
     server = ThreadingHTTPServer(("127.0.0.1", args.port), Handler)
-    server.app = app
-    print(f"Fumai agent listening on loopback:{args.port}, mode={snapshot.mode}", flush=True)
-    server.serve_forever()
+    # Bind before recovering jobs: an accidental duplicate launch on this port
+    # must not mark the active process's jobs interrupted. One service per DB.
+    try:
+        server.app = Application(snapshot, Store(args.database), os.environ["AGENT_ORIGIN"], json.loads(os.getenv("AGENT_USERS_JSON", "{}")), model,
+                                 release, args.static_root)
+        print(f"Fumai agent listening on loopback:{args.port}, mode={snapshot.mode}", flush=True)
+        server.serve_forever()
+    finally:
+        server.server_close()
 
 
 if __name__ == "__main__":
