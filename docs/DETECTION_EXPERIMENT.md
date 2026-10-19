@@ -65,7 +65,7 @@ Apple M4 Pro 的 MPS 上用 COCO 预训练 YOLO26s、320 像素、batch 8 跑完
 
 本地已生成 `data/processed/pv_hsd_tiles_384_v1/` 并逐框核对：训练 **11,472** 张图块、**32,034** 个图块框实例，验证 **2,284** 张图块、**5,369** 个图块框实例；原始训练 **19,077/19,077** 和验证 **3,201/3,201** 个热斑都至少完整落入一个图块，丢失 **0** 个。图块文件约 **794 MB**，不提交 Git。采集代理组沿用原始划分，不能因重复切图而重新随机分组。
 
-候选训练入口为 `src/train_pv_hsd_tiled_yolo.py`，沿用 YOLO26s、640 输入、batch 8、最多 80 轮和相同预训练权重。训练时的图块验证 mAP **不能直接和整图基线 mAP 比较**。训练后使用 `src/evaluate_pv_hsd_tiled.py` 在原始 571 张验证整图上做四图块推理，将框映射回 640×512 坐标，过滤图块内部边缘的截断框，按整图 NMS 合并，再由 COCOeval 计算 mAP、召回、空标签图上的检测数和整图耗时。只有这个整图验证结果才可用于判断切图方案是否优于基线。切图模型尚未完成 GPU 训练，因此这里不报告检测精度增益。
+候选训练入口为 `src/train_pv_hsd_tiled_yolo.py`，沿用 YOLO26s、640 输入、batch 8、最多 80 轮和相同预训练权重。训练时的图块验证 mAP **不能直接和整图基线 mAP 比较**。训练后使用 `src/evaluate_pv_hsd_tiled.py` 在原始 571 张验证整图上做四图块推理，将框映射回 640×512 坐标，过滤图块内部边缘的截断框，按整图 NMS 合并，再由 COCOeval 计算 mAP、召回、空标签图上的检测数和整图耗时。该脚本还支持 `--mode full`：以相同标注、置信度阈值、最终 NMS 和 COCOeval 重算原尺度基线，从而在验证集上进行同口径比较。旧基线的留出测试分数与这里的验证 COCO 分数属于不同划分和评估实现，不能直接相减。切图模型尚未完成 GPU 训练，因此这里不报告检测精度增益。
 
 ```bash
 PYTHONPATH=src python src/prepare_pv_hsd_tiles.py \
@@ -78,7 +78,11 @@ PYTHONPATH=src python src/train_pv_hsd_tiled_yolo.py \
 PYTHONPATH=src python src/evaluate_pv_hsd_tiled.py \
   --source data/processed/pv_hsd_grouped_v2 \
   --checkpoint reports/pv_hsd_yolo26s_tiles_cuda_v1/weights/best.pt \
-  --output reports/pv_hsd_yolo26s_tiles_full_val_v1.json --device cuda
+  --output reports/pv_hsd_yolo26s_tiles_full_val_v1.json --device cuda --mode tiled
+PYTHONPATH=src python src/evaluate_pv_hsd_tiled.py \
+  --source data/processed/pv_hsd_grouped_v2 \
+  --checkpoint reports/pv_hsd_yolo26s_cuda_v2/weights/best.pt \
+  --output reports/pv_hsd_yolo26s_full_val_coco_v1.json --device cuda --mode full
 ```
 
 当前 GPU 网关连续主动断开 SSH，因此该候选尚未在服务器训练。待连接恢复，应先在同一原始验证整图上重算基线和切图模型的 COCO 指标，再冻结选择；旧留出测试已被 YOLO 基线读取过，之后的比较不能称为全新盲测。

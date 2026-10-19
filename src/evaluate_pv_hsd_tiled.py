@@ -1,4 +1,4 @@
-"""Validate tiled detector on original 640x512 PV-HSD validation images.
+"""Compare full-image and tiled detectors on original PV-HSD validation images.
 
 Predictions from four overlapping crops are mapped back to full-image pixels,
 merged with image-level NMS, and scored with COCOeval. This script reads the
@@ -65,11 +65,23 @@ def touches_internal_edge(box, origin, margin=2.0):
             (top + TILE_SIZE[1] < IMAGE_SIZE[1] and y2 >= TILE_SIZE[1] - margin))
 
 
-def run(source, checkpoint, output, device, imgsz, batch_size, conf, nms_iou):
+def inference_views(original, mode):
+    """Return RGB PIL views and their original-image origins."""
+    if mode == "full":
+        return [original.copy()], ((0, 0),)
+    if mode == "tiled":
+        return ([original.crop((left, top, left + TILE_SIZE[0], top + TILE_SIZE[1]))
+                 for left, top in TILES], TILES)
+    raise ValueError(f"Unknown inference mode: {mode}")
+
+
+def run(source, checkpoint, output, device, imgsz, batch_size, conf, nms_iou, mode="tiled"):
     if output.exists():
         raise FileExistsError(output)
     if not 0 < conf < 1 or not 0 < nms_iou < 1:
         raise ValueError("conf and NMS IoU must be in (0, 1)")
+    if mode not in ("full", "tiled"):
+        raise ValueError(f"Unknown inference mode: {mode}")
     from pycocotools.coco import COCO
     from pycocotools.cocoeval import COCOeval
     from ultralytics import YOLO
@@ -87,16 +99,16 @@ def run(source, checkpoint, output, device, imgsz, batch_size, conf, nms_iou):
         with Image.open(path) as original:
             if original.size != IMAGE_SIZE:
                 raise ValueError(f"Unexpected image size: {path}")
-            crops = [original.crop((left, top, left + TILE_SIZE[0],
-                                    top + TILE_SIZE[1]))
-                     for left, top in TILES]
+            crops, origins = inference_views(original, mode)
         results = model.predict(crops, device=device, imgsz=imgsz, conf=conf,
                                 iou=0.7, max_det=300, batch=batch_size, verbose=False)
         boxes, scores = [], []
-        for origin, result in zip(TILES, results):
+        if len(results) != len(origins):
+            raise ValueError("Detector returned a different number of predictions than views")
+        for origin, result in zip(origins, results):
             for box, score in zip(result.boxes.xyxy.cpu().numpy(),
                                   result.boxes.conf.cpu().numpy()):
-                if touches_internal_edge(box, origin):
+                if mode == "tiled" and touches_internal_edge(box, origin):
                     continue
                 full_box = restore_box(box, origin)
                 if full_box[2] <= full_box[0] or full_box[3] <= full_box[1]:
@@ -111,22 +123,25 @@ def run(source, checkpoint, output, device, imgsz, batch_size, conf, nms_iou):
             empty_image_detections += image["id"] in empty_images
     if not predictions:
         raise ValueError("Detector produced no validation predictions")
+    inference_seconds = time.monotonic() - started
     detected = coco.loadRes(predictions)
     evaluation = COCOeval(coco, detected, "bbox")
     evaluation.evaluate()
     evaluation.accumulate()
     evaluation.summarize()
-    report = {"protocol": "grouped validation full-image COCOeval after 4-tile inference and NMS",
+    report = {"protocol": "grouped validation original-image COCOeval with common final NMS",
               "source": str(source), "checkpoint": str(checkpoint),
-              "imgsz": imgsz, "tile_size": list(TILE_SIZE), "tile_origins": [list(v) for v in TILES],
-              "tile_conf": conf, "full_image_nms_iou": nms_iou,
+              "mode": mode, "imgsz": imgsz,
+              "inference_view_size": list(IMAGE_SIZE if mode == "full" else TILE_SIZE),
+              "view_origins": [list(v) for v in (((0, 0),) if mode == "full" else TILES)],
+              "confidence_threshold": conf, "final_nms_iou": nms_iou,
               "validation_images": len(coco.dataset["images"]),
               "validation_boxes": len(coco.dataset["annotations"]),
               "map50_95": float(evaluation.stats[0]), "map50": float(evaluation.stats[1]),
               "map_small": float(evaluation.stats[3]), "recall_100": float(evaluation.stats[8]),
               "empty_label_images": len(empty_images),
               "detections_on_empty_label_images": empty_image_detections,
-              "seconds_per_full_image": (time.monotonic() - started) / len(coco.dataset["images"]),
+              "seconds_per_original_image": inference_seconds / len(coco.dataset["images"]),
               "limitations": ["Validation is from one collection with proxy capture groups.",
                               "Empty labels are not certified healthy images.",
                               "No test images are read by this script."]}
@@ -145,6 +160,7 @@ if __name__ == "__main__":
     parser.add_argument("--batch-size", type=int, default=4)
     parser.add_argument("--conf", type=float, default=0.001)
     parser.add_argument("--nms-iou", type=float, default=0.5)
+    parser.add_argument("--mode", choices=("full", "tiled"), default="tiled")
     args = parser.parse_args()
     run(args.source, args.checkpoint, args.output, args.device, args.imgsz,
-        args.batch_size, args.conf, args.nms_iou)
+        args.batch_size, args.conf, args.nms_iou, args.mode)
