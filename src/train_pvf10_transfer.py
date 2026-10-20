@@ -102,6 +102,19 @@ def defect_aware_loss(logits, labels, weights, healthy_index, binary_weight=0.0)
     return loss
 
 
+def load_backbone(model, checkpoint, architecture, head_prefix):
+    if checkpoint.get("architecture") != architecture or "backbone_state_dict" not in checkpoint:
+        raise ValueError("Pretrained backbone architecture/format mismatch")
+    state = checkpoint["backbone_state_dict"]
+    expected = {key for key in model.state_dict() if not key.startswith(head_prefix)}
+    if set(state) != expected:
+        raise ValueError("Backbone keys must exactly cover all non-head parameters and buffers")
+    target = model.state_dict()
+    if any(value.shape != target[key].shape for key, value in state.items()):
+        raise ValueError("Backbone tensor shape mismatch")
+    model.load_state_dict({**target, **state}, strict=True)
+
+
 def run(args):
     if args.output.exists():
         raise FileExistsError(args.output)
@@ -121,6 +134,12 @@ def run(args):
     model, weights_enum, head_prefix = build_model(args.architecture, len(classes))
     weight_cache = Path(torch.hub.get_dir()) / "checkpoints" / Path(urlsplit(weights_enum.url).path).name
     pretrained_sha256 = hashlib.sha256(weight_cache.read_bytes()).hexdigest()
+    backbone_init = getattr(args, "backbone_init", None)
+    backbone_sha256 = None
+    if backbone_init is not None:
+        checkpoint = torch.load(backbone_init, map_location="cpu", weights_only=True)
+        load_backbone(model, checkpoint, args.architecture, head_prefix)
+        backbone_sha256 = hashlib.sha256(backbone_init.read_bytes()).hexdigest()
     model = model.to(device)
     ema = (AveragedModel(model, multi_avg_fn=get_ema_multi_avg_fn(args.ema_decay),
                          use_buffers=True) if args.ema_decay else None)
@@ -176,6 +195,7 @@ def run(args):
                         "ema_decay": args.ema_decay,
                         "augmentation": args.augmentation,
                         "binary_loss_weight": args.binary_loss_weight,
+                        "adapted_backbone_sha256": backbone_sha256,
                         "pretrained": str(weights_enum)}, args.output / "best.pt")
             np.save(args.output / "best_validation_probabilities.npy", probabilities)
         if epoch + 1 - best_epoch >= args.patience:
@@ -193,6 +213,7 @@ def run(args):
                                     "ema_decay": args.ema_decay, "augmentation": args.augmentation,
                                     "binary_loss_weight": args.binary_loss_weight},
               "pretrained_sha256": pretrained_sha256,
+              "adapted_backbone_sha256": backbone_sha256,
               "model_parameters": sum(p.numel() for p in model.parameters()),
               "train_images": len(train_images), "validation_images": len(val_images),
               "best_epoch": best_epoch, "validation_macro_f1": best,
@@ -206,6 +227,8 @@ def run(args):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--data", type=Path, default=Path("data/processed/pvf10_date_v1"))
+    parser.add_argument("--backbone-init", type=Path,
+                        help="Optional strict self-supervised backbone checkpoint; head stays seed-initialized")
     parser.add_argument("--architecture", choices=("resnet18", "efficientnet_b0", "convnext_tiny"),
                         default="resnet18")
     parser.add_argument("--output", type=Path, required=True)
