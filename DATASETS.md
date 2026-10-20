@@ -56,3 +56,20 @@ This file tracks the public data acquired or identified for model development. R
 ## Additional industrial evaluation candidate (2026-10-20)
 
 [MHHS-Dataset, publisher repository](https://github.com/zss313/MHHS-Dataset) describes four UAV flight heights, hotspot boxes and defect-free full images. This could help evaluate the current detector's false alerts and altitude shift. Access requires an institution-email request and a hand-signed form; no data archive was retrieved and no request was sent. The README image totals are internally inconsistent, so counts, flight/site grouping, overlap with existing datasets and usage permission must be verified before any split or training. It is not currently a verified external test set.
+
+
+## Curated thermal detection pretraining candidate (2026-10-20)
+
+[Publisher record 14644158](https://zenodo.org/records/14644158) describes a five-source merged detection dataset. Zenodo metadata declares CC BY 4.0; individual source permissions and overlap with current datasets still need verification. The 1,428,080,889-byte archive has published MD5 `dd88e35595f4564b13233ad749dc4bcd`. Only its ZIP directory was range-read (about 7.7 MB); the full archive was not downloaded and its checksum was not verified.
+
+Directory audit found **22,842 JPG images and 22,842 TXT labels**. Removing Roboflow hash suffixes leaves **8,630 names**, with **48 names crossing published splits**. These are possible source/derivative overlap flags, not confirmed pixel duplicates. There are 107/1/1 zero-byte labels in train/test/valid; these do not prove fully annotated healthy images or adequate negative-flight coverage. Do not adopt the published split as independent industrial validation. No training on this candidate has started.
+
+Saved directory: `data/raw/pv_thermal_curated/remote_zip_directory.json`; reproducible audit:
+
+```bash
+python3 src/audit_curated_pv_directory.py \
+  --directory-json data/raw/pv_thermal_curated/remote_zip_directory.json \
+  --output reports/curated_pv_directory_audit_new.json
+```
+
+A full local ZIP can be audited with `--zip` instead. The audit reads directory metadata only and never deserializes included training cache files.
