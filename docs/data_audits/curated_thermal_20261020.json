@@ -1,0 +1,76 @@
+{
+  "source": "https://zenodo.org/records/14644158",
+  "archive_md5": "dd88e35595f4564b13233ad749dc4bcd",
+  "archive_bytes": 1428080889,
+  "classes": [
+    "defect"
+  ],
+  "images": 22842,
+  "counts_by_split": {
+    "test": 471,
+    "train": 21475,
+    "valid": 896
+  },
+  "empty_labels_by_split": {
+    "test": 1,
+    "train": 107,
+    "valid": 1
+  },
+  "boxes_by_split_class": {
+    "train": {
+      "defect": 59476
+    },
+    "valid": {
+      "defect": 2919
+    },
+    "test": {
+      "defect": 1296
+    }
+  },
+  "exact_pixel_groups_crossing_splits": 211,
+  "exact_pixel_groups_crossing_splits_with_conflicting_labels": 163,
+  "same_dhash_groups_crossing_splits": 366,
+  "normalized_name_groups_crossing_splits": 48,
+  "reference_train_val_images_read": 3439,
+  "reference_train_val_exact_pixel_matches": {},
+  "reference_train_val_same_dhash_candidate_count": 0,
+  "reference_manifest_sha256": "2a87e1e76dee443fda1122ac4ce93d1687252aa161a126ca3f453cffc6e3e081",
+  "project_test_status": "not opened",
+  "elapsed_seconds": 74.439062459,
+  "limitations": [
+    "Same dHash or source filename alone is not proof of duplicate pixels.",
+    "No verified flight/plant IDs; no independent industrial split is established.",
+    "Empty labels do not prove healthy components or complete annotation.",
+    "Dataset aggregates five sources whose permissions and overlap with project data require verification.",
+    "No model training or performance evaluation is performed."
+  ],
+  "label_error_counts": {
+    "invalid_or_outside_image_box": 1243
+  },
+  "quarantine_plan": {
+    "status_counts": {
+      "quarantined": 9294,
+      "candidate": 4497,
+      "redundant_derivative": 9051
+    },
+    "components": 6728,
+    "protocol": "Pretraining-only candidate plan; publisher val/test-related components excluded",
+    "limitations": [
+      "Not a verified independent plant/flight split.",
+      "Candidate labels and source permissions still require human/source review.",
+      "Filename union is conservative and may quarantine unrelated images.",
+      "No box clipping, label repair, dataset export or model training performed."
+    ],
+    "source_audit_summary_sha256": "9a9aed45fa7901be34ce15e40f3405bcc2f92035cc882f4bfab095ad68b47a80",
+    "source_audit_rows_sha256": "6a6a6c1d6ee2f383f46b87f63c5e96947c2e97f4a1aa702fcbb30b61b6b8111a"
+  },
+  "visual_review": {
+    "images": 8,
+    "selection": "first and middle candidate by filename prefix, first four prefixes only; not random",
+    "observations": [
+      "Box scale varies from small local hotspots to nearly complete modules.",
+      "At least one viewed image has a bright module region outside the supplied box; visual brightness alone does not confirm a missed defect."
+    ],
+    "conclusion": "Manual/source semantic review still required; no training or industrial validation claimed."
+  }
+}

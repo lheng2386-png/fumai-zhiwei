@@ -60,7 +60,7 @@ This file tracks the public data acquired or identified for model development. R
 
 ## Curated thermal detection pretraining candidate (2026-10-20)
 
-[Publisher record 14644158](https://zenodo.org/records/14644158) describes a five-source merged detection dataset. Zenodo metadata declares CC BY 4.0; individual source permissions and overlap with current datasets still need verification. The 1,428,080,889-byte archive has published MD5 `dd88e35595f4564b13233ad749dc4bcd`. Only its ZIP directory was range-read (about 7.7 MB); the full archive was not downloaded and its checksum was not verified.
+[Publisher record 14644158](https://zenodo.org/records/14644158) describes a five-source merged detection dataset. Zenodo metadata declares CC BY 4.0; individual source permissions and overlap with current datasets still need verification. The 1,428,080,889-byte archive has published MD5 `dd88e35595f4564b13233ad749dc4bcd`. Initial inspection range-read only the ZIP directory (about 7.7 MB). The full archive has now downloaded locally and passed the published MD5 check. The full decoded-pixel/box audit is complete; it does not establish a usable independent split.
 
 Directory audit found **22,842 JPG images and 22,842 TXT labels**. Removing Roboflow hash suffixes leaves **8,630 names**, with **48 names crossing published splits**. These are possible source/derivative overlap flags, not confirmed pixel duplicates. There are 107/1/1 zero-byte labels in train/test/valid; these do not prove fully annotated healthy images or adequate negative-flight coverage. Do not adopt the published split as independent industrial validation. No training on this candidate has started.
 
@@ -73,3 +73,30 @@ python3 src/audit_curated_pv_directory.py \
 ```
 
 A full local ZIP can be audited with `--zip` instead. The audit reads directory metadata only and never deserializes included training cache files.
+
+
+Full-content audit command (MD5 is checked before image reads):
+
+```bash
+python3 src/audit_curated_pv_pixels.py \
+  --archive data/raw/pv_thermal_curated/PV_Thermal_Defects_Dataset.zip \
+  --reference data/processed/pv_hsd_grouped_v2 \
+  --output reports/curated_pv_full_audit_new_run
+```
+
+The actual YAML has a single generic `defect` class; this cannot be equated to ten-class crop diagnosis or assumed to mean hotspot only. The script ignores publisher absolute dataset paths and never reads training cache objects. Reference duplicate checks cover project train/val only, leaving the project test images unopened.
+
+
+### Full archive audit result
+
+[Saved audit summary](docs/data_audits/curated_thermal_20261020.json): all 22,842 images decoded, checksum verified, 211 exact decoded-pixel groups cross publisher splits; 163 of those have differing parsed valid-box signatures. There are 1,243 annotation lines with nonpositive/out-of-range boxes or box edges outside the image under the declared tolerance. Do not silently clip or delete these boxes. Example identical pixels have 18, 6 and 8 supplied valid boxes in different source copies, indicating that consolidation needs source-level review.
+
+No exact pixel or equal-dHash matches were found against the **3,439 project PV-HSD train/val images**. This limited check does not rule out resized, cropped, recolored or other near-duplicate derivatives. The project test images were not opened.
+
+A conservative connected-component quarantine joins exact pixels and normalized source names, excludes whole components connected to publisher validation/test images, annotation errors/conflicts, or unverified empty negatives, and retains one representative per remaining component. This yields **4,497 pretraining candidates**, **9,294 quarantined images** and **9,051 redundant derivatives**. It does not make a new evaluation split or approve candidates for production. Source license lineage and consistent defect-box semantics still need review; eight inspected samples show box extents ranging from tiny spots to almost whole modules. No training on this merged dataset has started.
+
+```bash
+python3 src/plan_curated_pv_quarantine.py \
+  --audit reports/curated_pv_full_pixel_audit_v1 \
+  --output reports/curated_pv_quarantine_new_run
+```

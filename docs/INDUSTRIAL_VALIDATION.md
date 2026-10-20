@@ -122,3 +122,6 @@ python3 src/audit_curated_pv_pixels.py \
   --reference data/processed/pv_hsd_grouped_v2 \
   --output reports/curated_pv_full_audit_new_run
 ```
+
+
+检测数据的全量下载、发布 MD5 校验、22,842 张图片审计和隔离计划现已完成。确认 **211 组完全重复像素跨发布划分**，其中 **163 组有效框标注不同**；**1,243 行框未过范围检查**。现有 PV-HSD 的 3,439 张训练/验证图与之未找到完全像素或同 dHash 匹配，但这不能排除其他近重复；项目测试图未读。隔离后保留 **4,497 张预训练候选**，尚需统一框语义和来源权限核查。8 张候选图抽查已见局部热斑与整组件范围的框混合，暂不直接开始检测预训练。详情和复现命令见 [数据清单](../DATASETS.md#full-archive-audit-result)；统计摘要已随代码提交。
