@@ -9,6 +9,7 @@ saved. These historical folds have already been inspected in other studies.
 import argparse
 import hashlib
 import json
+import math
 from pathlib import Path
 import time
 
@@ -52,6 +53,9 @@ def write_json(path, value):
 
 def run(args):
     architecture = getattr(args, "architecture", "transformer")
+    hard_negative_alpha = getattr(args, "hard_negative_alpha", 0.0)
+    if not math.isfinite(hard_negative_alpha) or hard_negative_alpha < 0:
+        raise ValueError("Invalid hard-negative emphasis")
     if architecture not in ("transformer", "rnn", "lstm", "multiscale_cnn"):
         raise ValueError("Unknown architecture")
     if args.output.exists():
@@ -78,7 +82,7 @@ def run(args):
         "protocol": "matched-endpoint context comparison in train-only forward folds",
         "prepared_manifest_sha256": hashlib.sha256(manifest_bytes).hexdigest(),
         "device": str(device), "torch_version": torch.__version__,
-        "architecture": architecture,
+        "architecture": architecture, "hard_negative_alpha": hard_negative_alpha,
         "contexts_minutes": args.contexts, "seeds": args.seeds,
         "epochs": args.epochs, "patience": args.patience,
         "batch_size": args.batch_size, "lr": args.lr,
@@ -124,8 +128,10 @@ def run(args):
             runs = fold["runs"][str(minutes)] = {}
             tuning_ap[minutes] = []
             for seed in args.seeds:
+                loss_controls = ({"hard_negative_alpha": hard_negative_alpha}
+                                 if hard_negative_alpha else {})
                 record = train_one(architecture, seed, training, tuning,
-                                   candidate_folder, device, args)
+                                   candidate_folder, device, args, **loss_controls)
                 tuning_scores = np.load(
                     candidate_folder / f"{record['tag']}_validation.npy")
                 threshold = choose_threshold(tuning["y"], tuning_scores)
@@ -215,6 +221,8 @@ if __name__ == "__main__":
     parser.add_argument("--device", choices=("auto", "cpu", "mps", "cuda"), default="auto")
     parser.add_argument("--architecture", choices=("transformer", "rnn", "lstm", "multiscale_cnn"),
                         default="transformer")
+    parser.add_argument("--hard-negative-alpha", type=float, default=0.0,
+                        help="Emphasize training normals currently mistaken for faults")
     parser.add_argument("--contexts", type=int, nargs="+", default=[5, 15, 30])
     parser.add_argument("--seeds", type=int, nargs="+", default=[2031, 2032, 2033])
     parser.add_argument("--epochs", type=int, default=50)

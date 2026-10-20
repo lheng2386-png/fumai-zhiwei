@@ -9,7 +9,7 @@ from torch.optim.swa_utils import AveragedModel, get_ema_multi_avg_fn
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'src'))
 from evaluate_pvf10_stress import CONDITIONS, perturb, triage_metrics
-from train_pvf10_transfer import augment
+from train_pvf10_transfer import augment, defect_aware_loss
 
 
 class PVFStressTests(unittest.TestCase):
@@ -63,6 +63,23 @@ class PVFStressTests(unittest.TestCase):
         torch.testing.assert_close(x, source)
         with self.assertRaises(ValueError):
             augment(x, "unknown")
+
+    def test_binary_loss_is_exact_marginal_probability_and_has_gradients(self):
+        logits = torch.tensor([[1., 2., 3.], [2., 0., -1.]], requires_grad=True)
+        labels = torch.tensor([2, 0])
+        weights = torch.ones(3)
+        base = torch.nn.functional.cross_entropy(logits, labels)
+        torch.testing.assert_close(defect_aware_loss(logits, labels, weights, 0, 0), base)
+        p = logits.softmax(-1)
+        expected = base + .5 * (-torch.log(1 - p[0, 0]) - torch.log(p[1, 0])) / 2
+        loss = defect_aware_loss(logits, labels, weights, 0, .5)
+        torch.testing.assert_close(loss, expected)
+        loss.backward()
+        self.assertTrue(torch.isfinite(logits.grad).all())
+        self.assertTrue((logits.grad.abs().sum() > 0).item())
+        # Extreme logits must remain finite through logsumexp, without clipping probabilities.
+        extreme = torch.tensor([[1000., -1000., -1000.]])
+        self.assertTrue(torch.isfinite(defect_aware_loss(extreme, torch.tensor([1]), weights, 0, .5)))
 
     def test_ema_tracks_weights_without_gradient_or_alias(self):
         model = nn.Linear(1, 1, bias=False)

@@ -80,7 +80,10 @@ class ReunionContextTests(unittest.TestCase):
     def test_rnn_preserves_inner_selection_and_architecture_checkpoint_paths(self):
         self._check_orchestration("rnn")
 
-    def _check_orchestration(self, architecture):
+    def test_hard_negative_emphasis_is_passed_to_training_without_outer_selection(self):
+        self._check_orchestration("rnn", hard_negative_alpha=2.0)
+
+    def _check_orchestration(self, architecture, hard_negative_alpha=0.0):
         # Exercise orchestration only; no model is trained or sent to a GPU.
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -94,9 +97,10 @@ class ReunionContextTests(unittest.TestCase):
             args = argparse.Namespace(
                 prepared=root, output=root / "result", contexts=[5, 15, 30],
                 seeds=[2031, 2032, 2033], epochs=1, patience=1,
-                batch_size=2, lr=8e-4, device="cpu", architecture=architecture)
+                batch_size=2, lr=8e-4, device="cpu", architecture=architecture, hard_negative_alpha=hard_negative_alpha)
             trained = []
-            def fake_train(name, seed, training, tuning, output, device, controls):
+            def fake_train(name, seed, training, tuning, output, device, controls, **loss_controls):
+                self.assertEqual(loss_controls.get("hard_negative_alpha", 0.0), hard_negative_alpha)
                 self.assertEqual(name, architecture)
                 trained.append((training["x"].shape[-1], seed))
                 tag = f"{name}_seed{seed}"

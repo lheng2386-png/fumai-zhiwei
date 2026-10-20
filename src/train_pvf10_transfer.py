@@ -88,6 +88,20 @@ def build_model(architecture, classes, pretrained=True):
     return model, weights, head_prefix
 
 
+
+def defect_aware_loss(logits, labels, weights, healthy_index, binary_weight=0.0):
+    """Multiclass weighted CE plus unweighted healthy/any-defect marginal CE."""
+    if not math.isfinite(binary_weight) or binary_weight < 0 or not 0 <= healthy_index < logits.shape[1]:
+        raise ValueError("Invalid binary loss controls")
+    loss = F.cross_entropy(logits, labels, weight=weights)
+    if binary_weight:
+        defect_indices = [index for index in range(logits.shape[1]) if index != healthy_index]
+        binary_logits = torch.stack((logits[:, healthy_index],
+                                     torch.logsumexp(logits[:, defect_indices], dim=1)), dim=1)
+        loss = loss + binary_weight * F.cross_entropy(binary_logits, (labels != healthy_index).long())
+    return loss
+
+
 def run(args):
     if args.output.exists():
         raise FileExistsError(args.output)
@@ -133,8 +147,9 @@ def run(args):
         total = 0.0
         for ids in torch.randperm(len(x_train), device=device).split(args.batch_size):
             optimizer.zero_grad(set_to_none=True)
-            loss = F.cross_entropy(model(normalize(augment(x_train[ids], args.augmentation), args.input_size)),
-                                   y_train[ids], weight=weights)
+            logits = model(normalize(augment(x_train[ids], args.augmentation), args.input_size))
+            loss = defect_aware_loss(logits, y_train[ids], weights,
+                                     classes.index("healthy panel"), args.binary_loss_weight)
             if not torch.isfinite(loss):
                 raise FloatingPointError("Non-finite loss")
             loss.backward()
@@ -160,6 +175,7 @@ def run(args):
                         "input_size": args.input_size,
                         "ema_decay": args.ema_decay,
                         "augmentation": args.augmentation,
+                        "binary_loss_weight": args.binary_loss_weight,
                         "pretrained": str(weights_enum)}, args.output / "best.pt")
             np.save(args.output / "best_validation_probabilities.npy", probabilities)
         if epoch + 1 - best_epoch >= args.patience:
@@ -174,7 +190,8 @@ def run(args):
               "training_controls": {"epochs": args.epochs, "patience": args.patience,
                                     "batch_size": args.batch_size,
                                     "backbone_lr": args.backbone_lr, "head_lr": args.head_lr,
-                                    "ema_decay": args.ema_decay, "augmentation": args.augmentation},
+                                    "ema_decay": args.ema_decay, "augmentation": args.augmentation,
+                                    "binary_loss_weight": args.binary_loss_weight},
               "pretrained_sha256": pretrained_sha256,
               "model_parameters": sum(p.numel() for p in model.parameters()),
               "train_images": len(train_images), "validation_images": len(val_images),
@@ -199,6 +216,8 @@ if __name__ == "__main__":
     parser.add_argument("--batch-size", type=int, default=64)
     parser.add_argument("--input-size", type=int, choices=(112, 224), default=112,
                         help="Resize source crops per batch; interpolation adds no measured detail")
+    parser.add_argument("--binary-loss-weight", type=float, default=0.0,
+                        help="Auxiliary healthy/any-defect marginal CE; does not require new labels")
     parser.add_argument("--augmentation", choices=("baseline", "robust"), default="baseline")
     parser.add_argument("--ema-decay", type=float, default=0.0,
                         help="0 disables EMA; otherwise evaluate and save EMA weights")
@@ -207,6 +226,8 @@ if __name__ == "__main__":
     args = parser.parse_args()
     if min(args.epochs, args.patience, args.batch_size) < 1 or min(args.backbone_lr, args.head_lr) <= 0:
         parser.error("Invalid training parameters")
+    if not math.isfinite(args.binary_loss_weight) or args.binary_loss_weight < 0:
+        parser.error("binary-loss-weight must be finite and nonnegative")
     if not 0 <= args.ema_decay < 1:
         parser.error("EMA decay must be in [0, 1)")
     run(args)
