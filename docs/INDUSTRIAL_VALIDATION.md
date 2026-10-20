@@ -97,3 +97,28 @@ RNN 困难健康样本加权已完成。内部仍选择 15 分钟；2 月外层 
 
 
 健康/缺陷辅助损失三种子已全部完成：宏 F1 为 **0.6761/0.6284/0.6262**，均值 **0.6436**，低于抗退化基线的 **0.6555**，三个配对种子均下降。健康误报 **33/43/35**（抗退化基线 31/44/33），缺陷判健康 **20/18/26**（基线 20/15/26）。本轮不采用该辅助损失，默认仍为 0；保留代码和结果用于复现。训练现已结束，RNN 及图像已完成检查点备份。
+
+
+## 特征组对照与全量检测数据审计
+
+新增时序特征组消融，RNN 的架构、种子、15/30 分钟上下文、日期端点与训练控制均沿用上一轮，默认无困难样本额外加权：
+
+- `all`：原 14 通道，上一轮完整对照作为参考。
+- `dc_relative`：两台逆变器各自的 Pg/Ia/Va，加功率比与直流电流比，共 8 通道。
+- `ratios_only`：仅功率比和直流电流比，共 2 通道。
+
+所有组使用同一折的早期训练统计与端点，逐架构内部选长度并冻结后评分。通道数量改变了模型输入参数及随机数消耗，这不是精确控制参数量的实验。保存的折归一化参数仍是 14 通道源定义，后续推理需按结果的 `feature_indices` 选择通道；尚未替换生产入口。
+
+A10G `dc_relative` 已完成：2 月内部选 15 分钟，外层平均 AP **0.98424**（原全通道 RNN 为 **0.99560**），健康误报 **6/6/3**（原 **5/3/5**），故障召回 **0.9932/0.9830/0.9932**（原 **0.9796/0.7789/0.8129**）。召回跨种子更一致，但没有稳定减少误报，不能宣布全面优于原模型。3 月该组没有健康误报，但仅 26 个正常窗口。`ratios_only` 已启动，最后读取到日志仍在训练，随后 SSH 网关中断，未确认最终结果，不推断进程停止或成功完成。
+
+全量检测 ZIP 本机正断点续传；下载成功后自动校验发布 MD5，再运行 `audit_curated_pv_pixels.py`。该程序读取 ZIP 中的原图和 TXT，以解码像素哈希证明完全重复，以 dHash/归一文件名仅标记相似线索；检查类别、非有限数值、零宽高、越界框、缺标、孤立标注、同图不同标签。可用 `--reference data/processed/pv_hsd_grouped_v2` 比较现有项目 train/val 图像的完全重复，明确不读项目 test 目录。不会反序列化发布包中的 `.cache`。新数据的完整审计完成之前不启动检测预训练。
+
+```bash
+PYTHONPATH=src python src/compare_reunion_context.py \
+  --architecture rnn --feature-group dc_relative --contexts 15 30 \
+  --device cuda --output reports/reunion_dc_relative_new_run
+python3 src/audit_curated_pv_pixels.py \
+  --archive data/raw/pv_thermal_curated/PV_Thermal_Defects_Dataset.zip \
+  --reference data/processed/pv_hsd_grouped_v2 \
+  --output reports/curated_pv_full_audit_new_run
+```

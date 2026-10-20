@@ -42,6 +42,20 @@ def prepare_fold(prepared, dates, contexts):
              for minutes in contexts}, scaler, days)
 
 
+FEATURE_GROUPS = {
+    "all": tuple(range(14)),
+    "dc_relative": (0, 1, 3, 6, 7, 9, 12, 13),
+    "ratios_only": (12, 13),
+}
+
+
+def select_channels(data, feature_group):
+    """Keep endpoints and labels unchanged; existing fold train-only scales apply."""
+    if feature_group not in FEATURE_GROUPS or data["x"].ndim != 3 or data["x"].shape[1] != 14:
+        raise ValueError("Expected a supported feature group and 14 source channels")
+    return {**data, "x": np.ascontiguousarray(data["x"][:, FEATURE_GROUPS[feature_group], :])}
+
+
 def select_context(tuning_ap):
     """Use mean inner AP; an exact tie preserves the longer-context baseline."""
     return max(tuning_ap, key=lambda minutes: (np.mean(tuning_ap[minutes]), minutes))
@@ -53,6 +67,9 @@ def write_json(path, value):
 
 def run(args):
     architecture = getattr(args, "architecture", "transformer")
+    feature_group = getattr(args, "feature_group", "all")
+    if feature_group not in FEATURE_GROUPS:
+        raise ValueError("Unknown feature group")
     hard_negative_alpha = getattr(args, "hard_negative_alpha", 0.0)
     if not math.isfinite(hard_negative_alpha) or hard_negative_alpha < 0:
         raise ValueError("Invalid hard-negative emphasis")
@@ -83,6 +100,9 @@ def run(args):
         "prepared_manifest_sha256": hashlib.sha256(manifest_bytes).hexdigest(),
         "device": str(device), "torch_version": torch.__version__,
         "architecture": architecture, "hard_negative_alpha": hard_negative_alpha,
+        "feature_group": feature_group,
+        "feature_indices": FEATURE_GROUPS[feature_group],
+        "feature_names": [manifest["features"][i] for i in FEATURE_GROUPS[feature_group]],
         "contexts_minutes": args.contexts, "seeds": args.seeds,
         "epochs": args.epochs, "patience": args.patience,
         "batch_size": args.batch_size, "lr": args.lr,
@@ -101,6 +121,8 @@ def run(args):
     write_json(args.output / "progress.json", report)
     for name, *dates in FOLDS:
         datasets, scaler, days = prepare_fold(args.prepared, dates, args.contexts)
+        datasets = {minutes: tuple(select_channels(data, feature_group) for data in splits)
+                    for minutes, splits in datasets.items()}
         folder = args.output / name
         folder.mkdir()
         np.savez(folder / "normalization.npz", **scaler)
@@ -223,6 +245,7 @@ if __name__ == "__main__":
                         default="transformer")
     parser.add_argument("--hard-negative-alpha", type=float, default=0.0,
                         help="Emphasize training normals currently mistaken for faults")
+    parser.add_argument("--feature-group", choices=tuple(FEATURE_GROUPS), default="all")
     parser.add_argument("--contexts", type=int, nargs="+", default=[5, 15, 30])
     parser.add_argument("--seeds", type=int, nargs="+", default=[2031, 2032, 2033])
     parser.add_argument("--epochs", type=int, default=50)

@@ -11,7 +11,7 @@ import pandas as pd
 import torch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
-from compare_reunion_context import prepare_fold, run, select_context, trailing_context
+from compare_reunion_context import prepare_fold, run, select_context, trailing_context, select_channels
 
 
 class ReunionContextTests(unittest.TestCase):
@@ -69,6 +69,18 @@ class ReunionContextTests(unittest.TestCase):
                       ("train_days", "tuning_days", "evaluation_days")]
             self.assertFalse(groups[0] & groups[1] or groups[0] & groups[2] or groups[1] & groups[2])
 
+    def test_feature_groups_keep_labels_endpoints_and_expected_channels(self):
+        x = np.arange(2 * 14 * 30).reshape(2, 14, 30)
+        data = {"x": x, "y": np.array([0, 1]), "end_time_ns": np.array([1, 2])}
+        for group, ids in (("ratios_only", [12, 13]),
+                           ("dc_relative", [0, 1, 3, 6, 7, 9, 12, 13])):
+            r = select_channels(data, group)
+            np.testing.assert_array_equal(r["x"], x[:, ids, :])
+            np.testing.assert_array_equal(r["y"], data["y"])
+            np.testing.assert_array_equal(r["end_time_ns"], data["end_time_ns"])
+        with self.assertRaises(ValueError):
+            select_channels(data, "bad")
+
     def test_context_selection_uses_all_inner_seeds_and_keeps_baseline_on_tie(self):
         self.assertEqual(select_context({5: [1.0, 0.1], 15: [0.8, 0.8],
                                          30: [0.7, 0.7]}), 15)
@@ -83,7 +95,10 @@ class ReunionContextTests(unittest.TestCase):
     def test_hard_negative_emphasis_is_passed_to_training_without_outer_selection(self):
         self._check_orchestration("rnn", hard_negative_alpha=2.0)
 
-    def _check_orchestration(self, architecture, hard_negative_alpha=0.0):
+    def test_feature_group_is_recorded_and_uses_eight_input_channels(self):
+        self._check_orchestration("rnn", feature_group="dc_relative")
+
+    def _check_orchestration(self, architecture, hard_negative_alpha=0.0, feature_group="all"):
         # Exercise orchestration only; no model is trained or sent to a GPU.
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -97,11 +112,12 @@ class ReunionContextTests(unittest.TestCase):
             args = argparse.Namespace(
                 prepared=root, output=root / "result", contexts=[5, 15, 30],
                 seeds=[2031, 2032, 2033], epochs=1, patience=1,
-                batch_size=2, lr=8e-4, device="cpu", architecture=architecture, hard_negative_alpha=hard_negative_alpha)
+                batch_size=2, lr=8e-4, device="cpu", architecture=architecture, hard_negative_alpha=hard_negative_alpha, feature_group=feature_group)
             trained = []
             def fake_train(name, seed, training, tuning, output, device, controls, **loss_controls):
                 self.assertEqual(loss_controls.get("hard_negative_alpha", 0.0), hard_negative_alpha)
                 self.assertEqual(name, architecture)
+                self.assertEqual(training["x"].shape[1], 8 if feature_group == "dc_relative" else 14)
                 trained.append((training["x"].shape[-1], seed))
                 tag = f"{name}_seed{seed}"
                 score = np.asarray([0.1, 0.9], dtype=np.float32)
