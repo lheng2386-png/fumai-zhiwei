@@ -19,7 +19,7 @@ from torch.optim.swa_utils import AveragedModel, get_ema_multi_avg_fn
 from torch.nn import functional as F
 from sklearn.metrics import f1_score
 from torchvision.models import (ConvNeXt_Tiny_Weights, EfficientNet_B0_Weights,
-                                ResNet18_Weights, convnext_tiny, efficientnet_b0, resnet18)
+                                ResNet18_Weights, Swin_T_Weights, convnext_tiny, efficientnet_b0, resnet18, swin_t)
 import torchvision
 from torchvision.transforms.functional import gaussian_blur
 
@@ -83,6 +83,11 @@ def build_model(architecture, classes, pretrained=True):
         model = convnext_tiny(weights=weights if pretrained else None)
         model.classifier[2] = nn.Linear(model.classifier[2].in_features, classes)
         head_prefix = "classifier.2."
+    elif architecture == "swin_t":
+        weights = Swin_T_Weights.IMAGENET1K_V1
+        model = swin_t(weights=weights if pretrained else None)
+        model.head = nn.Linear(model.head.in_features, classes)
+        head_prefix = "head."
     else:
         raise ValueError(f"Unknown architecture: {architecture}")
     return model, weights, head_prefix
@@ -229,7 +234,7 @@ if __name__ == "__main__":
     parser.add_argument("--data", type=Path, default=Path("data/processed/pvf10_date_v1"))
     parser.add_argument("--backbone-init", type=Path,
                         help="Optional strict self-supervised backbone checkpoint; head stays seed-initialized")
-    parser.add_argument("--architecture", choices=("resnet18", "efficientnet_b0", "convnext_tiny"),
+    parser.add_argument("--architecture", choices=("resnet18", "efficientnet_b0", "convnext_tiny", "swin_t"),
                         default="resnet18")
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--device", choices=("mps", "cuda"), default="mps")

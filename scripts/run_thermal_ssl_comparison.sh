@@ -21,3 +21,10 @@ for seed in 2026 2027 2028; do
     --backbone-init "$pretrain/backbone.pt" --output "$output" \
     --seed "$seed" --epochs 25 --patience 6 --batch-size 64
  done
+
+if [[ ! -f reports/pvf10_ssl_transfer_comparison_a10_v1.json ]]; then
+  "$PYTHON_BIN" -u src/compare_pvf10_adaptation.py \
+    --reference reports/pvf10_robust_a10_v1 \
+    --adapted reports/pvf10_ssl_transfer_a10_v1 \
+    --output reports/pvf10_ssl_transfer_comparison_a10_v1.json
+fi

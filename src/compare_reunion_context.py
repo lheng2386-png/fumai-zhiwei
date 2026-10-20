@@ -18,6 +18,7 @@ import torch
 from sklearn.metrics import average_precision_score
 
 from backtest_reunion import FOLDS, fold_data
+from reunion_sensor_augmentation import SensorGainAugmentation
 from train_reunion import (choose_threshold, day_alert_summary, make_model,
                            predict, summarize_scores, train_one)
 
@@ -70,6 +71,11 @@ def run(args):
     feature_group = getattr(args, "feature_group", "all")
     if feature_group not in FEATURE_GROUPS:
         raise ValueError("Unknown feature group")
+    sensor_gain_bound = getattr(args, "sensor_gain_bound", 0.0)
+    if not math.isfinite(sensor_gain_bound) or not 0 <= sensor_gain_bound <= .1:
+        raise ValueError("Invalid sensor gain bound")
+    if sensor_gain_bound and feature_group == "ratios_only":
+        raise ValueError("Ratios-only cannot regenerate derived channels from absent measurements")
     hard_negative_alpha = getattr(args, "hard_negative_alpha", 0.0)
     if not math.isfinite(hard_negative_alpha) or hard_negative_alpha < 0:
         raise ValueError("Invalid hard-negative emphasis")
@@ -100,7 +106,7 @@ def run(args):
         "prepared_manifest_sha256": hashlib.sha256(manifest_bytes).hexdigest(),
         "device": str(device), "torch_version": torch.__version__,
         "architecture": architecture, "hard_negative_alpha": hard_negative_alpha,
-        "feature_group": feature_group,
+        "feature_group": feature_group, "sensor_gain_bound": sensor_gain_bound,
         "feature_indices": FEATURE_GROUPS[feature_group],
         "feature_names": [manifest["features"][i] for i in FEATURE_GROUPS[feature_group]],
         "contexts_minutes": args.contexts, "seeds": args.seeds,
@@ -152,6 +158,9 @@ def run(args):
             for seed in args.seeds:
                 loss_controls = ({"hard_negative_alpha": hard_negative_alpha}
                                  if hard_negative_alpha else {})
+                if sensor_gain_bound:
+                    loss_controls["batch_transform"] = SensorGainAugmentation(
+                        scaler["mean"], scaler["scale"], FEATURE_GROUPS[feature_group], sensor_gain_bound)
                 record = train_one(architecture, seed, training, tuning,
                                    candidate_folder, device, args, **loss_controls)
                 tuning_scores = np.load(
@@ -245,6 +254,8 @@ if __name__ == "__main__":
                         default="transformer")
     parser.add_argument("--hard-negative-alpha", type=float, default=0.0,
                         help="Emphasize training normals currently mistaken for faults")
+    parser.add_argument("--sensor-gain-bound", type=float, default=0.0,
+                        help="Optional training-only physical power/current gains with consistent ratios")
     parser.add_argument("--feature-group", choices=tuple(FEATURE_GROUPS), default="all")
     parser.add_argument("--contexts", type=int, nargs="+", default=[5, 15, 30])
     parser.add_argument("--seeds", type=int, nargs="+", default=[2031, 2032, 2033])

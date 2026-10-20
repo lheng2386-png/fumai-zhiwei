@@ -98,7 +98,7 @@ def classification_loss(logits, target, weights, hard_negative_alpha=0.0):
 
 def train_one(name, seed, train, validation, output, device, args,
               initial_state=None, hard_negative_alpha=0.0,
-              channel_dropout=0.0, channel_dropout_span=1):
+              channel_dropout=0.0, channel_dropout_span=1, batch_transform=None):
     seed_all(seed)
     model = make_model(name, train["x"].shape[1]).to(device)
     if initial_state is not None:
@@ -121,7 +121,10 @@ def train_one(name, seed, train, validation, output, device, args,
         permutation = torch.randperm(len(x), device=device)
         loss_sum = 0.0
         for indices in permutation.split(args.batch_size):
-            batch = x[indices] + torch.randn_like(x[indices]) * 0.01
+            batch = x[indices]
+            if batch_transform is not None:
+                batch = batch_transform(batch)
+            batch = batch + torch.randn_like(batch) * 0.01
             if channel_dropout:
                 # Drop contiguous temporal spans for a channel. The model sees
                 # the training normalization value (zero) and learns a

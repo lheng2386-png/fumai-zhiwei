@@ -98,7 +98,10 @@ class ReunionContextTests(unittest.TestCase):
     def test_feature_group_is_recorded_and_uses_eight_input_channels(self):
         self._check_orchestration("rnn", feature_group="dc_relative")
 
-    def _check_orchestration(self, architecture, hard_negative_alpha=0.0, feature_group="all"):
+    def test_sensor_augmentation_is_training_only_with_fold_scaler(self):
+        self._check_orchestration("rnn", feature_group="dc_relative", sensor_gain_bound=.05)
+
+    def _check_orchestration(self, architecture, hard_negative_alpha=0.0, feature_group="all", sensor_gain_bound=0.0):
         # Exercise orchestration only; no model is trained or sent to a GPU.
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -112,10 +115,14 @@ class ReunionContextTests(unittest.TestCase):
             args = argparse.Namespace(
                 prepared=root, output=root / "result", contexts=[5, 15, 30],
                 seeds=[2031, 2032, 2033], epochs=1, patience=1,
-                batch_size=2, lr=8e-4, device="cpu", architecture=architecture, hard_negative_alpha=hard_negative_alpha, feature_group=feature_group)
+                batch_size=2, lr=8e-4, device="cpu", architecture=architecture, hard_negative_alpha=hard_negative_alpha, feature_group=feature_group, sensor_gain_bound=sensor_gain_bound)
             trained = []
             def fake_train(name, seed, training, tuning, output, device, controls, **loss_controls):
                 self.assertEqual(loss_controls.get("hard_negative_alpha", 0.0), hard_negative_alpha)
+                self.assertEqual("batch_transform" in loss_controls, bool(sensor_gain_bound))
+                if sensor_gain_bound:
+                    self.assertEqual(loss_controls["batch_transform"].bound, sensor_gain_bound)
+                    self.assertEqual(len(loss_controls["batch_transform"].indices), 8)
                 self.assertEqual(name, architecture)
                 self.assertEqual(training["x"].shape[1], 8 if feature_group == "dc_relative" else 14)
                 trained.append((training["x"].shape[-1], seed))
