@@ -75,6 +75,12 @@ class ReunionContextTests(unittest.TestCase):
         self.assertEqual(select_context({5: [0.8, 0.8], 30: [0.8, 0.8]}), 30)
 
     def test_run_freezes_inner_selection_before_any_outer_inference(self):
+        self._check_orchestration("transformer")
+
+    def test_rnn_preserves_inner_selection_and_architecture_checkpoint_paths(self):
+        self._check_orchestration("rnn")
+
+    def _check_orchestration(self, architecture):
         # Exercise orchestration only; no model is trained or sent to a GPU.
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -88,9 +94,10 @@ class ReunionContextTests(unittest.TestCase):
             args = argparse.Namespace(
                 prepared=root, output=root / "result", contexts=[5, 15, 30],
                 seeds=[2031, 2032, 2033], epochs=1, patience=1,
-                batch_size=2, lr=8e-4, device="cpu")
+                batch_size=2, lr=8e-4, device="cpu", architecture=architecture)
             trained = []
             def fake_train(name, seed, training, tuning, output, device, controls):
+                self.assertEqual(name, architecture)
                 trained.append((training["x"].shape[-1], seed))
                 tag = f"{name}_seed{seed}"
                 score = np.asarray([0.1, 0.9], dtype=np.float32)
@@ -114,6 +121,7 @@ class ReunionContextTests(unittest.TestCase):
                   patch("compare_reunion_context.predict", side_effect=fake_predict),
                   patch("builtins.print")):
                 result = run(args)
+            self.assertEqual(result["architecture"], architecture)
             self.assertEqual(result["status"], "complete")
             self.assertEqual(set(trained), {(length, seed) for length in (5, 15, 30)
                                            for seed in args.seeds})

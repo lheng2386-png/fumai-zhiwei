@@ -51,6 +51,9 @@ def write_json(path, value):
 
 
 def run(args):
+    architecture = getattr(args, "architecture", "transformer")
+    if architecture not in ("transformer", "rnn", "lstm", "multiscale_cnn"):
+        raise ValueError("Unknown architecture")
     if args.output.exists():
         raise FileExistsError(args.output)
     if (30 not in args.contexts or len(args.contexts) < 2
@@ -72,9 +75,10 @@ def run(args):
     started = time.monotonic()
     args.output.mkdir(parents=True)
     report = {
-        "protocol": "matched-endpoint Transformer context comparison in train-only forward folds",
+        "protocol": "matched-endpoint context comparison in train-only forward folds",
         "prepared_manifest_sha256": hashlib.sha256(manifest_bytes).hexdigest(),
         "device": str(device), "torch_version": torch.__version__,
+        "architecture": architecture,
         "contexts_minutes": args.contexts, "seeds": args.seeds,
         "epochs": args.epochs, "patience": args.patience,
         "batch_size": args.batch_size, "lr": args.lr,
@@ -120,7 +124,7 @@ def run(args):
             runs = fold["runs"][str(minutes)] = {}
             tuning_ap[minutes] = []
             for seed in args.seeds:
-                record = train_one("transformer", seed, training, tuning,
+                record = train_one(architecture, seed, training, tuning,
                                    candidate_folder, device, args)
                 tuning_scores = np.load(
                     candidate_folder / f"{record['tag']}_validation.npy")
@@ -156,9 +160,9 @@ def run(args):
                 run_record = fold["runs"][str(minutes)][str(seed)]
                 evaluation_started = time.monotonic()
                 checkpoint = torch.load(
-                    candidate_folder / f"transformer_seed{seed}.pt",
+                    candidate_folder / f"{architecture}_seed{seed}.pt",
                     map_location="cpu", weights_only=True)
-                model = make_model("transformer", outer["x"].shape[1]).to(device)
+                model = make_model(architecture, outer["x"].shape[1]).to(device)
                 model.load_state_dict(checkpoint["state_dict"])
                 scores = predict(model, outer["x"], device, args.batch_size)
                 threshold = run_record["tuning_threshold"]
@@ -171,7 +175,7 @@ def run(args):
                     "outer_evaluation_seconds": time.monotonic() - evaluation_started,
                 })
                 np.savez_compressed(
-                    candidate_folder / f"transformer_seed{seed}_outer_predictions.npz",
+                    candidate_folder / f"{architecture}_seed{seed}_outer_predictions.npz",
                     scores=scores, y=outer["y"], end_time_ns=outer["end_time_ns"])
                 print(json.dumps({
                     "fold": name, "context_minutes": minutes, "seed": seed,
@@ -209,6 +213,8 @@ if __name__ == "__main__":
     parser.add_argument("--prepared", type=Path, default=Path("data/processed/la_reunion_v1"))
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--device", choices=("auto", "cpu", "mps", "cuda"), default="auto")
+    parser.add_argument("--architecture", choices=("transformer", "rnn", "lstm", "multiscale_cnn"),
+                        default="transformer")
     parser.add_argument("--contexts", type=int, nargs="+", default=[5, 15, 30])
     parser.add_argument("--seeds", type=int, nargs="+", default=[2031, 2032, 2033])
     parser.add_argument("--epochs", type=int, default=50)

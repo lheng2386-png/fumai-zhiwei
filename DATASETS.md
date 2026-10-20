@@ -51,3 +51,8 @@ This file tracks the public data acquired or identified for model development. R
 4. Keep a source-specific label map and distinguish measured, field-confirmed, injected, simulated, and weak labels.
 5. Fit normalization, augmentation statistics, thresholds, and model selection using training/validation data only. Reserve an untouched external source for final domain-shift evaluation.
 6. Cite each dataset and comply with its own license. Do not put raw datasets in the Git repository.
+
+
+## Additional industrial evaluation candidate (2026-10-20)
+
+[MHHS-Dataset, publisher repository](https://github.com/zss313/MHHS-Dataset) describes four UAV flight heights, hotspot boxes and defect-free full images. This could help evaluate the current detector's false alerts and altitude shift. Access requires an institution-email request and a hand-signed form; no data archive was retrieved and no request was sent. The README image totals are internally inconsistent, so counts, flight/site grouping, overlap with existing datasets and usage permission must be verified before any split or training. It is not currently a verified external test set.

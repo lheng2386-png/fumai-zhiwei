@@ -5,7 +5,7 @@
 | 模型线 | 当前主候选 | 必须保留的对照 | 选择依据与现状 |
 | --- | --- | --- | --- |
 | 时序故障诊断 | 轻量 Transformer，同时继续多尺度 CNN/TCN | ExtraTrees、CNN/TCN、普通 RNN、双向 LSTM、等权种子与跨架构集成 | La Réunion 同站验证 AP 中 Transformer 单模型最高；普通 RNN 次之，LSTM 与已试等权集成都未改善。留出事件测试 AP 0.734、正常日期误报较多，滚动回测入选架构也不一致。不能宣布 Transformer 普遍最优或已可生产。见 [时序报告](REUNION_EXPERIMENT.md)。 |
-| 红外裁图分类 | PVF-10 十类日期隔离实验中暂选 ImageNet ConvNeXt-Tiny 微调；RaptorMaps 十二类独立报告 | ResNet18、自主 CNN、EfficientNet、种子均值集成 | ConvNeXt 三种子验证宏 F1 均值 **0.6046**，ResNet18 为 **0.5354**，三个配对种子均改善；集成未超过最强单模型。健康误报和少数类召回仍不达标。RaptorMaps 旧模型内部宏 F1 0.706、sUAS 正常样本 2,803/2,835 误报属于另一类别协议。见 [PVF-10 报告](PVF10_EXPERIMENT.md) 与 [红外报告](INFRARED_EXPERIMENT.md)。 |
+| 红外裁图分类 | PVF-10 十类日期隔离实验中暂选 ImageNet ConvNeXt-Tiny 微调；RaptorMaps 十二类独立报告 | ResNet18、自主 CNN、EfficientNet、种子均值集成 | ConvNeXt 在 A10G 上三种子配对尺度对照：112 输入均值 **0.6106**，224 输入 **0.6515**；224 最佳单模型 **0.6604**，三种子集成 **0.6490**。早期 MPS 骨干对照与此分开报告；低对比度、模糊、噪声下明显退化。健康误报和少数类召回仍不达标。RaptorMaps 旧模型内部宏 F1 0.706、sUAS 正常样本 2,803/2,835 误报属于另一类别协议。见 [PVF-10 报告](PVF10_EXPERIMENT.md) 与 [红外报告](INFRARED_EXPERIMENT.md)。 |
 | 组件缺陷目标检测 | YOLO26s 切图候选；[D-FINE](https://github.com/Peterande/D-FINE)-S 已完成 80 轮对照 | [Ultralytics YOLO](https://docs.ultralytics.com/tasks/detect) 原尺度基线、D-FINE-S | 相同 571 张验证原图上，切图 mAP50–95 **0.3237**，原尺度 **0.3075**；D-FINE 官方推理入口为 **0.3034**，未超过切图方案。切图固定阈值空标签图告警也增加，三者仍未通过工业验收。见 [检测报告](DETECTION_EXPERIMENT.md)。 |
 
 ## 先选框架，再微调
@@ -20,3 +20,5 @@
 ## 目标检测数据现状
 
 [PV-HSD-2025](https://huggingface.co/datasets/MisakaMikoto128/PV-HSD-2025) 发布热斑边界框与高分辨率 R-JPEG，是目标检测候选；数据卡的许可证元数据与正文商业用途说明不一致，先按**研究用途**处理。需要检查原始航次、标注框和无缺陷整图覆盖；只含缺陷图会使误报评估失真。[PVF-10](https://github.com/wangbobby1026/PVF-Dataset) 来自八座电站，但提供的是**组件裁图分类**，不能当作目标检测框标注。已有 SolarFCD 的跨集合重复和标签冲突仍须先清理。数据清单见 [DATASETS.md](../DATASETS.md)。
+
+工业化改进的当前压力测试、运行中的对照和接入边界见 [工业验证记录](INDUSTRIAL_VALIDATION.md)。

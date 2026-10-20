@@ -15,11 +15,13 @@ from urllib.parse import urlsplit
 import numpy as np
 import torch
 from torch import nn
+from torch.optim.swa_utils import AveragedModel, get_ema_multi_avg_fn
 from torch.nn import functional as F
 from sklearn.metrics import f1_score
 from torchvision.models import (ConvNeXt_Tiny_Weights, EfficientNet_B0_Weights,
                                 ResNet18_Weights, convnext_tiny, efficientnet_b0, resnet18)
 import torchvision
+from torchvision.transforms.functional import gaussian_blur
 
 from train_deep import seed_all
 from train_multiscale import write_json
@@ -38,12 +40,24 @@ def normalize(x, input_size=112):
     return (x - mean) / std
 
 
-def augment(x):
+def augment(x, recipe="baseline"):
+    if recipe not in ("baseline", "robust"):
+        raise ValueError("Unknown augmentation recipe")
     flip = torch.rand((len(x), 1, 1, 1), device=x.device) < 0.5
     x = torch.where(flip, x.flip(-1), x)
     gain = torch.empty((len(x), 1, 1, 1), device=x.device).uniform_(0.9, 1.1)
     shift = torch.empty((len(x), 1, 1, 1), device=x.device).uniform_(-0.03, 0.03)
-    return (x * gain + shift).clamp(0, 1)
+    x = (x * gain + shift).clamp(0, 1)
+    if recipe == "robust":
+        center = x.mean(dim=(-2, -1), keepdim=True)
+        contrast = torch.empty((len(x), 1, 1, 1), device=x.device).uniform_(0.5, 1.2)
+        x = (x - center) * contrast + center
+        blurred = gaussian_blur(x, [5, 5], [1.0, 1.0])
+        apply_blur = torch.rand((len(x), 1, 1, 1), device=x.device) < 0.2
+        x = torch.where(apply_blur, blurred, x)
+        sigma = torch.empty((len(x), 1, 1, 1), device=x.device).uniform_(0.0, 0.02)
+        x = x + torch.randn_like(x) * sigma
+    return x.clamp(0, 1)
 
 
 @torch.no_grad()
@@ -53,20 +67,20 @@ def predict(model, images, batch_size, input_size=112):
                       for batch in images.split(batch_size)]).numpy()
 
 
-def build_model(architecture, classes):
+def build_model(architecture, classes, pretrained=True):
     if architecture == "resnet18":
         weights = ResNet18_Weights.IMAGENET1K_V1
-        model = resnet18(weights=weights)
+        model = resnet18(weights=weights if pretrained else None)
         model.fc = nn.Linear(model.fc.in_features, classes)
         head_prefix = "fc."
     elif architecture == "efficientnet_b0":
         weights = EfficientNet_B0_Weights.IMAGENET1K_V1
-        model = efficientnet_b0(weights=weights)
+        model = efficientnet_b0(weights=weights if pretrained else None)
         model.classifier[1] = nn.Linear(model.classifier[1].in_features, classes)
         head_prefix = "classifier.1."
     elif architecture == "convnext_tiny":
         weights = ConvNeXt_Tiny_Weights.IMAGENET1K_V1
-        model = convnext_tiny(weights=weights)
+        model = convnext_tiny(weights=weights if pretrained else None)
         model.classifier[2] = nn.Linear(model.classifier[2].in_features, classes)
         head_prefix = "classifier.2."
     else:
@@ -94,6 +108,8 @@ def run(args):
     weight_cache = Path(torch.hub.get_dir()) / "checkpoints" / Path(urlsplit(weights_enum.url).path).name
     pretrained_sha256 = hashlib.sha256(weight_cache.read_bytes()).hexdigest()
     model = model.to(device)
+    ema = (AveragedModel(model, multi_avg_fn=get_ema_multi_avg_fn(args.ema_decay),
+                         use_buffers=True) if args.ema_decay else None)
     args.output.mkdir(parents=True)
     x_train = torch.from_numpy(train_images.transpose(0, 3, 1, 2).astype(np.float32) / 255).to(device)
     x_val = torch.from_numpy(val_images.transpose(0, 3, 1, 2).astype(np.float32) / 255).to(device)
@@ -117,15 +133,18 @@ def run(args):
         total = 0.0
         for ids in torch.randperm(len(x_train), device=device).split(args.batch_size):
             optimizer.zero_grad(set_to_none=True)
-            loss = F.cross_entropy(model(normalize(augment(x_train[ids]), args.input_size)),
+            loss = F.cross_entropy(model(normalize(augment(x_train[ids], args.augmentation), args.input_size)),
                                    y_train[ids], weight=weights)
             if not torch.isfinite(loss):
                 raise FloatingPointError("Non-finite loss")
             loss.backward()
             torch.nn.utils.clip_grad_norm_(model.parameters(), 1)
             optimizer.step()
+            if ema is not None:
+                ema.update_parameters(model)
             total += float(loss.detach()) * len(ids)
-        probabilities = predict(model, x_val, args.batch_size, args.input_size)
+        evaluation_model = ema.module if ema is not None else model
+        probabilities = predict(evaluation_model, x_val, args.batch_size, args.input_size)
         score = float(f1_score(val_labels, probabilities.argmax(1),
                                labels=range(len(classes)), average="macro", zero_division=0))
         row = {"epoch": epoch + 1, "train_loss": total / len(x_train),
@@ -134,11 +153,13 @@ def run(args):
         print(json.dumps(row), flush=True)
         if score > best:
             best, best_epoch = score, epoch + 1
-            torch.save({"state_dict": {name: value.cpu().clone() for name, value in model.state_dict().items()},
+            torch.save({"state_dict": {name: value.cpu().clone() for name, value in evaluation_model.state_dict().items()},
                         "classes": classes, "seed": args.seed, "validation_macro_f1": best,
                         "archive_sha256": manifest["archive_sha256"],
                         "architecture": args.architecture,
                         "input_size": args.input_size,
+                        "ema_decay": args.ema_decay,
+                        "augmentation": args.augmentation,
                         "pretrained": str(weights_enum)}, args.output / "best.pt")
             np.save(args.output / "best_validation_probabilities.npy", probabilities)
         if epoch + 1 - best_epoch >= args.patience:
@@ -152,7 +173,8 @@ def run(args):
               "source_image_size": list(train_images.shape[1:3]),
               "training_controls": {"epochs": args.epochs, "patience": args.patience,
                                     "batch_size": args.batch_size,
-                                    "backbone_lr": args.backbone_lr, "head_lr": args.head_lr},
+                                    "backbone_lr": args.backbone_lr, "head_lr": args.head_lr,
+                                    "ema_decay": args.ema_decay, "augmentation": args.augmentation},
               "pretrained_sha256": pretrained_sha256,
               "model_parameters": sum(p.numel() for p in model.parameters()),
               "train_images": len(train_images), "validation_images": len(val_images),
@@ -177,9 +199,14 @@ if __name__ == "__main__":
     parser.add_argument("--batch-size", type=int, default=64)
     parser.add_argument("--input-size", type=int, choices=(112, 224), default=112,
                         help="Resize source crops per batch; interpolation adds no measured detail")
+    parser.add_argument("--augmentation", choices=("baseline", "robust"), default="baseline")
+    parser.add_argument("--ema-decay", type=float, default=0.0,
+                        help="0 disables EMA; otherwise evaluate and save EMA weights")
     parser.add_argument("--backbone-lr", type=float, default=0.00002)
     parser.add_argument("--head-lr", type=float, default=0.0003)
     args = parser.parse_args()
     if min(args.epochs, args.patience, args.batch_size) < 1 or min(args.backbone_lr, args.head_lr) <= 0:
         parser.error("Invalid training parameters")
+    if not 0 <= args.ema_decay < 1:
+        parser.error("EMA decay must be in [0, 1)")
     run(args)
