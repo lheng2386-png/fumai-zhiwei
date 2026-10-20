@@ -6,7 +6,7 @@
 | --- | --- | --- | --- |
 | 时序故障诊断 | 轻量 Transformer，同时继续多尺度 CNN/TCN | ExtraTrees、CNN/TCN、普通 RNN、双向 LSTM、等权种子与跨架构集成 | La Réunion 同站验证 AP 中 Transformer 单模型最高；普通 RNN 次之，LSTM 与已试等权集成都未改善。留出事件测试 AP 0.734、正常日期误报较多，滚动回测入选架构也不一致。不能宣布 Transformer 普遍最优或已可生产。见 [时序报告](REUNION_EXPERIMENT.md)。 |
 | 红外裁图分类 | PVF-10 十类日期隔离实验中暂选 ImageNet ConvNeXt-Tiny 微调；RaptorMaps 十二类独立报告 | ResNet18、自主 CNN、EfficientNet、种子均值集成 | ConvNeXt 三种子验证宏 F1 均值 **0.6046**，ResNet18 为 **0.5354**，三个配对种子均改善；集成未超过最强单模型。健康误报和少数类召回仍不达标。RaptorMaps 旧模型内部宏 F1 0.706、sUAS 正常样本 2,803/2,835 误报属于另一类别协议。见 [PVF-10 报告](PVF10_EXPERIMENT.md) 与 [红外报告](INFRARED_EXPERIMENT.md)。 |
-| 组件缺陷目标检测 | 已验证 YOLO26s 切图候选；[D-FINE](https://github.com/Peterande/D-FINE)-S 正在训练比较 | [Ultralytics YOLO](https://docs.ultralytics.com/tasks/detect) 原尺度基线 | 相同 571 张验证整图、统一 COCOeval 下，切图 mAP50–95 **0.3237**，基线 **0.3075**；固定阈值空标签图告警也增加。D-FINE 尚无完整训练结果，COCO 排名不能替代光伏实测。见 [检测报告](DETECTION_EXPERIMENT.md)。 |
+| 组件缺陷目标检测 | YOLO26s 切图候选；[D-FINE](https://github.com/Peterande/D-FINE)-S 已完成 80 轮对照 | [Ultralytics YOLO](https://docs.ultralytics.com/tasks/detect) 原尺度基线、D-FINE-S | 相同 571 张验证原图上，切图 mAP50–95 **0.3237**，原尺度 **0.3075**；D-FINE 官方推理入口为 **0.3034**，未超过切图方案。切图固定阈值空标签图告警也增加，三者仍未通过工业验收。见 [检测报告](DETECTION_EXPERIMENT.md)。 |
 
 ## 先选框架，再微调
 
