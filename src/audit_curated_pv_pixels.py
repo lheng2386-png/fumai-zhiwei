@@ -137,22 +137,27 @@ def run(archive_path, output, expected_md5=PUBLISHED_MD5, reference=None):
                 print(json.dumps({'images_audited': index + 1, 'elapsed_seconds': time.monotonic() - started}), flush=True)
     reference_matches = {}
     reference_count = 0
+    reference_dhash_candidates = {}
     if reference is not None:
         manifest = reference / 'manifest.json'
         if not manifest.is_file():
             raise ValueError('Reference manifest required')
         by_sha = defaultdict(list)
+        by_dhash = defaultdict(list)
         for row in rows:
             if row.get('pixel_sha256'):
                 by_sha[row['pixel_sha256']].append(row['path'])
+                by_dhash[row['dhash']].append(row['path'])
         for split in ('train', 'val'):
             for path in sorted((reference / split / 'images').iterdir()):
                 if path.suffix.lower() not in ('.jpg', '.jpeg', '.png'):
                     continue
-                sha, _, _ = pixel_fingerprints(path.read_bytes())
+                sha, dhash, _ = pixel_fingerprints(path.read_bytes())
                 reference_count += 1
                 if sha in by_sha:
                     reference_matches[str(path)] = by_sha[sha]
+                elif dhash in by_dhash:
+                    reference_dhash_candidates[str(path)] = by_dhash[dhash]
         # Original project test images are deliberately not opened.
     exact = cross_split_groups(rows, 'pixel_sha256')
     similar = cross_split_groups(rows, 'dhash')
@@ -164,6 +169,8 @@ def run(archive_path, output, expected_md5=PUBLISHED_MD5, reference=None):
               'archive_bytes': archive_path.stat().st_size, 'classes': classes,
               'reference_train_val_images_read': reference_count,
               'reference_train_val_exact_pixel_matches': reference_matches,
+              'reference_train_val_same_dhash_candidate_count': len(reference_dhash_candidates),
+              'reference_train_val_same_dhash_candidate_examples': dict(list(reference_dhash_candidates.items())[:20]),
               'reference_manifest_sha256': (hashlib.sha256((reference / 'manifest.json').read_bytes()).hexdigest() if reference is not None else None),
               'project_test_status': 'not opened',
               'images': len(rows), 'counts_by_split': dict(Counter(r['split'] for r in rows)),
