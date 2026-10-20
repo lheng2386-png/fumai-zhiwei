@@ -29,7 +29,10 @@ IMAGENET_MEAN = (0.485, 0.456, 0.406)
 IMAGENET_STD = (0.229, 0.224, 0.225)
 
 
-def normalize(x):
+def normalize(x, input_size=112):
+    if x.shape[-2:] != (input_size, input_size):
+        x = F.interpolate(x, size=(input_size, input_size), mode="bilinear",
+                          align_corners=False, antialias=True)
     mean = torch.tensor(IMAGENET_MEAN, device=x.device).view(1, 3, 1, 1)
     std = torch.tensor(IMAGENET_STD, device=x.device).view(1, 3, 1, 1)
     return (x - mean) / std
@@ -44,9 +47,9 @@ def augment(x):
 
 
 @torch.no_grad()
-def predict(model, images, batch_size):
+def predict(model, images, batch_size, input_size=112):
     model.eval()
-    return torch.cat([model(normalize(batch)).float().softmax(-1).cpu()
+    return torch.cat([model(normalize(batch, input_size)).float().softmax(-1).cpu()
                       for batch in images.split(batch_size)]).numpy()
 
 
@@ -114,14 +117,15 @@ def run(args):
         total = 0.0
         for ids in torch.randperm(len(x_train), device=device).split(args.batch_size):
             optimizer.zero_grad(set_to_none=True)
-            loss = F.cross_entropy(model(normalize(augment(x_train[ids]))), y_train[ids], weight=weights)
+            loss = F.cross_entropy(model(normalize(augment(x_train[ids]), args.input_size)),
+                                   y_train[ids], weight=weights)
             if not torch.isfinite(loss):
                 raise FloatingPointError("Non-finite loss")
             loss.backward()
             torch.nn.utils.clip_grad_norm_(model.parameters(), 1)
             optimizer.step()
             total += float(loss.detach()) * len(ids)
-        probabilities = predict(model, x_val, args.batch_size)
+        probabilities = predict(model, x_val, args.batch_size, args.input_size)
         score = float(f1_score(val_labels, probabilities.argmax(1),
                                labels=range(len(classes)), average="macro", zero_division=0))
         row = {"epoch": epoch + 1, "train_loss": total / len(x_train),
@@ -134,6 +138,7 @@ def run(args):
                         "classes": classes, "seed": args.seed, "validation_macro_f1": best,
                         "archive_sha256": manifest["archive_sha256"],
                         "architecture": args.architecture,
+                        "input_size": args.input_size,
                         "pretrained": str(weights_enum)}, args.output / "best.pt")
             np.save(args.output / "best_validation_probabilities.npy", probabilities)
         if epoch + 1 - best_epoch >= args.patience:
@@ -143,7 +148,11 @@ def run(args):
               "device": str(device), "torch_version": torch.__version__,
               "torchvision_version": torchvision.__version__,
               "architecture": args.architecture, "pretrained": str(weights_enum),
-              "input_size": [112, 112],
+              "input_size": [args.input_size, args.input_size],
+              "source_image_size": list(train_images.shape[1:3]),
+              "training_controls": {"epochs": args.epochs, "patience": args.patience,
+                                    "batch_size": args.batch_size,
+                                    "backbone_lr": args.backbone_lr, "head_lr": args.head_lr},
               "pretrained_sha256": pretrained_sha256,
               "model_parameters": sum(p.numel() for p in model.parameters()),
               "train_images": len(train_images), "validation_images": len(val_images),
@@ -166,6 +175,8 @@ if __name__ == "__main__":
     parser.add_argument("--epochs", type=int, default=25)
     parser.add_argument("--patience", type=int, default=6)
     parser.add_argument("--batch-size", type=int, default=64)
+    parser.add_argument("--input-size", type=int, choices=(112, 224), default=112,
+                        help="Resize source crops per batch; interpolation adds no measured detail")
     parser.add_argument("--backbone-lr", type=float, default=0.00002)
     parser.add_argument("--head-lr", type=float, default=0.0003)
     args = parser.parse_args()

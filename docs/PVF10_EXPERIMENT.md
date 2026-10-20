@@ -63,3 +63,9 @@ PYTHONPATH=src python3 src/select_pvf10.py \
 所选模型健康类 F1 **0.9184**，但 366 张健康裁图中仍有 **34 张**被分到缺陷类；`bottom dirt` 召回仅 **17/83**，`junction box heat` F1 **0.3200**，`short circuit panel` F1 **0.2326**。均值提高没有消除少数类失效和误报，也没有验证跨电站能力。该验证区只有两天且被反复用于开发，因此这是研究阶段的候选更新，不能作为生产验收或 SOTA 结论。
 
 结果在本地 `reports/pvf10_convnext_tiny_mps_seed202{6,7,8}_v1/` 和 `reports/pvf10_convnext_date_selection_v1.json`；权重不提交 Git。复现训练时，把前面的 `train_pvf10_transfer.py` 命令加上 `--architecture convnext_tiny`，种子保持 `2026 2027 2028`；选型仍用 `select_pvf10.py`，传入这三个新目录。
+
+### A10G 并行输入尺度实验
+
+在 D-FINE 训练的同时，另启动 ConvNeXt-Tiny 的 **112 / 224 输入配对实验**。两个尺度在同一 A10G 上依次训练，固定种子 2027、batch 64、学习率、增强、最大轮次和早停设置，避免直接把 MPS 与 CUDA 的差异算作尺度增益。只上传训练和验证 NPZ；数据、预训练权重及脚本 SHA-256 在两端核对，记录于服务器 `reports/pvf10_scale_a10_v1_manifest.json`。
+
+`train_pvf10_transfer.py --input-size 224` 在每个 batch 内先做双线性插值再按 ImageNet 均值方差标准化；源裁图仍为 112×112。这检验预训练骨干对输入尺度的适应，插值不会增加真实热像细节。原默认值仍是 112。实验目录为 `reports/pvf10_scale_a10_v1/input112/`、`input224/`，各有独立日志、最佳权重和验证概率；启动不代表已取得性能增益，需在两组完成后对比指标及并行运行成本。
