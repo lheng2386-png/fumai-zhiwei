@@ -339,3 +339,19 @@ PYTHONPATH=src python src/train_reunion.py evaluate --prepared data/processed/la
 PYTHONPATH=src python3 src/compare_reunion_context.py \
   --output reports/reunion_context_mps_v1 --device mps
 ```
+
+
+### A10G 四架构短上下文对照完成
+
+在同一 CUDA 环境、训练期前推折与三种子下完成 Transformer、RNN、LSTM、多尺度 CNN 的 15/30 分钟对照。每个架构先由内部调参数据选择长度及阈值，再报告历史外层日期；原 validation/test/normal_stress 未读。这里不按外层 AP 回选架构或窗口。
+
+| 架构 | 2 月内部所选长度 | 外层平均 AP | 健康窗口误报（三种子） | 故障召回（三种子） |
+| --- | ---: | ---: | --- | --- |
+| Transformer | 15 | 0.91754 | 3/5/4 | 0.7381/0.9830/0.7279 |
+| RNN | 15 | 0.99560 | 5/3/5 | 0.9796/0.7789/0.8129 |
+| LSTM | 30 | 0.99180 | 8/3/4 | 0.9694/0.7823/0.7925 |
+| 多尺度 CNN | 30 | 0.91305 | 3/14/15 | 0.7177/0.9762/0.9728 |
+
+3 月各架构内部所选长度分别为 30/15/15/30；平均 AP 都接近 1，但仅有 26 个健康窗口，LSTM 有一个种子误报 1 次，其余为零。该折不足以证明工业误报控制。RNN/LSTM 在 2 月排序指标较高，仍存在种子间故障召回波动与误报，不直接替换冻结主模型。历史外层日期已被其他实验查看，不能称独立盲测。
+
+逐架构完整结果与逐窗口预测保存在服务器 `reports/reunion_context_arch_a10_v1/`；四份结果 JSON 已备份本机。
