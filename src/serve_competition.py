@@ -18,6 +18,7 @@ from pydantic import BaseModel, Field, ConfigDict
 from starlette.concurrency import run_in_threadpool
 from competition_infer import run as infer, verified_file, sha256
 from competition_evidence import assess, utc_time
+from competition_feedback import job_result, save as save_feedback, history as feedback_history
 
 os.environ['YOLO_AUTOINSTALL']='false'
 
@@ -33,6 +34,15 @@ class ReviewRequest(BaseModel):
     as_of: str
     max_age_minutes: float=Field(default=30,gt=0,le=1440)
     max_pair_gap_minutes: float=Field(default=15,ge=0,le=1440)
+
+
+
+class FeedbackRequest(BaseModel):
+    model_config=ConfigDict(extra='forbid')
+    request_id: str=Field(pattern=r'^[a-f0-9]{32}$')
+    status: Literal['confirmed_fault','expected_operation','data_issue','needs_investigation']
+    reviewer: str=Field(min_length=1,max_length=128)
+    note: str=Field(min_length=1,max_length=4000)
 
 
 def create_app(root=None,bundle=None,output=None,device='cpu',origins=None,runner=None):
@@ -130,6 +140,22 @@ def create_app(root=None,bundle=None,output=None,device='cpu',origins=None,runne
         job_id=uuid.uuid4().hex;directory=output/job_id;directory.mkdir(parents=True)
         (directory/'review.json').write_text(json.dumps(result,ensure_ascii=False,indent=2)+'\n')
         return {'request_id':job_id,**result}
+
+    @app.get('/v1/jobs/{request_id}')
+    def get_job(request_id:str):
+        try:
+            result,digest=job_result(output,request_id)
+            return {'request_id':request_id,'report_sha256':digest,'result':result,
+                    'feedback_history':feedback_history(output,request_id)}
+        except FileNotFoundError as error:raise HTTPException(status_code=404,detail=str(error))
+        except ValueError as error:raise HTTPException(status_code=422,detail=str(error))
+
+    @app.post('/v1/feedback',status_code=201)
+    def human_feedback(body:FeedbackRequest):
+        try:return save_feedback(output,body.request_id,body.status,body.reviewer,body.note)
+        except FileNotFoundError as error:raise HTTPException(status_code=404,detail=str(error))
+        except ValueError as error:raise HTTPException(status_code=422,detail=str(error))
+
 
     return app
 

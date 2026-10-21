@@ -80,4 +80,20 @@ class CompetitionApiTests(unittest.TestCase):
             self.assertEqual(r.json()['detail']['code'],'invalid_model_input')
             self.assertNotIn('evidence',r.json())
 
+    def test_feedback_retrievable_and_cannot_rewrite_original(self):
+        r=self.client.post('/v1/infer/classification',data=self.fields(),files={'file':('module.png',b'fixture')})
+        identifier=r.json()['request_id']
+        initial=self.client.get('/v1/jobs/'+identifier)
+        self.assertEqual(initial.status_code,200)
+        digest=initial.json()['report_sha256']
+        body={'request_id':identifier,'status':'needs_investigation','reviewer':'test-reviewer','note':'Review source evidence'}
+        self.assertEqual(self.client.post('/v1/feedback',json=body).status_code,201)
+        self.assertEqual(self.client.post('/v1/feedback',json={**body,'status':'data_issue','note':'Metadata requires checking'}).status_code,201)
+        saved=self.client.get('/v1/jobs/'+identifier).json()
+        self.assertEqual(saved['report_sha256'],digest)
+        self.assertEqual(len(saved['feedback_history']),2)
+        self.assertTrue(all(r['matches_current_report'] for r in saved['feedback_history']))
+        self.assertEqual(self.client.post('/v1/feedback',json={**body,'request_id':'f'*32}).status_code,404)
+        self.assertEqual(self.client.post('/v1/feedback',json={**body,'note':' '}).status_code,422)
+
 if __name__=='__main__':unittest.main()

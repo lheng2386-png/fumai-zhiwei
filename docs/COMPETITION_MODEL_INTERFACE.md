@@ -1,6 +1,6 @@
 # 比赛版三模型统一推理接口 v1
 
-当前已实际跑通三个真实权重，完成命令行、统一 JSON 输出、证据协同和权重目录打包。HTTP 服务和前端联调还没有完成；队友可以先通过子进程调用或直接导入 `competition_infer.run` 接入。这不是重新训练三个模型。
+当前已实际跑通三个真实权重，完成命令行、统一 JSON 输出、证据协同和权重目录打包。HTTP 服务已完成真实请求验证；前后端按本文接口接入，任务清单见 `FRONTEND_BACKEND_TASKS.md`。这不是重新训练三个模型。
 
 ## 固定比赛候选
 
@@ -140,3 +140,24 @@ curl -sS -X POST http://127.0.0.1:8770/v1/infer/classification \
 
 
 真实测试还发现并修复了一个解码边界：Ultralytics 在尝试识别损坏图片时可能触发 HEIF 可选插件的依赖自动安装。比赛入口现明确只尝试 PNG/JPEG/TIFF/BMP，解码异常转为输入错误，并在推理前设置 `YOLO_AUTOINSTALL=false`。真实图片转 RGB 前最多允许 1,600 万像素，避免压缩文件小但解码内存过大。损坏图返回 422，不触发临时安装；该修复也覆盖 CLI 路径。
+
+
+## 人工复核和历史查询（已实现）
+
+为了完成“推理→证据复核→人工记录”的比赛演示，新增：
+
+| 方法与路径 | 用途 |
+| --- | --- |
+| GET /v1/jobs/{request_id} | 回查已完成的模型/协同报告、报告 SHA-256、全部人工复核历史 |
+| POST /v1/feedback | 对现有 request_id 追加一条人工复核，不修改原模型输出 |
+
+反馈 JSON 必填字段：`request_id`、`status`、`reviewer`、`note`。status 使用现有项目复核语义：confirmed_fault / expected_operation / data_issue / needs_investigation。reviewer 是本地演示中人工填写的姓名，**不是已认证的用户身份**；不能把没有现场证据的例子标为真实 confirmed_fault。
+
+成功保存返回 201 与 feedback_id、报告哈希。未知/未完成的请求返回 404；空备注、非法状态或路径形式的 request_id 返回 422。request_id 必须为服务生成的 32 位小写十六进制。记录追加到 `reports/competition_api_jobs/feedback.sqlite`，保留时间、姓名、结论与备注；同请求多次反馈均保留。查询时显示 matches_current_report，若源报告被外部改动，可识别历史反馈并非针对当前文件。
+
+实际用已有分类 HTTP 结果追加“needs_investigation”，备注明确为公开样例联调、未经现场确认；返回 201，随后查询返回 200，报告哈希与反馈前一致。19 项比赛接口/质量/打包/协同/复核相关测试通过。人工反馈不自动改训练标签、模型分数或故障结论，前端应分栏展示模型建议与人工结论。
+
+```bash
+curl -sS -X POST http://127.0.0.1:8770/v1/feedback  -H 'Content-Type: application/json'  -d '{"request_id":"替换为服务返回的32位ID","status":"needs_investigation","reviewer":"队员","note":"需要检查原始热像"}'
+curl -sS http://127.0.0.1:8770/v1/jobs/替换为服务返回的32位ID
+```
