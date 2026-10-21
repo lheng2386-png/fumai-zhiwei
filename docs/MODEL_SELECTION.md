@@ -4,8 +4,8 @@
 
 | 模型线 | 当前主候选 | 必须保留的对照 | 选择依据与现状 |
 | --- | --- | --- | --- |
-| 时序故障诊断 | 双向 RNN＋注意力/统计汇总为重点研究候选；保留 Transformer 配对路线 | 相同 DC 相对输入的 Transformer、LSTM、CNN/TCN、ExtraTrees、集成 | 早期全通道验证曾由 Transformer 领先，不能推广为架构普遍最优。DC 相对 RNN 在 2 月历史外层折三种子召回 0.9932/0.9830/0.9932，正常误报 6/6/3；同输入 Transformer 配对训练已完成，结果尚待取回核查。原冻结 Transformer 旧测试 AP 0.734。均未通过生产验收。见 [工业验证记录](INDUSTRIAL_VALIDATION.md)。 |
-| 红外裁图分类 | PVF-10 日期隔离的 ImageNet ConvNeXt-Tiny 微调候选 | Swin-T、ResNet18、EfficientNet、集成、EMA、热像自监督适配 | A10G 224 抗退化增强三种子宏 F1 均值 **0.65546**，Swin-T **0.65149**；同权损失 **0.65046**、热像 SimSiam 适配 **0.61609** 均未稳定提高。Mixup 三种子训练已完成，结果尚待取回。少数类、健康误报及新场站表现仍未验收。不同数据/任务的旧分数分开报告。见 [工业验证记录](INDUSTRIAL_VALIDATION.md)。 |
+| 时序故障诊断 | 双向 RNN＋注意力/统计汇总为重点研究候选；保留 Transformer 配对路线 | 相同 DC 相对输入的 Transformer、LSTM、CNN/TCN、ExtraTrees、集成 | 早期全通道验证曾由 Transformer 领先，不能推广为架构普遍最优。DC 相对 RNN 在 2 月历史外层折三种子召回 0.9932/0.9830/0.9932，正常误报 6/6/3；同输入 Transformer 在 2 月同为 15 分钟时平均 AP .98420（RNN .98424），误报 7/6/5、召回 .9830/.9796/.9762，未显示优势。原冻结 Transformer 旧测试 AP 0.734。均未通过生产验收。见 [工业验证记录](INDUSTRIAL_VALIDATION.md)。 |
+| 红外裁图分类 | PVF-10 日期隔离的 ImageNet ConvNeXt-Tiny 微调候选 | Swin-T、ResNet18、EfficientNet、集成、EMA、热像自监督适配 | A10G 224 抗退化增强三种子宏 F1 均值 **0.65546**，Swin-T **0.65149**；同权损失 **0.65046**、热像 SimSiam 适配 **0.61609** 均未稳定提高。Mixup 三种子均退步，平均 .62171，不采用。少数类、健康误报及新场站表现仍未验收。不同数据/任务的旧分数分开报告。见 [工业验证记录](INDUSTRIAL_VALIDATION.md)。 |
 | 组件缺陷目标检测 | YOLO26s 切图候选；[D-FINE](https://github.com/Peterande/D-FINE)-S 已完成 80 轮对照 | [Ultralytics YOLO](https://docs.ultralytics.com/tasks/detect) 原尺度基线、D-FINE-S | 相同 571 张验证原图上，切图 mAP50–95 **0.3237**，原尺度 **0.3075**；D-FINE 官方推理入口为 **0.3034**，未超过切图方案。切图固定阈值空标签图告警也增加，三者仍未通过工业验收。见 [检测报告](DETECTION_EXPERIMENT.md)。 |
 
 ## 先选框架，再微调
