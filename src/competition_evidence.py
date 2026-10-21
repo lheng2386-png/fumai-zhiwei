@@ -121,7 +121,7 @@ def assess(records,plant_id,asset_id,as_of,max_age_minutes=30,max_pair_gap_minut
 
 def main():
     p=argparse.ArgumentParser()
-    p.add_argument('--input',type=Path,required=True)
+    p.add_argument('--input',type=Path,nargs='+',required=True)
     p.add_argument('--output',type=Path,required=True)
     p.add_argument('--plant-id',required=True);p.add_argument('--asset-id',required=True)
     p.add_argument('--as-of',required=True)
@@ -129,8 +129,13 @@ def main():
     p.add_argument('--max-pair-gap-minutes',type=float,default=15)
     args=p.parse_args()
     if args.output.exists():raise FileExistsError(args.output)
-    records=json.loads(args.input.read_text())
-    if not isinstance(records,list):raise ValueError('Input must be a list of evidence records')
+    records=[]
+    for path in args.input:
+        payload=json.loads(path.read_text())
+        if isinstance(payload,dict) and payload.get('schema_version')=='competition-inference-v1':
+            payload=payload['evidence']
+        if not isinstance(payload,list):raise ValueError('Input must be evidence list or inference-v1 report')
+        records.extend(payload)
     result=assess(records,args.plant_id,args.asset_id,args.as_of,args.max_age_minutes,args.max_pair_gap_minutes)
     args.output.parent.mkdir(parents=True,exist_ok=True)
     args.output.write_text(json.dumps(result,indent=2,ensure_ascii=False)+'\n')

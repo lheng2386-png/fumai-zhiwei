@@ -1,0 +1,66 @@
+{
+  "version": "competition-models-v1",
+  "purpose": "Pinned research candidates for two-day competition demo",
+  "limitations": [
+    "Time-series checkpoint/scaler use one earlier historical training fold, not a full-fleet model.",
+    "Classification seed2026 was chosen during repeated development validation; not a fresh test result.",
+    "Image scores .7 and detector confidence .25 are fixed demonstration policies, not calibrated reliability.",
+    "Weights are stored separately from Git. See pinned paths and hashes."
+  ],
+  "models": {
+    "timeseries": {
+      "architecture": "rnn",
+      "checkpoint": {
+        "path": "reports/reunion_feature_ablation_a10_v1/dc_relative/mid_february/context_15/rnn_seed2031.pt",
+        "sha256": "ae9b7cde3613b4c5e4897dceea1eb4b079d4542bc467d9386860b59d58f6b616"
+      },
+      "normalization": {
+        "path": "reports/reunion_feature_ablation_a10_v1/dc_relative/mid_february/normalization.npz",
+        "sha256": "560931121e23840606ddb34ebaea33b97db4c01d3f7cbd385bee0be617089988"
+      },
+      "context_minutes": 15,
+      "feature_indices": [
+        0,
+        1,
+        3,
+        6,
+        7,
+        9,
+        12,
+        13
+      ],
+      "threshold": 0.28,
+      "threshold_version": "dc-rnn-mid_february-seed2031-inner-macro-f1"
+    },
+    "classification": {
+      "architecture": "convnext_tiny",
+      "checkpoint": {
+        "path": "reports/pvf10_robust_a10_v1/seed2026/best.pt",
+        "sha256": "452ff313d289820a78e579d29aa481a600e7042bbae4648395699a8dafab3a57"
+      },
+      "classes": [
+        "bottom dirt",
+        "break",
+        "debris cover",
+        "healthy panel",
+        "hot cell",
+        "junction box heat",
+        "shadow",
+        "short circuit panel",
+        "string short circuit",
+        "substring open circuit"
+      ],
+      "min_class_score": 0.7,
+      "threshold_version": "competition-class-maxsoftmax-0.7-v1"
+    },
+    "detection": {
+      "architecture": "yolo26s_tiled",
+      "checkpoint": {
+        "path": "reports/pv_hsd_yolo26s_tiles_cuda_v1/weights/best.pt",
+        "sha256": "8108e12765c979c2cef85ea14a6cec445fc24507323e0383345ddf599f56400f"
+      },
+      "confidence_threshold": 0.25,
+      "threshold_version": "competition-detection-conf0.25-nms0.5-v1"
+    }
+  }
+}
