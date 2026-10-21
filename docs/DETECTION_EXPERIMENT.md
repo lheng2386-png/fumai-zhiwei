@@ -117,3 +117,37 @@ PYTHONPATH=src python src/evaluate_pv_hsd_tiled.py \
 三者使用相同 571 张验证原图和 COCO 指标，但 D-FINE 使用官方无 NMS 后处理，YOLO 使用前述 NMS；这反映当前各自完整推理方案的结果，不是把后处理完全消除后的骨干比较。D-FINE 在本设置下未超过切图 YOLO，故不因架构是 Transformer 就替换现有检测候选。它的独立正常图误报与跨航次表现仍未验收，也尚未做两模型的互补集成评估。
 
 最终训练日志在服务器 `reports/pv_hsd_dfine_s_a10_v1/log.txt`，复核结果在 `reports/pv_hsd_dfine_s_a10_v1_best_validation/summary.json`。阶段二存在重新载入阶段一最佳状态的行为，因此保存权重中的 `last_epoch` 不直接代表外层循环轮号；本结论以**已保存权重重新验证**为依据。日志及最佳权重均另行取回本机备份，原测试分区未读取。
+
+
+### 逐图预测缓存与错误归因
+
+此前仅保留 COCO 汇总，无法从本机报告分析具体漏检或评估集成互补。`evaluate_pv_hsd_tiled.py --predictions-output` 新增可选整图坐标缓存：记录标注文件/检查点/实际读取验证原图的 SHA-256、全部图像 ID（包括无预测图）、置信度与 NMS 参数。保留现有内部裁块边缘过滤及整图 NMS；不改变训练、不读取测试。缓存先原子保存，再做 COCO 汇总，已有目标文件不覆盖。
+
+本机具备同一切图权重、571 张验证图、torch 2.8.0、Ultralytics 8.4.182 和 MPS GPU；云网关关闭连接期间启动本机 **推理评估**，不是 CPU 预训练或新训练实验。Mac MPS 耗时不能与 A10G 时延混为同一硬件结果，数值差异也需重核。目录 `reports/pv_hsd_tiles_mps_cache_v1*`，启动时尚无最终结果。
+
+`audit_pv_hsd_predictions.py` 在固定 confidence .25/.50、IoU .50/.75 下按分数从高到低进行一对一匹配，输出每幅原图 TP/FP/FN、漏检标注 ID、空标签图告警，并将剩余检测区分为已匹配目标的重复框、IoU≥.1 的定位错误和背景候选。它验证缓存标注/图像 ID，不重新拟合模型或优化阈值。该贪心诊断不是 COCO AP/AR；空标签图也未经独立健康认证，不能将这些计数当现场误报率。当前先定位失效，再决定集成或训练改进，未宣称集成有效。
+
+```bash
+.venv-detect/bin/python src/evaluate_pv_hsd_tiled.py \
+  --checkpoint reports/pv_hsd_yolo26s_tiles_cuda_v1/weights/best.pt \
+  --output reports/pv_hsd_tiles_mps_cache_v1_summary.json \
+  --predictions-output reports/pv_hsd_tiles_mps_cache_v1.json --device mps --mode tiled
+.venv-detect/bin/python src/audit_pv_hsd_predictions.py \
+  --annotations data/processed/pv_hsd_grouped_v2/coco/instances_val.json \
+  --predictions reports/pv_hsd_tiles_mps_cache_v1.json \
+  --output reports/pv_hsd_tiles_mps_error_audit_v1.json
+```
+
+
+本次 MPS 直接后处理出现 Ultralytics NMS 超时警告，存在跳过后续裁块的风险；已停止这次评估，未保存或采用该结果。随后只把模型原始输出移至 CPU 执行同一库的 NMS，模型前向继续使用 MPS，重新从第一幅图开始。缓存和汇总明确记录推理设备与 NMS 设备；新流程已越过 250/571 张图，尚待完整 COCO 与错误审计。CUDA 默认后处理不变。这次修复旨在避免评估丢失预测，不是新模型或性能提升声明。
+
+
+本机缓存及完整审计现已完成：571/571 张图均记录哈希，COCO mAP50–95 **0.323625**、mAP50 **0.749426**，与 A10G 切图模型的 0.323727 接近；不是新训练增益。MPS 前向＋CPU NMS 端到端约 **101 ms/原图**，不能替换 A10G 的约 31.5 ms 时延。
+
+| 固定诊断条件 | TP | FP | FN | Precision | Recall | 47 张空标签图中告警图数 |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| conf .25，IoU .50 | 2553 | 1445 | 648 | .6386 | .7976 | 20 |
+| conf .50，IoU .50 | 2065 | 497 | 1136 | .8060 | .6451 | 7 |
+| conf .25，IoU .75 | 1147 | 2851 | 2054 | .2869 | .3583 | 20 |
+
+conf .25 / IoU .50 的 1,445 个 FP 分为重复框 **8**、定位错误 **560**、背景候选 **877**；这里“背景”仅指与已标框 IoU<.1，也可能含漏标，不能断言全是模型幻觉。IoU .75 的召回仅 .3583，提示框定位是主要研究方向之一；单纯加强 NMS 去重难以解释大部分错误。后续优先复核这些逐图错误及标注一致性，再比较更精细定位训练或互补检测器，不能凭诊断计数断言某种方法已有效。完整结果 `reports/pv_hsd_tiles_mps_cache_v1_summary.json`、`reports/pv_hsd_tiles_mps_error_audit_v1.json`，预测缓存同前；测试图未读取。

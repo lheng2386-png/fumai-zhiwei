@@ -6,6 +6,7 @@ grouped validation split only; the one-shot test protocol remains separate.
 """
 
 import argparse
+import hashlib
 import json
 import time
 from pathlib import Path
@@ -75,9 +76,11 @@ def inference_views(original, mode):
     raise ValueError(f"Unknown inference mode: {mode}")
 
 
-def run(source, checkpoint, output, device, imgsz, batch_size, conf, nms_iou, mode="tiled"):
+def run(source, checkpoint, output, device, imgsz, batch_size, conf, nms_iou, mode="tiled", predictions_output=None):
     if output.exists():
         raise FileExistsError(output)
+    if predictions_output is not None and (predictions_output.exists() or predictions_output == output):
+        raise FileExistsError(predictions_output)
     if not 0 < conf < 1 or not 0 < nms_iou < 1:
         raise ValueError("conf and NMS IoU must be in (0, 1)")
     if mode not in ("full", "tiled"):
@@ -85,11 +88,26 @@ def run(source, checkpoint, output, device, imgsz, batch_size, conf, nms_iou, mo
     from pycocotools.coco import COCO
     from pycocotools.cocoeval import COCOeval
     from ultralytics import YOLO
+    import torch
+    from ultralytics.models.yolo.detect.predict import DetectionPredictor
+
+    class CpuPostprocessPredictor(DetectionPredictor):
+        # Keep inference on MPS; avoid MPS NMS timeouts omitting later views.
+        def postprocess(self, preds, img, orig_imgs, **kwargs):
+            def cpu(value):
+                if isinstance(value, torch.Tensor): return value.cpu()
+                if isinstance(value, tuple): return tuple(cpu(v) for v in value)
+                if isinstance(value, list): return [cpu(v) for v in value]
+                return value
+            return super().postprocess(cpu(preds), img, orig_imgs, **kwargs)
+
+    predictor = CpuPostprocessPredictor if str(device) == "mps" else DetectionPredictor
 
     annotation_path = source / "coco" / "instances_val.json"
     coco = COCO(str(annotation_path))
     model = YOLO(str(checkpoint))
     predictions = []
+    image_sha256 = {}
     empty_images = {image["id"] for image in coco.dataset["images"]}
     empty_images -= {item["image_id"] for item in coco.dataset["annotations"]}
     empty_image_detections = 0
@@ -99,11 +117,12 @@ def run(source, checkpoint, output, device, imgsz, batch_size, conf, nms_iou, mo
     started = time.monotonic()
     for image in coco.dataset["images"]:
         path = source / "val" / "images" / image["file_name"]
+        image_sha256[str(image["id"])] = hashlib.sha256(path.read_bytes()).hexdigest()
         with Image.open(path) as original:
             if original.size != IMAGE_SIZE:
                 raise ValueError(f"Unexpected image size: {path}")
             crops, origins = inference_views(original, mode)
-        results = model.predict(crops, device=device, imgsz=imgsz, conf=conf,
+        results = model.predict(crops, predictor=predictor, device=device, imgsz=imgsz, conf=conf,
                                 iou=0.7, max_det=300, batch=batch_size, verbose=False)
         boxes, scores = [], []
         if len(results) != len(origins):
@@ -130,11 +149,26 @@ def run(source, checkpoint, output, device, imgsz, batch_size, conf, nms_iou, mo
                     if scores[index] >= threshold:
                         empty_image_hits[threshold] += 1
                         empty_detections_at_confidence[threshold] += 1
+        if len(image_sha256) % 25 == 0:
+            print(json.dumps({"completed_images": len(image_sha256), "total_images": len(coco.dataset["images"])}), flush=True)
         for threshold in fixed_confidences:
             empty_images_with_detection_at_confidence[threshold] += int(empty_image_hits[threshold] > 0)
     if not predictions:
         raise ValueError("Detector produced no validation predictions")
     inference_seconds = time.monotonic() - started
+    if predictions_output is not None:
+        cache = {"protocol": "PV-HSD validation original-coordinate post-NMS predictions",
+                 "annotation_sha256": hashlib.sha256(annotation_path.read_bytes()).hexdigest(),
+                 "checkpoint_sha256": hashlib.sha256(checkpoint.read_bytes()).hexdigest(),
+                 "image_sha256": image_sha256, "mode": mode, "imgsz": imgsz,
+                 "inference_device": str(device), "nms_device": "cpu" if str(device)=="mps" else str(device),
+                 "confidence_threshold": conf, "final_nms_iou": nms_iou,
+                 "image_ids": sorted(empty_images | {item["image_id"] for item in coco.dataset["annotations"]}),
+                 "predictions": predictions, "test_status": "not read"}
+        predictions_output.parent.mkdir(parents=True, exist_ok=True)
+        temporary = predictions_output.with_suffix(predictions_output.suffix + ".tmp")
+        temporary.write_text(json.dumps(cache) + "\n")
+        temporary.replace(predictions_output)
     detected = coco.loadRes(predictions)
     evaluation = COCOeval(coco, detected, "bbox")
     evaluation.evaluate()
@@ -143,6 +177,8 @@ def run(source, checkpoint, output, device, imgsz, batch_size, conf, nms_iou, mo
     report = {"protocol": "grouped validation original-image COCOeval with common final NMS",
               "source": str(source), "checkpoint": str(checkpoint),
               "mode": mode, "imgsz": imgsz,
+              "predictions_output": str(predictions_output) if predictions_output else None,
+              "inference_device": str(device), "nms_device": "cpu" if str(device)=="mps" else str(device),
               "inference_view_size": list(IMAGE_SIZE if mode == "full" else TILE_SIZE),
               "view_origins": [list(v) for v in (((0, 0),) if mode == "full" else TILES)],
               "confidence_threshold": conf, "final_nms_iou": nms_iou,
@@ -169,6 +205,8 @@ def run(source, checkpoint, output, device, imgsz, batch_size, conf, nms_iou, mo
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
+    parser.add_argument("--predictions-output", type=Path,
+                        help="Optional immutable validation-only original-coordinate prediction cache")
     parser.add_argument("--source", type=Path, default=Path("data/processed/pv_hsd_grouped_v2"))
     parser.add_argument("--checkpoint", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
@@ -180,4 +218,4 @@ if __name__ == "__main__":
     parser.add_argument("--mode", choices=("full", "tiled"), default="tiled")
     args = parser.parse_args()
     run(args.source, args.checkpoint, args.output, args.device, args.imgsz,
-        args.batch_size, args.conf, args.nms_iou, args.mode)
+        args.batch_size, args.conf, args.nms_iou, args.mode, args.predictions_output)
