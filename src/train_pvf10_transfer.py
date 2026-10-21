@@ -107,6 +107,23 @@ def defect_aware_loss(logits, labels, weights, healthy_index, binary_weight=0.0)
     return loss
 
 
+def mixup_batch(images, labels, alpha):
+    """One beta draw and permutation per batch; zero preserves original RNG path."""
+    if not math.isfinite(alpha) or alpha < 0:
+        raise ValueError("Mixup alpha must be finite and nonnegative")
+    if alpha == 0:
+        return images, labels, labels, 1.0
+    lam = float(np.random.beta(alpha, alpha))
+    order = torch.randperm(len(images), device=images.device)
+    return lam * images + (1 - lam) * images[order], labels, labels[order], lam
+
+
+def mixup_loss(logits, first, second, lam, weights, healthy_index, binary_weight=0.0):
+    # Weighted hard-target CE for each partner, mixed by the same image coefficient.
+    return (lam * defect_aware_loss(logits, first, weights, healthy_index, binary_weight)
+            + (1 - lam) * defect_aware_loss(logits, second, weights, healthy_index, binary_weight))
+
+
 def load_backbone(model, checkpoint, architecture, head_prefix):
     if checkpoint.get("architecture") != architecture or "backbone_state_dict" not in checkpoint:
         raise ValueError("Pretrained backbone architecture/format mismatch")
@@ -171,9 +188,12 @@ def run(args):
         total = 0.0
         for ids in torch.randperm(len(x_train), device=device).split(args.batch_size):
             optimizer.zero_grad(set_to_none=True)
-            logits = model(normalize(augment(x_train[ids], args.augmentation), args.input_size))
-            loss = defect_aware_loss(logits, y_train[ids], weights,
-                                     classes.index("healthy panel"), args.binary_loss_weight)
+            images = augment(x_train[ids], args.augmentation)
+            mixed, first, second, lam = mixup_batch(images, y_train[ids], args.mixup_alpha)
+            logits = model(normalize(mixed, args.input_size))
+            loss = mixup_loss(logits, first, second, lam, weights,
+                              classes.index("healthy panel"), args.binary_loss_weight) if args.mixup_alpha else defect_aware_loss(
+                                  logits, first, weights, classes.index("healthy panel"), args.binary_loss_weight)
             if not torch.isfinite(loss):
                 raise FloatingPointError("Non-finite loss")
             loss.backward()
@@ -201,6 +221,7 @@ def run(args):
                         "augmentation": args.augmentation,
                         "binary_loss_weight": args.binary_loss_weight,
                         "class_weight_power": args.class_weight_power,
+                        "mixup_alpha": args.mixup_alpha,
                         "adapted_backbone_sha256": backbone_sha256,
                         "pretrained": str(weights_enum)}, args.output / "best.pt")
             np.save(args.output / "best_validation_probabilities.npy", probabilities)
@@ -218,7 +239,8 @@ def run(args):
                                     "backbone_lr": args.backbone_lr, "head_lr": args.head_lr,
                                     "ema_decay": args.ema_decay, "augmentation": args.augmentation,
                                     "binary_loss_weight": args.binary_loss_weight,
-                                    "class_weight_power": args.class_weight_power},
+                                    "class_weight_power": args.class_weight_power,
+                                    "mixup_alpha": args.mixup_alpha},
               "pretrained_sha256": pretrained_sha256,
               "adapted_backbone_sha256": backbone_sha256,
               "model_parameters": sum(p.numel() for p in model.parameters()),
@@ -246,6 +268,8 @@ if __name__ == "__main__":
     parser.add_argument("--batch-size", type=int, default=64)
     parser.add_argument("--input-size", type=int, choices=(112, 224), default=112,
                         help="Resize source crops per batch; interpolation adds no measured detail")
+    parser.add_argument("--mixup-alpha", type=float, default=0.0,
+                        help="Beta mixture alpha; 0 preserves unmixed training")
     parser.add_argument("--class-weight-power", type=float, default=0.5,
                         help="Inverse training class-count power; 0 is uniform loss, .5 preserves baseline")
     parser.add_argument("--binary-loss-weight", type=float, default=0.0,
@@ -258,6 +282,8 @@ if __name__ == "__main__":
     args = parser.parse_args()
     if min(args.epochs, args.patience, args.batch_size) < 1 or min(args.backbone_lr, args.head_lr) <= 0:
         parser.error("Invalid training parameters")
+    if not math.isfinite(args.mixup_alpha) or args.mixup_alpha < 0:
+        parser.error("mixup-alpha must be finite and nonnegative")
     if not math.isfinite(args.class_weight_power) or not 0 <= args.class_weight_power <= 1:
         parser.error("class-weight-power must be in [0, 1]")
     if not math.isfinite(args.binary_loss_weight) or args.binary_loss_weight < 0:

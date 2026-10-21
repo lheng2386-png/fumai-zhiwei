@@ -14,8 +14,8 @@ def check_pair(reference, candidate, archive, seed):
                 or r['architecture']!='convnext_tiny' or r['input_size']!=[224,224]
                 or r.get('adapted_backbone_sha256')):
             raise ValueError('Incompatible loss-ablation source')
-    for key in ('epochs','patience','batch_size','backbone_lr','head_lr','ema_decay','augmentation','binary_loss_weight'):
-        default=0. if key=='binary_loss_weight' else None
+    for key in ('epochs','patience','batch_size','backbone_lr','head_lr','ema_decay','augmentation','binary_loss_weight','mixup_alpha'):
+        default=0. if key in ('binary_loss_weight','mixup_alpha') else None
         if reference['training_controls'].get(key,default)!=candidate['training_controls'].get(key,default):
             raise ValueError(f'Training controls differ: {key}')
     if (reference['training_controls'].get('class_weight_power',.5)!=.5
