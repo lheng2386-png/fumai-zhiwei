@@ -304,3 +304,25 @@ PYTHONPATH=src python src/audit_reunion_confirmation.py \
 PYTHONPATH=src python src/audit_pvf10_error_consistency.py \
   --run reports/pvf10_robust_a10_v1 --output reports/pvf10_error_consistency_new_run.json
 ```
+
+
+### 同 DC 输入的固定三模型／六模型集成
+
+完成新一轮缓存集成 `compare_reunion_dc_ensembles.py`：RNN 三种子均值、Transformer 三种子均值、二者六模型等权均值。沿用完全匹配的 DC 相对八通道、早期训练统计、端点及训练控制，每架构的长度均由原内部调参平均 AP 选择（2 月两者 15 分钟；3 月 RNN 15、Transformer 30）。先仅用内部调参概率确定宏 F1 阈值，以及探索性的 FPR≤.01 且召回≥.9 阈值，再将全部成员和阈值保存到 `inner_plan.json`，随后打开外层预测。没有根据外层调权或选择集成成员。
+
+| 2 月宏 F1 内部阈值方案 | 正常窗口误报 / 249 | 故障检出 / 294 | 故障窗口召回 | 5 个观测事件首次标签至告警，分钟 |
+| --- | ---: | ---: | ---: | --- |
+| RNN 三种子均值 | 5 | 289 | .98299 | 0/0/5/0/15 |
+| Transformer 三种子均值 | 5 | 288 | .97959 | 0/5/5/0/20 |
+| 六模型等权均值 | 5 | 288 | .97959 | 0/5/5/0/15 |
+
+2 月约束阈值也得到上述混淆矩阵：内部满足条件不保证未来满足，后续日期实际误报率 **5/249≈2.01%**，高于 1%。该 1% 并非现场商定验收标准，不能宣称达到工业要求。3 月三组宏 F1 阈值方案均为 0/26 正常误报、278/280 故障检出；三组内部约束阈值均**不可行**，程序保留不可行状态，不借用外层阈值填补。
+
+六模型此次未带来整体收益，且需要更多推理计算，不替换 RNN 重点候选；三种子均值也未稳定超过此前各单种子。集成 softmax 仍未校准。原缓存未证明新增正常航次或维修工单，本次只是单站历史诊断。完整源文件哈希、每组阈值、日期/事件指标及集成概率保存于 `reports/reunion_dc_ensembles_v1/`。新增测试确认等权均值、无效概率拒绝及调参约束不可行保留。
+
+```bash
+PYTHONPATH=src python src/compare_reunion_dc_ensembles.py \
+  --rnn reports/reunion_feature_ablation_a10_v1/dc_relative \
+  --transformer reports/reunion_transformer_dc_a10_v1 \
+  --output reports/reunion_dc_ensembles_new_run
+```
