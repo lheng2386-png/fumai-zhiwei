@@ -39,6 +39,8 @@ def load_split(prepared, split):
 def make_model(name, channels):
     if name == "lstm":
         return LSTMPV(channels=channels, width=64, layers=2, classes=2)
+    if name == "rnn_recent":
+        return RNNPV(channels=channels, width=64, layers=2, classes=2, recent_steps=5)
     if name == "rnn":
         return RNNPV(channels=channels, width=64, layers=2, classes=2)
     spec = ARCHITECTURES[name]

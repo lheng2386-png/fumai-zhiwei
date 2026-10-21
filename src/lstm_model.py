@@ -29,8 +29,11 @@ class LSTMPV(nn.Module):
 class RNNPV(nn.Module):
     """Plain recurrent network with the same pooling/statistics head as LSTMPV."""
 
-    def __init__(self, channels=14, width=64, layers=2, classes=2):
+    def __init__(self, channels=14, width=64, layers=2, classes=2, recent_steps=None):
         super().__init__()
+        if recent_steps is not None and recent_steps < 1:
+            raise ValueError("recent_steps must be positive")
+        self.recent_steps = recent_steps
         self.input = nn.Linear(channels, width)
         self.encoder = nn.RNN(width, width, num_layers=layers, batch_first=True,
                               bidirectional=True, nonlinearity="tanh",
@@ -44,8 +47,10 @@ class RNNPV(nn.Module):
     def forward(self, x):
         sequence = self.input(x.transpose(1, 2))
         encoded, _ = self.encoder(sequence)
-        weights = self.attention(encoded).softmax(dim=1)
-        attended = (encoded * weights).sum(dim=1)
-        stats = self.statistics(torch.cat((x.mean(-1), x.std(-1, correction=0),
-                                           x[:, :, -1]), dim=1))
+        pooled = encoded[:, -self.recent_steps:] if self.recent_steps is not None else encoded
+        stats_x = x[:, :, -self.recent_steps:] if self.recent_steps is not None else x
+        weights = self.attention(pooled).softmax(dim=1)
+        attended = (pooled * weights).sum(dim=1)
+        stats = self.statistics(torch.cat((stats_x.mean(-1), stats_x.std(-1, correction=0),
+                                           stats_x[:, :, -1]), dim=1))
         return self.classifier(torch.cat((attended, encoded[:, -1], stats), dim=1))
