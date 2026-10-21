@@ -1,3 +1,5 @@
+> 团队开发：请先看 [前后端任务清单](docs/FRONTEND_BACKEND_TASKS.md)、[短信和邮件通知任务](docs/NOTIFICATION_TASKS.md) 与 [模型服务部署记录](docs/MODEL_SERVER_DEPLOYMENT.md)。项目负责人负责模型研发和 Agent 开发。
+
 # 伏脉智维 Fumai Zhiwei
 
 **面向光伏电站的设备异常筛查、故障辨识与数字化运维研究项目。**
