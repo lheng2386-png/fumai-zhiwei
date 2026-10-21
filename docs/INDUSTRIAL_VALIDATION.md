@@ -326,3 +326,14 @@ PYTHONPATH=src python src/compare_reunion_dc_ensembles.py \
   --transformer reports/reunion_transformer_dc_a10_v1 \
   --output reports/reunion_dc_ensembles_new_run
 ```
+
+
+### 训练原图集中度与类内原图均衡采样准备
+
+只审计训练 NPZ 的类别/原图组：bottom dirt 257 张来自 76 张原图（最大单图 24 张）；junction box heat 471 张来自 58 张原图（最大单图 34 张，前三图 92 张）；shadow 68 张来自 24 张原图；healthy panel 825 张来自 404 张原图。原图仍不等同独立场站/航次，裁图数量不能替代独立采集覆盖。
+
+新增 `pvf10_photo_sampling.py`，对每个类别 c、原图 g 中每个样本赋权 `n_c / (G_c * n_cg)`。因此每类别权重总和仍为原训练图片数 `n_c`，同类别各原图总权重相同；不同类别不强制相同。每轮按这些权重有放回抽取原训练图片总数 N，保持原 batch/优化步数、类别损失指数 .5、224 输入、robust 增强、ImageNet 权重及三种子；只是预期类别采样量相同，**有限随机抽样每轮的实际类别计数并不保证一致**。有放回会重复/遗漏图片，不能视作新增独立数据。日志新增每轮独立图片数与实际类别计数，结果记录训练 NPZ 哈希与 sampling 控制。
+
+`train_pvf10_transfer.py --sampling photo_balanced` 开启；默认 `image_shuffle` 保留原 `randperm` RNG 路径。辅助损失/预训练比较也增加 sampling 一致性检查，避免混淆收益。`report_pvf10_loss_ablation.py --ablation sampling` 只允许采样设置改变，输出逐类、日期和健康/缺陷错误。18 项图像相关测试通过，并完成 MPS 上真实采样张量功能检查；这不是数据集训练。
+
+三种子启动脚本 `scripts/run_pvf10_photo_balanced.sh` 使用独立服务器快照 `train_pvf10_transfer_photo_v1.py`，目录 `reports/pvf10_photo_balanced_a10_v1/`。当前 SSH 间歇关闭连接，上传失败，**尚未启动该训练**；已完成训练和测试准备，不预先宣称提升。已有主候选不变。不同采样策略的 RNG 消耗和实际图像暴露不同，这是完整采样配方对照而非相同逐批数据顺序。

@@ -30,4 +30,15 @@ class LossAblationTests(unittest.TestCase):
             bad=deepcopy(b);bad['training_controls'][key]=val
             with self.assertRaises(ValueError):check_pair(a,bad,'data',2026,'mixup')
 
+    def test_sampling_pair_keeps_original_loss_and_augmentation(self):
+        a={'archive_sha256':'data','seed':2026,'test_status':'not read','architecture':'convnext_tiny',
+           'input_size':[224,224],'pretrained_sha256':'weights','training_controls':{
+               'epochs':25,'patience':6,'batch_size':64,'backbone_lr':2e-5,'head_lr':3e-4,
+               'ema_decay':0.,'augmentation':'robust'}}
+        b=deepcopy(a);b['training_controls']['sampling']='photo_balanced'
+        check_pair(a,b,'data',2026,'sampling')
+        for key,val in [('class_weight_power',0.),('augmentation','baseline'),('mixup_alpha',.2)]:
+            bad=deepcopy(b);bad['training_controls'][key]=val
+            with self.assertRaises(ValueError):check_pair(a,bad,'data',2026,'sampling')
+
 if __name__=='__main__':unittest.main()

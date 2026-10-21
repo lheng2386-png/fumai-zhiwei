@@ -23,6 +23,7 @@ from torchvision.models import (ConvNeXt_Tiny_Weights, EfficientNet_B0_Weights,
 import torchvision
 from torchvision.transforms.functional import gaussian_blur
 
+from pvf10_photo_sampling import photo_balanced_weights, epoch_indices
 from train_deep import seed_all
 from train_multiscale import write_json
 
@@ -158,6 +159,7 @@ def run(args):
     manifest = json.loads((args.data / "manifest.json").read_text())
     with np.load(args.data / "train.npz", allow_pickle=False) as train:
         train_images, train_labels, classes = train["images"], train["labels"], train["classes"].tolist()
+        train_photos = train["source_photo"] if args.sampling == "photo_balanced" else None
     with np.load(args.data / "validation.npz", allow_pickle=False) as validation:
         val_images, val_labels = validation["images"], validation["labels"]
         validation_order_sha256 = validation_identity(val_labels, classes, validation["source_photo"], validation["capture_date"])
@@ -187,6 +189,8 @@ def run(args):
     counts = torch.bincount(y_train, minlength=len(classes)).float().clamp(min=1)
     weights = counts.pow(-args.class_weight_power)
     weights /= weights.mean()
+    sampling_weights = (torch.from_numpy(photo_balanced_weights(train_labels,train_photos)).float().to(device)
+                        if args.sampling == "photo_balanced" else None)
     optimizer = torch.optim.AdamW([
         {"params": (p for name, p in model.named_parameters() if not name.startswith(head_prefix)),
          "lr": args.backbone_lr, "base_lr": args.backbone_lr},
@@ -201,7 +205,8 @@ def run(args):
         for group in optimizer.param_groups:
             group["lr"] = group["base_lr"] * factor
         total = 0.0
-        for ids in torch.randperm(len(x_train), device=device).split(args.batch_size):
+        indices = epoch_indices(len(x_train), device, sampling_weights)
+        for ids in indices.split(args.batch_size):
             optimizer.zero_grad(set_to_none=True)
             images = augment(x_train[ids], args.augmentation)
             mixed, first, second, lam = mixup_batch(images, y_train[ids], args.mixup_alpha)
@@ -222,7 +227,9 @@ def run(args):
         score = float(f1_score(val_labels, probabilities.argmax(1),
                                labels=range(len(classes)), average="macro", zero_division=0))
         row = {"epoch": epoch + 1, "train_loss": total / len(x_train),
-               "validation_macro_f1": score, "elapsed_seconds": time.monotonic() - started}
+               "validation_macro_f1": score, "elapsed_seconds": time.monotonic() - started,
+               "unique_training_images_sampled": int(indices.unique().numel()),
+               "sampled_class_counts": torch.bincount(y_train[indices],minlength=len(classes)).cpu().tolist()}
         history.append(row)
         print(json.dumps(row), flush=True)
         if score > best:
@@ -238,7 +245,7 @@ def run(args):
                         "augmentation": args.augmentation,
                         "binary_loss_weight": args.binary_loss_weight,
                         "class_weight_power": args.class_weight_power,
-                        "mixup_alpha": args.mixup_alpha,
+                        "mixup_alpha": args.mixup_alpha, "sampling": args.sampling,
                         "adapted_backbone_sha256": backbone_sha256,
                         "pretrained": str(weights_enum)}, args.output / "best.pt")
             np.save(args.output / "best_validation_probabilities.npy", probabilities)
@@ -259,8 +266,9 @@ def run(args):
                                     "ema_decay": args.ema_decay, "augmentation": args.augmentation,
                                     "binary_loss_weight": args.binary_loss_weight,
                                     "class_weight_power": args.class_weight_power,
-                                    "mixup_alpha": args.mixup_alpha},
+                                    "mixup_alpha": args.mixup_alpha, "sampling": args.sampling},
               "pretrained_sha256": pretrained_sha256,
+              "training_npz_sha256": hashlib.sha256((args.data / "train.npz").read_bytes()).hexdigest(),
               "adapted_backbone_sha256": backbone_sha256,
               "model_parameters": sum(p.numel() for p in model.parameters()),
               "train_images": len(train_images), "validation_images": len(val_images),
@@ -287,6 +295,8 @@ if __name__ == "__main__":
     parser.add_argument("--batch-size", type=int, default=64)
     parser.add_argument("--input-size", type=int, choices=(112, 224), default=112,
                         help="Resize source crops per batch; interpolation adds no measured detail")
+    parser.add_argument("--sampling", choices=("image_shuffle","photo_balanced"), default="image_shuffle",
+                        help="Default image shuffle; optional class-preserving photo-balanced replacement sampling")
     parser.add_argument("--mixup-alpha", type=float, default=0.0,
                         help="Beta mixture alpha; 0 preserves unmixed training")
     parser.add_argument("--class-weight-power", type=float, default=0.5,
