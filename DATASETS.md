@@ -100,3 +100,17 @@ python3 src/plan_curated_pv_quarantine.py \
   --audit reports/curated_pv_full_pixel_audit_v1 \
   --output reports/curated_pv_quarantine_new_run
 ```
+
+
+## TECNALIA reproducible re-audit (2026-10-21)
+
+The existing TECNALIA archive was re-fetched from the publisher and verified against published MD5 `15daed06b32f5debc9f3d81f0afe31d4`; its SHA-256 is `2bdf42ae6a151048d3f233e49909ff8f418eb2df10ed7a4ce9b2da3549963ac0`. This is **not an additional dataset**. New reusable audit `src/audit_tecnalia_pv.py` reads only the five named CSV members and electrical metadata through `bsdtar` stdout, without extracting archive paths or training anything.
+
+Each released module has 51,921 chronological rows, 2024-11-01 through 2025-07-30, with median positive spacing 10 minutes and no duplicate timestamps. Electrical metadata still declares 5 minutes and a November-only interval, so it is not authoritative for sequence durations. JaSolar3 has 783 temperature values of -9999; these are counted as missing, while zero nighttime power is retained. All modules lack 12 nominal sensor fields entirely, including AC voltage/current/power, pressure, humidity and rain. Finite V/I/P records agree with P=VI to within 1 W, which is a consistency check, not proof of independent power measurement or fault labels.
+
+The earlier poster audit already established that the released five modules omit the healthy JaSolar1 reference. This new audit does not override that finding, infer intervention dates, or label module brands as fault classes. It adds reproducible timestamp/sentinel/channel coverage evidence before any future cross-source representation experiment. Compact source/quality statistics are committed in [tecnalia_20261021.json](docs/data_audits/tecnalia_20261021.json).
+
+```bash
+python3 src/audit_tecnalia_pv.py --archive data/raw/tecnalia/TECNALIA.rar \
+  --output reports/tecnalia_pv_release_audit_new_run.json
+```

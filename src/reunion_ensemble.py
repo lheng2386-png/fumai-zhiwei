@@ -47,32 +47,45 @@ def ensemble_scores(models, x, device, batch_size=256, weights=None):
 
 
 def aggregate_alert_events(rows, threshold, min_consecutive=2):
-    """Add event-level alarms to row dictionaries in chronological order.
+    """Causal confirmation at 5-minute endpoints; never backfill earlier alarms.
 
-    An abstention or non-alarm resets the consecutive-window counter. The
-    returned objects are copies and include `event_alarm` and `event_id`.
+    A gap, abstention or low score resets confirmation. Timezone-aware, strictly
+    chronological end_time_utc values are mandatory, so separated samples cannot
+    silently qualify as consecutive observations. Inputs are not mutated.
     """
-    if min_consecutive < 1:
-        raise ValueError("min_consecutive must be positive")
+    if (not np.isfinite(threshold) or not 0 <= threshold <= 1
+            or not isinstance(min_consecutive, int) or isinstance(min_consecutive, bool)
+            or min_consecutive < 1):
+        raise ValueError("Invalid event confirmation controls")
     result = [dict(row) for row in rows]
-    streak = []
-    event_number = 0
+    streak, event_number, previous_time = 0, 0, None
     for row in result:
+        if "end_time_utc" not in row:
+            raise ValueError("Event confirmation requires end_time_utc")
+        timestamp = pd.Timestamp(row["end_time_utc"])
+        if pd.isna(timestamp) or timestamp.tzinfo is None:
+            raise ValueError("Event time must include a timezone")
+        current_time = timestamp.value
+        if previous_time is not None:
+            if current_time <= previous_time:
+                raise ValueError("Event endpoints must be strictly chronological")
+            if current_time - previous_time != 300_000_000_000:
+                streak = 0
+        previous_time = current_time
         probability = row.get("fault_probability")
-        eligible = row.get("status") == "ready" and probability is not None
-        alarm = bool(eligible and float(probability) >= threshold)
-        row["event_alarm"] = False
+        ready = row.get("status") == "ready"
+        if ready and (probability is None or not np.isfinite(probability) or not 0 <= probability <= 1):
+            raise ValueError("Ready rows require a finite fault probability in [0,1]")
+        alarm = bool(ready and probability >= threshold)
+        streak = streak + 1 if alarm else 0
+        row["candidate_alarm"] = alarm
+        row["confirmation_streak"] = streak
+        row["event_alarm"] = streak >= min_consecutive
         row["event_id"] = None
-        if not alarm:
-            streak = []
-            continue
-        streak.append(row)
-        if len(streak) >= min_consecutive:
-            if len(streak) == min_consecutive:
+        if row["event_alarm"]:
+            if streak == min_consecutive:
                 event_number += 1
-            for member in streak:
-                member["event_alarm"] = True
-                member["event_id"] = event_number
+            row["event_id"] = event_number
     return result
 
 

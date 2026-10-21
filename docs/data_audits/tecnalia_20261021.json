@@ -1,0 +1,232 @@
+{
+  "source": "https://zenodo.org/records/18306410",
+  "license": "CC BY 4.0, per publisher metadata",
+  "archive_md5": "15daed06b32f5debc9f3d81f0afe31d4",
+  "archive_sha256": "2bdf42ae6a151048d3f233e49909ff8f418eb2df10ed7a4ce9b2da3549963ac0",
+  "electrical_metadata": {
+    "rows": 5,
+    "module_names": [
+      "JASolar",
+      "NingboSolar",
+      "Trinasolar",
+      "Atersa",
+      "Photowatt"
+    ],
+    "declared_interval_minutes": [
+      5,
+      5,
+      5,
+      5,
+      5
+    ],
+    "declared_first_timestamps": [
+      "2024-11-01",
+      "2024-11-01",
+      "2024-11-01",
+      "2024-11-01",
+      "2024-11-01"
+    ],
+    "declared_last_timestamps": [
+      "2024-11-30",
+      "2024-11-30",
+      "2024-11-30",
+      "2024-11-30",
+      "2024-11-30"
+    ]
+  },
+  "limitations": [
+    "No timezone or fault onset inferred from filenames or model predictions.",
+    "Module identity/capacity can confound fault classification.",
+    "Published description includes both naturally degraded and induced-fault modules.",
+    "No split, labels, imputation, preprocessing fit or model training performed."
+  ],
+  "modules": {
+    "Atersa": {
+      "member_sha256": "47955089675afa06311032fdc3c0c6312069dc18cacf1a18ca3ebc7179926d05",
+      "rows": 51921,
+      "first_timestamp": "2024-11-01 00:00:00",
+      "last_timestamp": "2025-07-30 11:30:00",
+      "timestamp_timezone": "not specified; not inferred",
+      "invalid_timestamps": 0,
+      "duplicate_timestamps": 0,
+      "nonpositive_steps": 0,
+      "positive_step_minutes_counts": {
+        "10.0": 26266,
+        "5.0": 25654
+      },
+      "median_positive_step_minutes": 10.0,
+      "sentinel_minus9999_by_column": {},
+      "entirely_missing_columns": [
+        "DHI (W/m\u00b2)",
+        "DNI (W/m\u00b2)",
+        "Vac(V)",
+        "Iac(A)",
+        "Pac(W)",
+        "Back GPOA (W/m\u00b2)",
+        "SR (Wh/m\u00b2)",
+        "Pressure (mmHg)",
+        "Humidity(%)",
+        "Rain Accumulation (mm)",
+        "Intensity(mm/h)",
+        "Direction of wind"
+      ],
+      "available_label_columns": [],
+      "power_consistency": {
+        "finite_rows": 51921,
+        "rows_abs_P_minus_VI_above_1W": 0,
+        "daylight_proxy_front_poa_above_200Wm2": 11941,
+        "daylight_proxy_nonpositive_power": 1
+      }
+    },
+    "JaSolar3": {
+      "member_sha256": "1ddb5da7751da83096f43155f18b8a7505f6bf9952c48feab3e719e9d45d4a19",
+      "rows": 51921,
+      "first_timestamp": "2024-11-01 00:00:00",
+      "last_timestamp": "2025-07-30 11:30:00",
+      "timestamp_timezone": "not specified; not inferred",
+      "invalid_timestamps": 0,
+      "duplicate_timestamps": 0,
+      "nonpositive_steps": 0,
+      "positive_step_minutes_counts": {
+        "10.0": 26266,
+        "5.0": 25654
+      },
+      "median_positive_step_minutes": 10.0,
+      "sentinel_minus9999_by_column": {
+        "Temp. Mod (\u00b0C)": 783
+      },
+      "entirely_missing_columns": [
+        "DHI (W/m\u00b2)",
+        "DNI (W/m\u00b2)",
+        "Vac(V)",
+        "Iac(A)",
+        "Pac(W)",
+        "Back GPOA (W/m\u00b2)",
+        "SR (Wh/m\u00b2)",
+        "Pressure (mmHg)",
+        "Humidity(%)",
+        "Rain Accumulation (mm)",
+        "Intensity(mm/h)",
+        "Direction of wind"
+      ],
+      "available_label_columns": [],
+      "power_consistency": {
+        "finite_rows": 51921,
+        "rows_abs_P_minus_VI_above_1W": 0,
+        "daylight_proxy_front_poa_above_200Wm2": 11941,
+        "daylight_proxy_nonpositive_power": 0
+      }
+    },
+    "NingboSolar": {
+      "member_sha256": "78729672b8d31889abf682dad2ec220eb515b5db7f697908434767b9f314bcd6",
+      "rows": 51921,
+      "first_timestamp": "2024-11-01 00:00:00",
+      "last_timestamp": "2025-07-30 11:30:00",
+      "timestamp_timezone": "not specified; not inferred",
+      "invalid_timestamps": 0,
+      "duplicate_timestamps": 0,
+      "nonpositive_steps": 0,
+      "positive_step_minutes_counts": {
+        "10.0": 26266,
+        "5.0": 25654
+      },
+      "median_positive_step_minutes": 10.0,
+      "sentinel_minus9999_by_column": {},
+      "entirely_missing_columns": [
+        "DHI (W/m\u00b2)",
+        "DNI (W/m\u00b2)",
+        "Vac(V)",
+        "Iac(A)",
+        "Pac(W)",
+        "Back GPOA (W/m\u00b2)",
+        "SR (Wh/m\u00b2)",
+        "Pressure (mmHg)",
+        "Humidity(%)",
+        "Rain Accumulation (mm)",
+        "Intensity(mm/h)",
+        "Direction of wind"
+      ],
+      "available_label_columns": [],
+      "power_consistency": {
+        "finite_rows": 51921,
+        "rows_abs_P_minus_VI_above_1W": 0,
+        "daylight_proxy_front_poa_above_200Wm2": 11941,
+        "daylight_proxy_nonpositive_power": 0
+      }
+    },
+    "Photowatt": {
+      "member_sha256": "05465d10a047e9fb0bf1a0ba51bad277ff65b39773764d5225b9edf6126b6bfb",
+      "rows": 51921,
+      "first_timestamp": "2024-11-01 00:00:00",
+      "last_timestamp": "2025-07-30 11:30:00",
+      "timestamp_timezone": "not specified; not inferred",
+      "invalid_timestamps": 0,
+      "duplicate_timestamps": 0,
+      "nonpositive_steps": 0,
+      "positive_step_minutes_counts": {
+        "10.0": 26266,
+        "5.0": 25654
+      },
+      "median_positive_step_minutes": 10.0,
+      "sentinel_minus9999_by_column": {},
+      "entirely_missing_columns": [
+        "DHI (W/m\u00b2)",
+        "DNI (W/m\u00b2)",
+        "Vac(V)",
+        "Iac(A)",
+        "Pac(W)",
+        "Back GPOA (W/m\u00b2)",
+        "SR (Wh/m\u00b2)",
+        "Pressure (mmHg)",
+        "Humidity(%)",
+        "Rain Accumulation (mm)",
+        "Intensity(mm/h)",
+        "Direction of wind"
+      ],
+      "available_label_columns": [],
+      "power_consistency": {
+        "finite_rows": 51791,
+        "rows_abs_P_minus_VI_above_1W": 0,
+        "daylight_proxy_front_poa_above_200Wm2": 11941,
+        "daylight_proxy_nonpositive_power": 3
+      }
+    },
+    "TrinaSolar": {
+      "member_sha256": "2923fd080049867efe506cd9d1501cd83f7207a288f79256f2a1b9cd8dec87cd",
+      "rows": 51921,
+      "first_timestamp": "2024-11-01 00:00:00",
+      "last_timestamp": "2025-07-30 11:30:00",
+      "timestamp_timezone": "not specified; not inferred",
+      "invalid_timestamps": 0,
+      "duplicate_timestamps": 0,
+      "nonpositive_steps": 0,
+      "positive_step_minutes_counts": {
+        "10.0": 26266,
+        "5.0": 25654
+      },
+      "median_positive_step_minutes": 10.0,
+      "sentinel_minus9999_by_column": {},
+      "entirely_missing_columns": [
+        "DHI (W/m\u00b2)",
+        "DNI (W/m\u00b2)",
+        "Vac(V)",
+        "Iac(A)",
+        "Pac(W)",
+        "Back GPOA (W/m\u00b2)",
+        "SR (Wh/m\u00b2)",
+        "Pressure (mmHg)",
+        "Humidity(%)",
+        "Rain Accumulation (mm)",
+        "Intensity(mm/h)",
+        "Direction of wind"
+      ],
+      "available_label_columns": [],
+      "power_consistency": {
+        "finite_rows": 51921,
+        "rows_abs_P_minus_VI_above_1W": 0,
+        "daylight_proxy_front_poa_above_200Wm2": 11941,
+        "daylight_proxy_nonpositive_power": 4
+      }
+    }
+  }
+}
