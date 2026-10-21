@@ -218,3 +218,22 @@ PYTHONPATH=src python src/compare_reunion_context.py \
 下一轮视觉对照独立实现 [Mixup](https://arxiv.org/abs/1710.09412)：每批一次 Beta(0.2,0.2) 混合系数与随机配对，增强后混合训练图片；损失为同系数混合两组加权交叉熵（各自按该组目标类权重归一化），不将混合图片解释为物理温度。保持 ConvNeXt、224、robust、类别权重指数 .5、三种子与原训练控制；验证不混合，测试不读。默认 alpha=0 保留原 RNG 与未混合路径，记录实际 alpha，既有对照检查增加该控制，避免混淆改进来源。
 
 运行 `PYTHON_BIN=/root/miniconda3/bin/python bash scripts/run_pvf10_mixup.sh`，服务器快照 `train_pvf10_transfer_mixup_v1.py`，目录 `reports/pvf10_mixup_a10_v1/`。尚无结果，不预先声明提升；尤其检查少数类与缺陷判健康退化。脚本快照来自本次训练入口，不应覆盖正在运行的快照。
+
+
+### 相同直流相对输入的 Transformer/RNN 对照
+
+针对此前架构和输入特征同时变化的问题，新增 Transformer 配对运行，使用相同 `dc_relative` 八通道、15/30 分钟、2031/2032/2033、50 轮/耐心 8、batch 256、AdamW 学习率 8e-4、原训练噪声，不加传感器增强或难负样本权重。复用相同训练期前推折、训练统计、端点与内部选型规则，输出 `reports/reunion_transformer_dc_a10_v1/`。架构仍按各自既有定义（Transformer width64/layers3，双向 RNN width64/layers2），参数量不同；相同优化器设置也不证明已对每种架构充分调优。
+
+启动后已从云端确认 `results.json` 生成，图像 Mixup 三种子也均生成最终结果；传回本机的连接随即关闭，尚未取全文件和核对分数。不把“完成训练”写成“性能提高”。本轮不重启已完成训练，只补取结果。
+
+新增 `report_reunion_architecture_pair.py`：核对数据清单、训练控制、端点、标签、归一化值，重算缓存混淆矩阵；确认所选窗口仍符合内部调参 AP 规则。分别输出固定上下文比较和各自内部所选上下文比较，不按外层分数选赢家。`report_pvf10_loss_ablation.py --ablation mixup` 同样严格核对只有 alpha 0→.2 改变，汇总三种子逐类/逐日期错误。两者不做生产自动替换。
+
+```bash
+PYTHONPATH=src python src/report_reunion_architecture_pair.py \
+  --reference reports/reunion_feature_ablation_a10_v1/dc_relative \
+  --candidate reports/reunion_transformer_dc_a10_v1 \
+  --output reports/reunion_dc_architecture_pair_v1.json
+PYTHONPATH=src python src/report_pvf10_loss_ablation.py --ablation mixup \
+  --reference reports/pvf10_robust_a10_v1 --candidate reports/pvf10_mixup_a10_v1 \
+  --output reports/pvf10_mixup_comparison_v1.json
+```
