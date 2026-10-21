@@ -160,3 +160,30 @@ conf .25 / IoU .50 的 1,445 个 FP 分为重复框 **8**、定位错误 **560**
 入口 `finetune_pv_hsd_resolution.py`，输出 `reports/pv_hsd_resolution_a10_v1/`。每个分支保存最佳图块验证权重后，分别用 **640/960 两种推理尺寸**在 571 张验证原图上评估，形成 2×2 矩阵，以区分训练和推理放大；仍使用相同整图 NMS 并保存逐图缓存。放大只插值已有像素，没有增加相机实测信息。原最佳权重已用过验证集，本轮是后续研发、一个训练种子，不能提供新航次证据。
 
 程序在训练前保存输入哈希、完整显式控制、依赖及 GPU 信息，逐分支更新状态；已有根目录或分支不覆盖。中断保留 Ultralytics `last.pt`，须核查后显式恢复，不能自动把半成品当完成。当前已提交 A10G，结果待核验；若高分辨率提升 AP 但明显增加空标签告警或成本，也不自动替换。
+
+
+### 固定权重，仅改变推理尺寸：640/960 配对结果
+
+云训练期间在 Mac 做独立推理对照：同一切图权重、同一 571 张验证原图、四裁块、NMS .5、conf .001，模型前向 MPS、库 NMS CPU，只有输入插值尺寸 640→960 改变。完整缓存通过检查点、逐图 SHA-256、标注文件、图像 ID 及所有推理控制一致性检查后，由 `compare_pv_hsd_inference_sizes.py` 重新计算 COCO 分数。没有读取测试或以本次结果选阈值。
+
+| 固定权重推理设置 | 640 | 960 |
+| --- | ---: | ---: |
+| COCO mAP50–95 | .323625 | .321340 |
+| AP50 | .749426 | .747884 |
+| AP75 | .211555 | .204454 |
+| AR@100 | .452046 | .456514 |
+| conf .25 / IoU .50 诊断 TP / FP / FN | 2553 / 1445 / 648 | 2541 / 1528 / 660 |
+| 47 张空标签图中 conf .25 告警图数 | 20 | 21 |
+| Mac 本次端到端耗时，秒/原图 | .1013 | .1406 |
+
+AR 略增但 AP/固定阈值误检与漏检都退步，不能只取 AR 宣称提升。conf .25 / IoU .50 时，960 找回 640 漏掉的 **134 个**标注，却新漏掉 **146 个**；**514 个**两者都漏掉。贪心匹配的转移计数属于定位诊断，与 COCO AP 不同。尺寸放大没有新增实测像素，此权重单纯改 960 暂不采用。推理时延是本次 Mac 上测量，非专门重复测速或云端 A10G 性能。
+
+这些结果不代表 960 **训练**一定无益；A10G 训练 640/960 的 2×2 实验仍继续，最新确认 640 对照已完成第 19/20 轮，未中止或重启。数据/代码结论均需单独报告。配对摘要提交于 `docs/data_audits/pv_hsd_inference_sizes_20261021.json`，完整缓存及结果在本机 `reports/pv_hsd_tiles_mps960_v1*` 和 `reports/pv_hsd_inference_sizes_mps_v1.json`。
+
+```bash
+.venv-detect/bin/python src/compare_pv_hsd_inference_sizes.py \
+  --annotations data/processed/pv_hsd_grouped_v2/coco/instances_val.json \
+  --reference reports/pv_hsd_tiles_mps_cache_v1.json \
+  --candidate reports/pv_hsd_tiles_mps960_v1_predictions.json \
+  --output reports/pv_hsd_inference_sizes_new_run.json
+```

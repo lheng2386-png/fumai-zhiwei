@@ -1,0 +1,103 @@
+{
+  "protocol": "Same checkpoint and image hashes, only inference size 640 vs 960",
+  "source_sha256": {
+    "reports/pv_hsd_tiles_mps_cache_v1.json": "a5ee0e2b14c67324dbb976f049be26bbe95f81e509fc4e737a1a311592a553d1",
+    "reports/pv_hsd_tiles_mps960_v1_predictions.json": "6e64ca16fd849d9903b37a53016aa7a7e33f9cf2012d91ad065107e87d69b2e7"
+  },
+  "annotation_sha256": "b38a836f4da11b722f167049449329bdcda474b0eeaec546f3e3f3f682e991c4",
+  "sizes": {
+    "640": {
+      "map50_95": 0.32362529653788275,
+      "map50": 0.7494257277114633,
+      "map75": 0.21155457881144563,
+      "recall_100": 0.45204623555139023,
+      "fixed_points": {
+        "conf0.25_iou0.5": {
+          "true_positive": 2553,
+          "false_positive": 1445,
+          "false_negative": 648,
+          "empty_label_images_with_detection": 20
+        },
+        "conf0.25_iou0.75": {
+          "true_positive": 1147,
+          "false_positive": 2851,
+          "false_negative": 2054,
+          "empty_label_images_with_detection": 20
+        },
+        "conf0.5_iou0.5": {
+          "true_positive": 2065,
+          "false_positive": 497,
+          "false_negative": 1136,
+          "empty_label_images_with_detection": 7
+        },
+        "conf0.5_iou0.75": {
+          "true_positive": 987,
+          "false_positive": 1575,
+          "false_negative": 2214,
+          "empty_label_images_with_detection": 7
+        }
+      }
+    },
+    "960": {
+      "map50_95": 0.3213402335113771,
+      "map50": 0.7478836322113703,
+      "map75": 0.20445384108128153,
+      "recall_100": 0.4565135895032803,
+      "fixed_points": {
+        "conf0.25_iou0.5": {
+          "true_positive": 2541,
+          "false_positive": 1528,
+          "false_negative": 660,
+          "empty_label_images_with_detection": 21
+        },
+        "conf0.25_iou0.75": {
+          "true_positive": 1131,
+          "false_positive": 2938,
+          "false_negative": 2070,
+          "empty_label_images_with_detection": 21
+        },
+        "conf0.5_iou0.5": {
+          "true_positive": 2064,
+          "false_positive": 530,
+          "false_negative": 1137,
+          "empty_label_images_with_detection": 7
+        },
+        "conf0.5_iou0.75": {
+          "true_positive": 980,
+          "false_positive": 1614,
+          "false_negative": 2221,
+          "empty_label_images_with_detection": 7
+        }
+      }
+    }
+  },
+  "limitations": [
+    "Repeated validation, no new site or flight.",
+    "Larger input interpolates source pixels, not higher sensor resolution.",
+    "No model/threshold selected on this comparison.",
+    "Empty annotation images are not certified healthy.",
+    "Fixed-IoU greedy diagnostic is separate from COCO AP/AR."
+  ],
+  "paired_miss_transitions": {
+    "conf0.25_iou0.5": {
+      "missed_both": 514,
+      "recovered_at_960": 134,
+      "newly_missed_at_960": 146
+    },
+    "conf0.25_iou0.75": {
+      "missed_both": 1834,
+      "recovered_at_960": 220,
+      "newly_missed_at_960": 236
+    },
+    "conf0.5_iou0.5": {
+      "missed_both": 945,
+      "recovered_at_960": 191,
+      "newly_missed_at_960": 192
+    },
+    "conf0.5_iou0.75": {
+      "missed_both": 2007,
+      "recovered_at_960": 207,
+      "newly_missed_at_960": 214
+    }
+  }
+}
