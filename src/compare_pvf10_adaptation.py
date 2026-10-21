@@ -20,8 +20,8 @@ def compatible(reference, adapted, archive_sha, seed):
             raise ValueError('Paired run protocol mismatch')
     if reference.get('adapted_backbone_sha256') or not adapted.get('adapted_backbone_sha256'):
         raise ValueError('Expected unadapted reference and adapted candidate')
-    for key in ('epochs', 'patience', 'batch_size', 'backbone_lr', 'head_lr', 'ema_decay', 'augmentation', 'binary_loss_weight'):
-        default = 0.0 if key == 'binary_loss_weight' else None
+    for key in ('epochs', 'patience', 'batch_size', 'backbone_lr', 'head_lr', 'ema_decay', 'augmentation', 'binary_loss_weight', 'class_weight_power'):
+        default = 0.0 if key == 'binary_loss_weight' else .5 if key == 'class_weight_power' else None
         if reference['training_controls'].get(key, default) != adapted['training_controls'].get(key, default):
             raise ValueError(f'Training controls differ: {key}')
     if reference['pretrained_sha256'] != adapted['pretrained_sha256']:

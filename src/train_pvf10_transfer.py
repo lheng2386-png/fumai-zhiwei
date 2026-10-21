@@ -153,7 +153,7 @@ def run(args):
     x_val = torch.from_numpy(val_images.transpose(0, 3, 1, 2).astype(np.float32) / 255).to(device)
     y_train = torch.from_numpy(train_labels).long().to(device)
     counts = torch.bincount(y_train, minlength=len(classes)).float().clamp(min=1)
-    weights = counts.rsqrt()
+    weights = counts.pow(-args.class_weight_power)
     weights /= weights.mean()
     optimizer = torch.optim.AdamW([
         {"params": (p for name, p in model.named_parameters() if not name.startswith(head_prefix)),
@@ -200,6 +200,7 @@ def run(args):
                         "ema_decay": args.ema_decay,
                         "augmentation": args.augmentation,
                         "binary_loss_weight": args.binary_loss_weight,
+                        "class_weight_power": args.class_weight_power,
                         "adapted_backbone_sha256": backbone_sha256,
                         "pretrained": str(weights_enum)}, args.output / "best.pt")
             np.save(args.output / "best_validation_probabilities.npy", probabilities)
@@ -216,7 +217,8 @@ def run(args):
                                     "batch_size": args.batch_size,
                                     "backbone_lr": args.backbone_lr, "head_lr": args.head_lr,
                                     "ema_decay": args.ema_decay, "augmentation": args.augmentation,
-                                    "binary_loss_weight": args.binary_loss_weight},
+                                    "binary_loss_weight": args.binary_loss_weight,
+                                    "class_weight_power": args.class_weight_power},
               "pretrained_sha256": pretrained_sha256,
               "adapted_backbone_sha256": backbone_sha256,
               "model_parameters": sum(p.numel() for p in model.parameters()),
@@ -244,6 +246,8 @@ if __name__ == "__main__":
     parser.add_argument("--batch-size", type=int, default=64)
     parser.add_argument("--input-size", type=int, choices=(112, 224), default=112,
                         help="Resize source crops per batch; interpolation adds no measured detail")
+    parser.add_argument("--class-weight-power", type=float, default=0.5,
+                        help="Inverse training class-count power; 0 is uniform loss, .5 preserves baseline")
     parser.add_argument("--binary-loss-weight", type=float, default=0.0,
                         help="Auxiliary healthy/any-defect marginal CE; does not require new labels")
     parser.add_argument("--augmentation", choices=("baseline", "robust"), default="baseline")
@@ -254,6 +258,8 @@ if __name__ == "__main__":
     args = parser.parse_args()
     if min(args.epochs, args.patience, args.batch_size) < 1 or min(args.backbone_lr, args.head_lr) <= 0:
         parser.error("Invalid training parameters")
+    if not math.isfinite(args.class_weight_power) or not 0 <= args.class_weight_power <= 1:
+        parser.error("class-weight-power must be in [0, 1]")
     if not math.isfinite(args.binary_loss_weight) or args.binary_loss_weight < 0:
         parser.error("binary-loss-weight must be finite and nonnegative")
     if not 0 <= args.ema_decay < 1:

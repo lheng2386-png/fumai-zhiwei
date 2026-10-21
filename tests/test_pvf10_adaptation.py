@@ -18,7 +18,7 @@ class AdaptationProtocolTests(unittest.TestCase):
         adapted['adapted_backbone_sha256'] = 'adapted'
         adapted['training_controls']['binary_loss_weight'] = 0.
         compatible(baseline, adapted, 'same', 2026)
-        for key, value in (('augmentation', 'baseline'), ('binary_loss_weight', .5), ('epochs', 50)):
+        for key, value in (('augmentation', 'baseline'), ('binary_loss_weight', .5), ('epochs', 50), ('class_weight_power', 0)):
             bad = deepcopy(adapted); bad['training_controls'][key] = value
             with self.assertRaises(ValueError):
                 compatible(baseline, bad, 'same', 2026)
