@@ -79,7 +79,7 @@ def run(args):
     hard_negative_alpha = getattr(args, "hard_negative_alpha", 0.0)
     if not math.isfinite(hard_negative_alpha) or hard_negative_alpha < 0:
         raise ValueError("Invalid hard-negative emphasis")
-    if architecture not in ("transformer", "rnn", "rnn_recent", "lstm", "multiscale_cnn"):
+    if architecture not in ("transformer", "rnn", "rnn_recent", "gru", "lstm", "multiscale_cnn"):
         raise ValueError("Unknown architecture")
     if args.output.exists():
         raise FileExistsError(args.output)
@@ -250,7 +250,7 @@ if __name__ == "__main__":
     parser.add_argument("--prepared", type=Path, default=Path("data/processed/la_reunion_v1"))
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--device", choices=("auto", "cpu", "mps", "cuda"), default="auto")
-    parser.add_argument("--architecture", choices=("transformer", "rnn", "rnn_recent", "lstm", "multiscale_cnn"),
+    parser.add_argument("--architecture", choices=("transformer", "rnn", "rnn_recent", "gru", "lstm", "multiscale_cnn"),
                         default="transformer")
     parser.add_argument("--hard-negative-alpha", type=float, default=0.0,
                         help="Emphasize training normals currently mistaken for faults")

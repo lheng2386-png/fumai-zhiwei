@@ -29,15 +29,22 @@ class LSTMPV(nn.Module):
 class RNNPV(nn.Module):
     """Plain recurrent network with the same pooling/statistics head as LSTMPV."""
 
-    def __init__(self, channels=14, width=64, layers=2, classes=2, recent_steps=None):
+    def __init__(self, channels=14, width=64, layers=2, classes=2, recent_steps=None, cell_type="rnn"):
         super().__init__()
         if recent_steps is not None and recent_steps < 1:
             raise ValueError("recent_steps must be positive")
+        if cell_type not in ("rnn", "gru"):
+            raise ValueError("Unsupported recurrent cell")
         self.recent_steps = recent_steps
+        self.cell_type = cell_type
         self.input = nn.Linear(channels, width)
-        self.encoder = nn.RNN(width, width, num_layers=layers, batch_first=True,
-                              bidirectional=True, nonlinearity="tanh",
-                              dropout=.1 if layers > 1 else 0)
+        if cell_type == "rnn":
+            self.encoder = nn.RNN(width, width, num_layers=layers, batch_first=True,
+                                  bidirectional=True, nonlinearity="tanh",
+                                  dropout=.1 if layers > 1 else 0)
+        else:
+            self.encoder = nn.GRU(width, width, num_layers=layers, batch_first=True,
+                                  bidirectional=True, dropout=.1 if layers > 1 else 0)
         self.attention = nn.Linear(width * 2, 1)
         self.statistics = nn.Sequential(nn.Linear(channels * 3, width),
                                         nn.LayerNorm(width), nn.GELU())
@@ -54,3 +61,9 @@ class RNNPV(nn.Module):
         stats = self.statistics(torch.cat((stats_x.mean(-1), stats_x.std(-1, correction=0),
                                            stats_x[:, :, -1]), dim=1))
         return self.classifier(torch.cat((attended, encoded[:, -1], stats), dim=1))
+
+
+class GRUPV(RNNPV):
+    """GRU gates with the existing full-window RNN attention/statistics readout."""
+    def __init__(self, channels=14, width=64, layers=2, classes=2):
+        super().__init__(channels,width,layers,classes,cell_type="gru")
