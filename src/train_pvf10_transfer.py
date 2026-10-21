@@ -137,6 +137,19 @@ def load_backbone(model, checkpoint, architecture, head_prefix):
     model.load_state_dict({**target, **state}, strict=True)
 
 
+def validation_identity(labels, classes, source_photo, capture_date):
+    """Hash semantic sample order, distinct from the publisher archive hash."""
+    labels=np.asarray(labels)
+    photos,dates=np.asarray(source_photo),np.asarray(capture_date)
+    if (labels.ndim!=1 or labels.dtype.kind not in 'iu' or photos.shape!=labels.shape
+            or dates.shape!=labels.shape or np.any((labels<0)|(labels>=len(classes)))
+            or len(set(classes))!=len(classes)):
+        raise ValueError("Invalid validation sample identity")
+    payload={"classes":list(classes),"rows":[[int(y),str(photo),str(date)]
+              for y,photo,date in zip(labels,photos,dates)]}
+    return hashlib.sha256(json.dumps(payload,ensure_ascii=False,separators=(",",":")).encode()).hexdigest()
+
+
 def run(args):
     if args.output.exists():
         raise FileExistsError(args.output)
@@ -147,10 +160,12 @@ def run(args):
         train_images, train_labels, classes = train["images"], train["labels"], train["classes"].tolist()
     with np.load(args.data / "validation.npz", allow_pickle=False) as validation:
         val_images, val_labels = validation["images"], validation["labels"]
+        validation_order_sha256 = validation_identity(val_labels, classes, validation["source_photo"], validation["capture_date"])
         if validation["classes"].tolist() != classes:
             raise ValueError("Class maps disagree")
     if classes != manifest["classes"]:
         raise ValueError("Manifest class map mismatch")
+    validation_npz_sha256 = hashlib.sha256((args.data / "validation.npz").read_bytes()).hexdigest()
     device = torch.device(args.device)
     seed_all(args.seed)
     model, weights_enum, head_prefix = build_model(args.architecture, len(classes))
@@ -215,6 +230,8 @@ def run(args):
             torch.save({"state_dict": {name: value.cpu().clone() for name, value in evaluation_model.state_dict().items()},
                         "classes": classes, "seed": args.seed, "validation_macro_f1": best,
                         "archive_sha256": manifest["archive_sha256"],
+                        "validation_order_sha256": validation_order_sha256,
+                        "validation_npz_sha256": validation_npz_sha256,
                         "architecture": args.architecture,
                         "input_size": args.input_size,
                         "ema_decay": args.ema_decay,
@@ -228,7 +245,9 @@ def run(args):
         if epoch + 1 - best_epoch >= args.patience:
             break
     report = {"protocol": "PVF-10 date-disjoint ImageNet transfer; test untouched",
-              "archive_sha256": manifest["archive_sha256"], "seed": args.seed,
+              "archive_sha256": manifest["archive_sha256"],
+              "validation_order_sha256": validation_order_sha256,
+              "validation_npz_sha256": validation_npz_sha256, "seed": args.seed,
               "device": str(device), "torch_version": torch.__version__,
               "torchvision_version": torchvision.__version__,
               "architecture": args.architecture, "pretrained": str(weights_enum),

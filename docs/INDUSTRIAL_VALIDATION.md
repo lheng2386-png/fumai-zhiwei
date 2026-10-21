@@ -280,3 +280,27 @@ PYTHONPATH=src python src/audit_reunion_confirmation.py \
   --source dc_transformer reports/reunion_transformer_dc_a10_v1 \
   --output reports/reunion_causal_confirmation_new_run
 ```
+
+
+### 图像跨种子共同错误与预测顺序校验
+
+新增 `audit_pvf10_error_consistency.py` 对原 ConvNeXt 抗退化三种子做验证错误审计，不训练、不改标签、不调阈值，也不打开测试文件。1,085 张验证图中 **149 张三个种子全错**，其中 **111 张错成同一类别**；这 111 张中 **14 张**三个模型最高 softmax 均≥.9。softmax 未校准，不能把这个固定诊断阈值当可靠度保证。12 张缺陷被三个模型全部判为健康，24 张健康被三个模型全部判为某种缺陷（后者不要求三模型错成同类）。
+
+| 三个种子共同的实际→预测类别 | 图片数 | 原始照片组数 |
+| --- | ---: | ---: |
+| bottom dirt → hot cell | 29 | 10 |
+| healthy panel → debris cover | 15 | 15 |
+| hot cell → debris cover | 12 | 11 |
+| shadow → hot cell | 8 | 7 |
+| shadow → healthy panel | 5 | 2 |
+
+全错样本在 20230223 为 **145/945**，20230407 为 **4/140**；两个日期的类别构成、拍摄条件和样本数量不同，不能仅按这两个比例归因为某种相机或场站偏移。原始照片组也不能当独立场站。上述共同错误提示三种子集成的互补性有限，但它不是对所有集成的否定；尤其不能因模型一致而擅自重标验证图。报告保留全部逐图行号、日期、原图组及各模型概率，用于后续复核，未用于训练。
+
+检查发现旧训练报告只有发布归档哈希，缺少“当前验证图及其顺序”的身份绑定。后续 `train_pvf10_transfer.py` 在结果及最佳权重中新增 `validation_npz_sha256`（完整 NPZ 内容）与 `validation_order_sha256`（类别表＋有序标签/原图组/日期）。新增审计对有此字段的源报告逐一验证，不匹配即拒绝；对历史缓存明确记录 `source_run_identity_verified=false`，不事后伪造它们训练时未保存的证据。默认训练路径与 RNG 不变，不因为增加元数据就重新训练或更新模型性能结论。14 项图像相关测试通过，包括类别/标签/顺序变化使身份哈希改变。
+
+完整报告 `reports/pvf10_error_consistency_v1.json`；入口：
+
+```bash
+PYTHONPATH=src python src/audit_pvf10_error_consistency.py \
+  --run reports/pvf10_robust_a10_v1 --output reports/pvf10_error_consistency_new_run.json
+```
