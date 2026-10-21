@@ -92,3 +92,51 @@ python3 src/package_competition_models.py --output reports/competition_models_po
 ```
 
 可搬移配置已用真实时序权重运行通过；其余两条原路径真实推理均通过，portable 文件与原文件哈希一致。权重不提交 Git，源数据也不打进权重包。比赛使用与展示仍保留数据来源说明。
+
+## HTTP 服务（已完成真实请求测试）
+
+入口 `src/serve_competition.py` 使用 FastAPI，默认仅监听本机 8770。三个任务共用配置中固定模型，不接受客户端选择任意权重、服务器路径或训练命令。实际依赖版本写入 `requirements-competition-api.txt`。
+
+```bash
+.venv-detect/bin/python -m pip install -r requirements-competition-api.txt
+.venv-detect/bin/python src/serve_competition.py --port 8770
+```
+
+当前本机已在 `http://127.0.0.1:8770` 运行，自动交互接口说明在 `/docs`，机器可读规范在 `/openapi.json`。Swagger UI 的默认资源依赖网络；纯 HTTP curl 不依赖页面资源。前端开发端口不同则启动时添加 `--allow-origin http://localhost:3000`，也可重复指定明确来源。`--device cuda` 可切换服务推理设备；当前这轮验证用 CPU，没改动云端训练。
+
+服务状态与推理分开：`GET /health` 验证全部配置权重/归一化文件哈希，但不会加载模型跑假请求；`models_warmed_up=false` 明确说明当前是每次推理加载，不是常驻热模型。推理采用单 worker＋串行执行，适合本地比赛联调；高并发服务未实现，也不作为两天版前置条件。
+
+| 方法与路径 | 输入 | 成功输出 |
+| --- | --- | --- |
+| GET /health | 无 | ready、模型架构/版本、权重验证状态、推理设备 |
+| POST /v1/infer/timeseries | multipart 文件与身份元数据 | 与 CLI 一致的时序 evidence 列表＋request_id |
+| POST /v1/infer/classification | multipart 图片与采集时刻 | 十类分类 evidence＋request_id |
+| POST /v1/infer/detection | multipart 640×512 图片与采集时刻 | 原图坐标检测 evidence＋request_id |
+| POST /v1/review | JSON 证据列表与目标设备/当前时间 | 协同复核结果＋request_id |
+
+上传字段：`file`、`plant_id`、`asset_id`、`observation_id`、`data_kind`；图像额外必须有 `observed_at`。`data_kind` 只能为 public_research / site_observation / synthetic_demo。每个文件最多 16 MiB；使用生成的 request_id 目录和固定输入名，不信任上传文件名。结果、原始输入或错误记录保留在 `reports/competition_api_jobs/<request_id>/`，方便复现。
+
+```bash
+curl -sS http://127.0.0.1:8770/health
+curl -sS -X POST http://127.0.0.1:8770/v1/infer/classification \
+ -F 'file=@reports/competition_real_inputs_v1/module.png' \
+ -F 'plant_id=pvf10-public' -F 'asset_id=unverified-module' \
+ -F 'observation_id=pvf10-http-demo' -F 'data_kind=synthetic_demo' \
+ -F 'observed_at=2026-10-21T10:00:00Z'
+```
+
+复核 JSON 格式：`{"evidence":[...],"plant_id":"...","asset_id":"...","as_of":"带时区时间"}`；可额外指定 max_age_minutes / max_pair_gap_minutes。前端从各推理响应取 evidence，原样提交，保留来源与模拟标记。此接口是客户端提供证据的本地演示接口，不是已认证的现场告警平台。
+
+失败响应：422 表示输入/时间/身份无效或模型输入不匹配；413 表示上传超限；503 表示固定权重缺失/校验不符；500 表示模型运行错误。前端不要把非 200 响应渲染成健康。质量未过但文件可解析时，推理仍可返回 200，必须读取每条 evidence 的 `quality=blocked`、`decision=uncertain`。
+
+实际测试已完成：三个真实模型 HTTP 上传均返回 200，协同接口只采用目标资产证据，另外两个公开来源被 different_asset 排除；常量图片返回 blocked/uncertain，损坏图片和无时区请求返回 422。API、打包、质量及协同共 16 项相关测试通过。
+
+```bash
+.venv-detect/bin/python scripts/smoke_competition_api.py --output reports/competition_http_smoke_new
+.venv-detect/bin/python -m unittest discover -s tests -p 'test_competition_*.py'
+```
+
+上述 HTTP smoke 读取的是训练/开发验证样例，不是新增测试成绩；两个图像的精确时间未知，继续显式用 synthetic_demo。接口实现参考 [FastAPI 文件上传文档](https://fastapi.tiangolo.com/tutorial/request-files/)；测试生命周期参考 [FastAPI lifespan 测试文档](https://fastapi.tiangolo.com/advanced/testing-events/)。
+
+
+真实测试还发现并修复了一个解码边界：Ultralytics 在尝试识别损坏图片时可能触发 HEIF 可选插件的依赖自动安装。比赛入口现明确只尝试 PNG/JPEG/TIFF/BMP，解码异常转为输入错误，并在推理前设置 `YOLO_AUTOINSTALL=false`。真实图片转 RGB 前最多允许 1,600 万像素，避免压缩文件小但解码内存过大。损坏图返回 422，不触发临时安装；该修复也覆盖 CLI 路径。

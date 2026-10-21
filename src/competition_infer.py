@@ -7,6 +7,7 @@ import argparse
 import hashlib
 import json
 import math
+import os
 from pathlib import Path
 import time
 import numpy as np
@@ -29,8 +30,13 @@ def verified_file(root,spec):
 
 def image_input(path,expected_size=None):
     from PIL import Image,ImageOps
-    with Image.open(path) as source:
-        image=ImageOps.exif_transpose(source).convert('RGB');image.load()
+    try:
+        with Image.open(path,formats=['PNG','JPEG','TIFF','BMP']) as source:
+            if source.width*source.height>16_000_000:
+                raise ValueError('Image exceeds competition input pixel limit')
+            image=ImageOps.exif_transpose(source).convert('RGB');image.load()
+    except (OSError, ImportError, ValueError, Image.DecompressionBombError) as error:
+        raise ValueError('Unsupported, damaged or oversized image input') from error
     values=np.asarray(image,dtype=np.float32)/255.
     if expected_size is not None and image.size!=tuple(expected_size):
         return image,{'ready':False,'reason':'unsupported_source_image_size','size':list(image.size)}
@@ -66,6 +72,7 @@ def classify(path,checkpoint,spec,device):
 
 
 def detect(path,checkpoint,spec,device):
+    os.environ['YOLO_AUTOINSTALL']='false'
     from ultralytics import YOLO
     from evaluate_pv_hsd_tiled import inference_views,restore_box,touches_internal_edge,nms
     image,quality=image_input(path,(640,512))

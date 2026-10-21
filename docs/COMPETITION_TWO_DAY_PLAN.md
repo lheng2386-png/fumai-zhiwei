@@ -81,3 +81,6 @@ python3 -m unittest discover -s tests -p 'test_competition_evidence.py'
 ## 实际进度更新：三模型真实推理已跑通
 
 新增 [三模型接口说明](COMPETITION_MODEL_INTERFACE.md)，`competition_infer.py` 已实际使用本机真实权重跑通时序、分类、检测，输出可直接接入协同策略；新增可搬移权重包和样例生成/一键 smoke 脚本。核心缺口从“缺少统一真实推理”推进到 HTTP 封装、前端联调、质量展示及彩排。完整平台仍未完成，不把 CLI 成功说成已完成前后端联调。
+
+
+HTTP 封装也已完成并通过三个真实模型上传请求、质量阻断、错误状态及跨资产隔离测试。当前服务本机 8770，16 项相关测试通过；尚待队友前端实际接入、人工复核页面与整场彩排。详见同一接口文档的 HTTP 章节。

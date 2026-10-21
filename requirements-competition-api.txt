@@ -1,0 +1,5 @@
+# HTTP facade only; install alongside the model runtime, not instead of torch/Ultralytics.
+fastapi==0.128.8
+uvicorn==0.39.0
+python-multipart==0.0.20
+httpx==0.28.1

@@ -4,6 +4,7 @@ from pathlib import Path
 import sys
 import tempfile
 import unittest
+from unittest.mock import patch
 import numpy as np
 from PIL import Image
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]/'src'))
@@ -46,5 +47,12 @@ class CompetitionInferTests(unittest.TestCase):
             p.write_bytes(b'changed')
             with self.assertRaises(ValueError):package(config,source,root/'bad')
             self.assertFalse((root/'bad').exists())
+
+    def test_corrupt_image_or_missing_optional_decoder_is_input_error(self):
+        with tempfile.TemporaryDirectory() as directory:
+            p=Path(directory)/'bad.png';p.write_bytes(b'not a real image')
+            with self.assertRaises(ValueError):image_input(p)
+            with patch('PIL.Image.open',side_effect=ModuleNotFoundError('optional decoder')):
+                with self.assertRaises(ValueError):image_input(p)
 
 if __name__=='__main__':unittest.main()
