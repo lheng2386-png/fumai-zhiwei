@@ -1,0 +1,76 @@
+{
+  "protocol": "Fixed 640+960 union, NMS .5, retain survivor scores; stable ties prefer 640",
+  "source_cache_sha256": {
+    "fumai-zhiwei/reports/pv_hsd_tiles_mps_cache_v1.json": "a5ee0e2b14c67324dbb976f049be26bbe95f81e509fc4e737a1a311592a553d1",
+    "fumai-zhiwei/reports/pv_hsd_tiles_mps960_v1_predictions.json": "6e64ca16fd849d9903b37a53016aa7a7e33f9cf2012d91ad065107e87d69b2e7"
+  },
+  "map50_95": 0.32778333075775046,
+  "map50": 0.7567775922735752,
+  "map75": 0.21521126391258352,
+  "recall_100": 0.4628553577007185,
+  "fixed_points": {
+    "conf0.25_iou0.5": {
+      "true_positive": 2643,
+      "false_positive": 1816,
+      "false_negative": 558,
+      "precision": 0.5927337968154295,
+      "recall": 0.8256794751640113,
+      "empty_label_images": 47,
+      "empty_label_images_with_detection": 23,
+      "false_positive_types": {
+        "duplicate": 15,
+        "localization": 696,
+        "background": 1105
+      }
+    },
+    "conf0.25_iou0.75": {
+      "true_positive": 1187,
+      "false_positive": 3272,
+      "false_negative": 2014,
+      "precision": 0.2662031845705315,
+      "recall": 0.37082161824429866,
+      "empty_label_images": 47,
+      "empty_label_images_with_detection": 23,
+      "false_positive_types": {
+        "duplicate": 0,
+        "localization": 2167,
+        "background": 1105
+      }
+    },
+    "conf0.5_iou0.5": {
+      "true_positive": 2231,
+      "false_positive": 658,
+      "false_negative": 970,
+      "precision": 0.7722395292488751,
+      "recall": 0.696969696969697,
+      "empty_label_images": 47,
+      "empty_label_images_with_detection": 10,
+      "false_positive_types": {
+        "duplicate": 3,
+        "localization": 320,
+        "background": 335
+      }
+    },
+    "conf0.5_iou0.75": {
+      "true_positive": 1051,
+      "false_positive": 1838,
+      "false_negative": 2150,
+      "precision": 0.36379370024229835,
+      "recall": 0.3283348953452046,
+      "empty_label_images": 47,
+      "empty_label_images_with_detection": 10,
+      "false_positive_types": {
+        "duplicate": 0,
+        "localization": 1503,
+        "background": 335
+      }
+    }
+  },
+  "test_status": "not read",
+  "limitations": [
+    "Repeated validation; not a new site/flight evaluation.",
+    "Two strongly correlated scales of one checkpoint; scores are not calibrated.",
+    "Requires both inference passes; cache merge runtime is not model latency.",
+    "No threshold/model selected on this result; empty labels are not certified healthy."
+  ]
+}
