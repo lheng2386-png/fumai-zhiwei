@@ -133,16 +133,26 @@ if ! release_is_valid; then
     stage=$(mktemp -d "$APP_ROOT/releases/.stage-XXXXXX")
     archive=$(mktemp)
     python3 - "$ARCHIVE_URL" "$archive" <<'PY'
-import pathlib, sys, urllib.request
+import pathlib, sys, time, urllib.request
 url, target = sys.argv[1], pathlib.Path(sys.argv[2])
-request = urllib.request.Request(url, headers={'User-Agent': 'fumai-deploy/1.0'})
-with urllib.request.urlopen(request, timeout=90) as source, target.open('wb') as output:
-    total = 0
-    while chunk := source.read(1024 * 1024):
-        total += len(chunk)
-        if total > 64 * 1024 * 1024:
-            raise RuntimeError('Repository archive exceeds 64 MiB')
-        output.write(chunk)
+last_error = None
+for attempt in range(4):
+    try:
+        request = urllib.request.Request(url, headers={'User-Agent': 'fumai-deploy/1.0'})
+        with urllib.request.urlopen(request, timeout=90) as source, target.open('wb') as output:
+            total = 0
+            while chunk := source.read(1024 * 1024):
+                total += len(chunk)
+                if total > 64 * 1024 * 1024:
+                    raise RuntimeError('Repository archive exceeds 64 MiB')
+                output.write(chunk)
+        break
+    except Exception as error:
+        last_error = error
+        target.unlink(missing_ok=True)
+        if attempt == 3:
+            raise
+        time.sleep(2 ** attempt)
 PY
     python3 - "$archive" "$stage" "$COMMIT" <<'PY'
 import pathlib, shutil, sys, tarfile
