@@ -21,6 +21,7 @@ from .config import configured_model
 from .intent import classify_question, direct_answer, informational_intent, normalized
 from .store import Store
 from .tasks import AnalysisTasks, TaskBusy, TERMINAL
+from .conversation import Conversation, guard_model, context_excerpt
 
 
 class HTTPError(Exception):
@@ -45,16 +46,42 @@ class Application:
             if len(token) < 32 or not isinstance(user, dict) or user.get("role") not in {"viewer", "operator"} or not re.fullmatch(r"[A-Za-z0-9_.-]{1,64}", user.get("id", "")):
                 raise ValueError("Invalid configured user token, id or role")
         self.tasks = AnalysisTasks(store, self.slots, self.analyze)
+        self.conversation = Conversation(snapshot,store)
 
     def analyze(self, owner, body, progress=None):
-        intent = self.request_intent(body)
-        if intent != "maintenance":
+        conversation_id=body.get('_conversation_id') or self.store.default_conversation(owner)
+        fresh_analysis=any(kind=='maintenance' for _,kind in self.conversation.routes(owner,body))
+        if not fresh_analysis:
             if progress:
                 progress("answering")
-            return self.store.save_run(owner, body["message"], direct_answer(intent, self.model))
+            result=self.conversation.direct(owner,body,self.model)
+            if self.model and self.conversation.can_enrich_reply(owner,body) and result.get('events'):
+                try:
+                    bundle={**copy.deepcopy(result),'allow_tools':False,'hypotheses':[],'checks':[],'unknowns':[],
+                            'questions':[{'question_id':a['question_id'],'question':a['question']} for a in result['answers']],
+                            'conversation_context':[context_excerpt(r) for r in self.store.turns(owner,conversation_id,limit=8)]}
+                    # Do not anchor the model on the deterministic fallback answer.
+                    bundle.pop('answers',None)
+                    bundle['summary']='请直接回答当前追问的具体问题；已有观测是引用材料，不是要重复输出的报告。'
+                    bundle['reply_requirements']={'mode':'followup','no_new_diagnosis':True,'do_not_repeat_previous_reply':True}
+                    enriched=self.model.enrich(self.snapshot,body['message'],bundle,progress=progress) if progress else self.model.enrich(self.snapshot,body['message'],bundle)
+                    if enriched.get('model_analysis'):
+                        enriched['model_analysis']['hypotheses']=[]  # No model-generated cause list is published.
+                    guard_model(enriched.get('model_analysis'),result['events'])
+                    analysis=enriched['model_analysis'];answers={a['question_id']:a for a in analysis.get('answers',[])}
+                    for entry in result['answers']:
+                        if entry['intent']=='followup' and not re.search(r'通信|缺失|排序|首位|第一|原因',entry['question']):
+                            answer=answers.get(entry['question_id'])
+                            if answer:entry['answer']=answer['answer']
+                            elif len(result['answers'])==1:entry['answer']=analysis['summary']
+                    result.update(engine=enriched['engine'],model_status='connected',model_name=enriched['model_name'])
+                    if len(result['answers'])==1:result['summary']=result['answers'][0]['answer']
+                except Exception:
+                    result['model_status']='failed_fallback'
+            return self.store.save_run(owner,body['message'],result,conversation_id)
         if progress:
             progress("evidence")
-        result = self.snapshot.analyze(body.get("message"), body.get("event_id"), body.get("device_id"))
+        result = self.conversation.prepare_analysis(owner,body)
         result.update(response_type="analysis", intent="maintenance")
         introduction = informational_intent(normalized(body["message"]))
         if introduction:
@@ -66,12 +93,17 @@ class Application:
                     result = self.model.enrich(self.snapshot, body["message"], copy.deepcopy(result), progress=progress)
                 else:
                     result = self.model.enrich(self.snapshot, body["message"], copy.deepcopy(result))
+                if result.get('model_analysis'):
+                    result['model_analysis']['hypotheses']=[]  # The report uses the deterministic unranked possibilities.
+                guard_model(result.get('model_analysis'),result['events'])
             except Exception:
-                result["model_status"] = "failed_fallback"
-                result["unknowns"].insert(0, "模型请求失败或输出未通过校验，以下为规则分析；可稍后重试。")
+                result.pop('model_analysis',None)
+                result.update(engine='rules',model_status='failed_fallback')
+                result["unknowns"].insert(0, "模型请求失败、回答格式无效或包含无依据归因，以下保留可核对的观测与规则建议。")
         if progress:
             progress("saving")
-        return self.store.save_run(owner, body["message"], result)
+        result=self.conversation.finish_analysis(owner,body,result,self.model)
+        return self.store.save_run(owner,body['message'],result,conversation_id)
 
     @staticmethod
     def request_intent(body):
@@ -81,10 +113,10 @@ class Application:
         origin = headers.get("Origin")
         if origin and origin != self.origin:
             raise HTTPError(403, "来源不匹配")
-        if self.snapshot.mode == "live":
+        bearer=headers.get('Authorization','')
+        if self.snapshot.mode == "live" or bearer:
             if headers.get("X-Forwarded-Proto") != "https":
                 raise HTTPError(403, "实测模式必须通过 HTTPS 访问")
-            bearer = headers.get("Authorization", "")
             token = bearer[7:] if bearer.startswith("Bearer ") else ""
             for known, user in self.users.items():
                 if hmac.compare_digest(token.encode(), known.encode()):
@@ -99,6 +131,13 @@ class Application:
             uuid.UUID(session)
         except (ValueError, AttributeError):
             raise HTTPError(400, "需要有效的演示会话") from None
+        client=headers.get('X-Fumai-Client')
+        if client:
+            try:client=str(uuid.UUID(client))
+            except (ValueError,TypeError,AttributeError):raise HTTPError(400,'需要有效的浏览器访客标识') from None
+            owner='browser:'+client
+            self.store.claim_legacy(owner,session)
+            return owner
         return "demo:" + session
 
     def limit(self, key, maximum=20):
@@ -128,17 +167,38 @@ class Application:
             raise HTTPError(403, "提交需要同源页面")
         if method == "GET" and path.startswith("/agent-api/analysis-tasks/"):
             self.limit(client + ":task-poll", 120)
+        elif path in {'/agent-api/bootstrap','/agent-api/history','/agent-api/conversations','/agent-api/run'}:
+            self.limit(client+':history',120)
         else:
-            self.limit(client)
+            self.limit(client,30)
         snapshot = self.snapshot
+        conversation_id=headers.get('X-Fumai-Session') or self.store.default_conversation(owner)
+        conversation_id=self.store.ensure_conversation(owner,conversation_id)
         if method == "GET" and path == "/agent-api/bootstrap":
             return {"metadata": snapshot.meta, "mode": snapshot.mode, "model_configured": self.model is not None,
                     "stale": snapshot.stale, "devices": list(snapshot.devices.values()), "events": snapshot.list_events(limit=12)["events"],
-                    "history": self.store.history(owner), "device_control": False, "release": self.release}
+                    "history": self.store.history(owner,analysis_only=True), "device_control": False, "release": self.release,
+                    'conversation_id':conversation_id,'conversations':self.store.conversations(owner),
+                    'turns':self.store.turns(owner,conversation_id),
+                    'identity':{'kind':'account' if owner in [u['id'] for u in self.users.values()] else 'browser_guest',
+                                'history_scope':'account' if owner in [u['id'] for u in self.users.values()] else 'current_browser'},
+                    'capabilities':{'history':True,'context':True,'shared_business_data':False,'generation_forecast':False,'notifications':False}}
+        if method=='POST' and path=='/agent-api/history':
+            if set(body)-{'device_id','conversation_only','limit','offset'}:raise InputError('未知历史查询参数')
+            return {'records':self.store.history(owner,conversation_id=conversation_id if body.get('conversation_only') is True else None,
+                       device_id=body.get('device_id'),analysis_only=True,limit=body.get('limit',20),offset=body.get('offset',0))}
+        if method=='GET' and path=='/agent-api/conversations':
+            return {'conversations':self.store.conversations(owner)}
+        if method=='POST' and path=='/agent-api/conversations':
+            if set(body)!={'conversation_id'}:raise InputError('需要会话编号')
+            target=self.store.ensure_conversation(owner,body['conversation_id'])
+            return {'conversation_id':target,'turns':self.store.turns(owner,target),'conversations':self.store.conversations(owner)}
         if method == "POST" and path == "/agent-api/analyze":
-            if set(body) - {"message", "event_id", "device_id"}:
+            if set(body) - {"message", "event_id", "device_id",'response_mode'}:
                 raise InputError("未知分析参数")
-            if self.request_intent(body) != "maintenance":
+            if body.get('response_mode','auto') not in {'auto','report','chat'}:raise InputError('未知回答方式')
+            body={**body,'_conversation_id':conversation_id}
+            if not self.conversation.needs_model(owner,body):
                 return self.analyze(owner, body)
             if not self.slots.acquire(blocking=False):
                 raise HTTPError(503, "模型正在处理其他任务，请稍后重试")
@@ -147,11 +207,13 @@ class Application:
             finally:
                 self.slots.release()
         if method == "POST" and path == "/agent-api/analysis-tasks":
-            if set(body) - {"message", "event_id", "device_id", "request_id"}:
+            if set(body) - {"message", "event_id", "device_id", "request_id",'response_mode'}:
                 raise InputError("未知分析参数")
-            maintenance = self.request_intent(body) == "maintenance"
-            if maintenance:
-                snapshot.analyze(body.get("message"), body.get("event_id"), body.get("device_id"))
+            if body.get('response_mode','auto') not in {'auto','report','chat'}:raise InputError('未知回答方式')
+            body={**body,'_conversation_id':conversation_id}
+            maintenance = self.conversation.needs_model(owner,body)
+            if any(kind=='maintenance' for _,kind in self.conversation.routes(owner,body)):
+                self.conversation.prepare_analysis(owner,body)
             try:
                 return self.tasks.submit(owner, body, reserve_model_slot=maintenance)
             except TaskBusy as exc:
@@ -168,7 +230,7 @@ class Application:
             if snapshot.mode == "live" and snapshot.stale:
                 raise HTTPError(409, "当前快照已过期，请更新数据后重新分析")
             run = self.store.get_run(owner, body["run_id"])
-            if run.get("response_type") == "direct":
+            if run.get("response_type") != "analysis":
                 raise InputError("普通问答没有设备事件证据，不能生成核查草稿")
             if run["metadata"]["fingerprint"] != snapshot.meta["fingerprint"]:
                 raise HTTPError(409, "数据版本已变化，请重新分析")

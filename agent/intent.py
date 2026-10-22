@@ -31,6 +31,15 @@ OPERATIONS = re.compile(
     r"|inv[_ -]?[a-z0-9]+|demo-2107-[a-z0-9-]+"
     r"|\b(?:device|inverter|event|power|anomaly|anomalies|fault|alarm|inspect|investigate|maintenance)\b"
 )
+TASK_PATTERNS = {
+    'history': r'(?:分析|诊断|对话|聊天|会话).{0,6}(?:记录|历史)|(?:历史|之前|以前|刚才|上次).{0,16}(?:分析记录|分析过|有没有分析|是否分析|分析报告|分析结果)|(?:查询|查看|列出|查找).{0,12}(?:历史|之前|以前|最近|过往).{0,10}(?:分析|诊断|结果)|(?:刚才|上次|之前).{0,12}(?:分析(?:了|的是)|诊断(?:了|的是))|(?:分析|诊断)(?:过|了吗)|previous analys|analysis history',
+    'correction': r'不对|纠正|更正|你误解|我说的是|不是这样|说错了|不是.{0,35}(?:而是|是inv|是 inv|改为)',
+    'business': r'负责人|负责谁|谁负责|设备(?:当前)?状态|逆变器(?:当前)?状态|短信|邮件|通知.*(?:状态|发送|成功|失败)|发电量|预测电量|实际电量|预测偏差|运行日报|运维总结|复核进度|复核状态|工单进度',
+    'knowledge': r'(?:什么是|含义|定义|是什么意思|如何理解).{0,25}(?:同群|残差|功率|阈值|故障|告警|光伏|逆变器)|(?:同群|残差|功率|阈值).{0,15}(?:是什么|什么意思)|同群证据不足时.{0,10}(?:先查什么|怎么办|如何处理)',
+    'followup': r'刚才|上一条|上一个|上次|你说的|这样判断|为什么这样|继续解释|进一步解释|该设备|这台设备|这个结论|这条证据|这条事件|它的|依据是什么|凭什么|^为什么(?:呢)?[?？]*$|^继续[?？]*$|为什么.{0,15}(?:通信|缺失|排序)|(?:通信|缺失).{0,20}(?:依据|证据|排在|第一|首位)',
+    'evidence_query': r'(?:实测|参考|功率|同群|采样).{0,15}(?:多少|几台|几条|多长|差值)|(?:多少|几台).{0,12}(?:同群|功率)|(?:是|属于).{0,10}(?:单机|共性)',
+}
+ANALYSIS = re.compile(r'分析|诊断|核查|排查|检查|核对|回顾|对比|比较|异常|故障|偏低|偏高|不一致|偏差|超限|\b(?:analy[sz]e|check|inspect|investigate)\b')
 
 
 def normalized(message):
@@ -55,7 +64,14 @@ def classify_question(message, has_context=False):
         if any(OPERATIONS.search(clause) and not informational_intent(clause) for clause in clauses):
             return "maintenance"
         return direct
-    if OPERATIONS.search(text):
+    for intent, pattern in TASK_PATTERNS.items():
+        if re.search(pattern,text):
+            if intent == 'followup' and re.search(r'重新分析|再次分析|再分析|完整诊断|完整报告|^(?:请)?分析',text):
+                return 'maintenance'
+            return intent
+    if has_context and re.search(r'^(?:那|为什么|怎么|如何|能否|是不是|也就是说|接下来|还需要)',text):
+        return 'followup'
+    if OPERATIONS.search(text) and (ANALYSIS.search(text) or re.fullmatch(r'(?:inv[_ -]?\d+|demo-2107-[a-z0-9-]+)',text)):
         return "maintenance"
     if has_context and re.search(r"分析|看看|查看|检查|核对|查一下|看一下|继续|\b(?:analyze|check)\b", text):
         return "maintenance"

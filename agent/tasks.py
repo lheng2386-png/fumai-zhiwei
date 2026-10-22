@@ -133,7 +133,8 @@ class AnalysisTasks:
         except (ValueError, TypeError, AttributeError):
             raise InputError("无效的任务编号") from None
         with self.store.connect() as db:
-            row = db.execute("SELECT * FROM analysis_tasks WHERE id=? AND owner=?", (task_id, owner)).fetchone()
+            allowed=self.store.owners(owner)
+            row = db.execute('SELECT * FROM analysis_tasks WHERE id=? AND owner IN ('+','.join('?' for _ in allowed)+')',(task_id,*allowed)).fetchone()
         if not row:
             raise InputError("任务不存在或无权访问")
         with self._failure_lock:

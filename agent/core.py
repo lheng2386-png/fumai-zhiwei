@@ -187,6 +187,8 @@ class Snapshot:
                 rows = [self.event(key) for key in event_ids[:6]]
             else:
                 rows = self.list_events(device_id or (device_ids[0] if len(device_ids) == 1 else None))["events"]
+                if len(device_ids)>1 and not device_id:
+                    rows=[e for e in self.events.values() if e['inverter'] in device_ids][:6]
                 selected_kind = "insufficient_peers" if "同群证据不足" in message else "shared_or_model_candidate" if "共性" in message else None
                 if selected_kind:
                     rows = [e for e in self.events.values() if e["evidence"] == selected_kind and (not device_id or e["inverter"] == device_id)][:6]
