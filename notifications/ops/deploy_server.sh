@@ -294,7 +294,8 @@ runuser -u fumai-notify -- env \
     FUMAI_DB_PATH="$DB_PATH" \
     "$NODE_LINK/bin/node" "$CURRENT/notifications/src/migrate.mjs"
 systemctl daemon-reload
-systemctl enable --now fumai-notification-api.service fumai-notification-worker.service
+systemctl enable fumai-notification-api.service fumai-notification-worker.service
+systemctl restart fumai-notification-api.service fumai-notification-worker.service
 for attempt in {1..20}; do
     if python3 - <<'PY'
 import json, urllib.request
