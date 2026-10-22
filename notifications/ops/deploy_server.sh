@@ -200,6 +200,7 @@ PY
     rm -rf "$stage"
 fi
 release_is_valid || { echo 'Prepared release failed validation.' >&2; find "$RELEASE" -maxdepth 4 -type f -print >&2; exit 1; }
+chmod 0755 "$APP_ROOT" "$APP_ROOT/releases" "$RELEASE"
 ln -sfn "$RELEASE" "$CURRENT"
 [[ "$(readlink -f "$CURRENT")" == "$RELEASE" ]] || { echo 'Current release symlink is incorrect.' >&2; exit 1; }
 [[ -f "$CURRENT/notifications/src/migrate.mjs" ]] || {
@@ -214,6 +215,11 @@ if ! id fumai-notify >/dev/null 2>&1; then
 fi
 chown fumai-notify:fumai-notify "$STATE_ROOT"
 chmod 0750 "$STATE_ROOT"
+runuser -u fumai-notify -- test -r "$CURRENT/notifications/src/migrate.mjs" || {
+    echo 'The service account cannot read the migration file.' >&2
+    namei -l "$CURRENT/notifications/src/migrate.mjs" >&2 || true
+    exit 1
+}
 
 cat > "$ENV_FILE" <<EOF
 FUMAI_DB_PATH=$DB_PATH
