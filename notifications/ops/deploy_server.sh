@@ -402,4 +402,3 @@ printf 'Commit: %s\n' "$COMMIT"
 printf 'Mode: mock (no real SMS or email)\n'
 printf 'Page: %s/notifications.html\n' "$PUBLIC_ORIGIN"
 printf 'Backup: %s\n' "$BACKUP_ROOT"
-
