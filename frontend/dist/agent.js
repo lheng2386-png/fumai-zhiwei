@@ -1,6 +1,21 @@
 /* Evidence workbench. Model keys never enter the browser. */
 (() => {
     'use strict';
+    // Follow the visible viewport when the mobile keyboard changes its height.
+    // Pinch zoom keeps the existing layout instead of shrinking the workbench.
+    if (window.visualViewport) {
+        const viewport = window.visualViewport;
+        const fitViewport = () => {
+            if (viewport.scale !== 1) return;
+            document.documentElement.style.setProperty('--agent-viewport-height', `${Math.round(viewport.height)}px`);
+            const typing = document.activeElement?.matches('.agent-compose textarea');
+            document.documentElement.classList.toggle('agent-keyboard-open', !!typing && viewport.height < window.innerHeight - 120);
+        };
+        viewport.addEventListener('resize', fitViewport);
+        document.addEventListener('focusin', fitViewport);
+        document.addEventListener('focusout', () => requestAnimationFrame(fitViewport));
+        fitViewport();
+    }
     const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
     const glyph = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M12 3v3m-6 2h12a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2Zm-4 4h2m16 0h2M8 20v2m8-2v2"/><path d="M8 12h.01M16 12h.01M8 16h8" stroke-linecap="round"/></svg>';
     const uuid = () => '10000000-1000-4000-8000-100000000000'.replace(/[018]/g, c => (Number(c) ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> Number(c) / 4).toString(16));
