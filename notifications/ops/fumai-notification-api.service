@@ -1,0 +1,17 @@
+[Unit]
+Description=Fumai notification API
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/fumai-zhiwei/notifications
+EnvironmentFile=/etc/fumai-zhiwei/notification.env
+ExecStart=/usr/bin/node src/server.mjs
+Restart=on-failure
+RestartSec=3
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
+
