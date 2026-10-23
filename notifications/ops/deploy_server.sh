@@ -328,6 +328,31 @@ log 'Run the idempotent database migration and start API/Worker'
 runuser -u fumai-notify -- env \
     FUMAI_DB_PATH="$DB_PATH" \
     "$NODE_LINK/bin/node" "$CURRENT/notifications/src/migrate.mjs"
+
+needs_admin=$(cd "$CURRENT/notifications" && runuser -u fumai-notify -- env \
+    FUMAI_DB_PATH="$DB_PATH" \
+    "$NODE_LINK/bin/node" --input-type=module -e \
+    "import { openDatabase } from './src/db.mjs'; const db=openDatabase(); console.log(db.prepare('SELECT count(*) count FROM app_user').get().count===0?'yes':'no'); db.close();")
+if [[ "$needs_admin" == 'yes' ]]; then
+    if [[ ! -t 0 ]]; then
+        echo 'No application administrator exists. Run this deployment in an interactive terminal to create one.' >&2
+        exit 1
+    fi
+    printf 'Initial website administrator username: '
+    read -r bootstrap_username
+    printf 'Initial website administrator password (10-128 characters): '
+    read -rs bootstrap_password
+    printf '\n'
+    [[ $bootstrap_username =~ ^[A-Za-z0-9._-]{3,40}$ ]] || { echo 'Administrator username format is invalid.' >&2; exit 1; }
+    [[ ${#bootstrap_password} -ge 10 && ${#bootstrap_password} -le 128 ]] || { echo 'Administrator password length is invalid.' >&2; exit 1; }
+    (cd "$CURRENT/notifications" && runuser -u fumai-notify -- env \
+        FUMAI_DB_PATH="$DB_PATH" \
+        FUMAI_BOOTSTRAP_ADMIN_USERNAME="$bootstrap_username" \
+        FUMAI_BOOTSTRAP_ADMIN_PASSWORD="$bootstrap_password" \
+        "$NODE_LINK/bin/node" --input-type=module -e \
+        "import { openDatabase } from './src/db.mjs'; import { AuthService } from './src/auth.mjs'; const db=openDatabase(); const user=new AuthService(db).ensureBootstrapFromEnv(); if(!user) throw new Error('Administrator was not created'); console.log('Created website administrator: '+user.username); db.close();")
+    unset bootstrap_password
+fi
 systemctl daemon-reload
 systemctl enable fumai-notification-api.service fumai-notification-worker.service
 systemctl restart fumai-notification-api.service fumai-notification-worker.service
