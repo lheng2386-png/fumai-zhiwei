@@ -6,6 +6,8 @@ Issue #10；用户确认暂无图纸/勘测/模型，允许自主选择工具。
 
 入口 `/#scene`。示意场景含 576 块组件、24 台逆变器、2 台箱变；支持旋转、平移、缩放、全站/俯视/设备定位、设备拾取、分类/待核查过滤、搜索、日间/傍晚光照和标准/低功耗模式。候选事件以红标记展示，空间位置与功率观测都明确标识为样例。
 
+页面保留当前登录保护。现有服务器的 `/` 与 `/index.html` 由通知服务静态目录代理，因此发布本页同时把同样的场景脚本、样式和导航增量合入该入口；不更改认证、Nginx 或后端逻辑。后续发布应同步这两个入口，避免只更新前端版本标识而漏掉实际首页。
+
 已有样例事件可打开证据或智能体。模型选择不自动触发诊断或控制设备。导入的工程布局不自动继承同编号样例事件；真实业务状态须在完成身份、编号和时间语义映射后另行接入。无 WebGL 时仍可使用设备索引。
 
 ## 模型工具与精度
@@ -61,5 +63,7 @@ node frontend/serve.mjs
 ```
 
 浏览器回归 `frontend/tests/scene.browser.cjs`，设置 FUMAI_CHECK_URL / FUMAI_PLAYWRIGHT_MODULE / FUMAI_BROWSER_EXECUTABLE / FUMAI_TEST_OUTPUT。包含实际 WebGL、射线拾取、模型加载、真实 Wasm 解码、无 WebGL、导入失败回退、路由释放和手机布局。测试内核的 WebGL 性能不能当作现场终端帧率保证。
+
+仅本地回归用拦截的测试身份，不更改应用认证代码。公网可显式设置 FUMAI_SCENE_REGISTER_VIEWER=1，走已有正常注册 API 创建一次无设备绑定的 viewer 测试账号，验收后注销会话；使用保留的 example.invalid 邮箱，不发通知。生产登录重定向另行验证，不通过拦截模拟公网身份。
 
 原理与许可证：[InstancedMesh](https://threejs.org/docs/pages/InstancedMesh.html)、[GLTFLoader](https://threejs.org/docs/pages/GLTFLoader.html)、[Meshoptimizer 解码器](https://github.com/zeux/meshoptimizer/tree/v0.22/js)、`frontend/THIRD_PARTY_NOTICES.md`。
