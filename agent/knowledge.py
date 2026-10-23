@@ -222,6 +222,7 @@ class Knowledge:
 
     def chunk(self,owner,chunk_id):
         if not isinstance(chunk_id,str) or len(chunk_id)>64:raise InputError('无效的引用编号。')
+        chunk_id=chunk_id.removeprefix('KB:')
         with self.store.connect() as db:
             row=db.execute('''SELECT c.id AS chunk_id,c.document_id,c.ordinal,c.location,c.text,d.title,d.filename,d.digest
                 FROM kb_chunks c JOIN kb_documents d ON d.id=c.document_id WHERE c.id=? AND d.owner=? AND d.status='ready' ''',(chunk_id,owner)).fetchone()

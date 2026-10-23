@@ -43,7 +43,7 @@ class KnowledgeTests(unittest.TestCase):
         result=self.kb.search(self.owner,'E073 绝缘电阻低要核查什么？')
         self.assertTrue(result['chunks']);chunk=result['chunks'][0]
         self.assertEqual(chunk['filename'],'运维手册.txt');self.assertIn('绝缘电阻低',chunk['text'])
-        self.assertTrue(chunk['citation_id'].startswith('KB:'));self.assertEqual(chunk['digest'],__import__('hashlib').sha256(chunk['text'].encode()).hexdigest())
+        self.assertEqual(self.kb.chunk(self.owner,chunk['citation_id'])['chunk_id'],chunk['chunk_id']);self.assertTrue(chunk['citation_id'].startswith('KB:'));self.assertEqual(chunk['digest'],__import__('hashlib').sha256(chunk['text'].encode()).hexdigest())
         self.assertEqual(self.kb.search('other','E073')['chunks'],[])
         with self.assertRaises(InputError):self.kb.chunk('other',chunk['chunk_id'])
         with self.assertRaises(InputError):self.kb.delete('other',doc['id'])
