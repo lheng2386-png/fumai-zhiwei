@@ -14,6 +14,7 @@ export class NotificationWorker {
     this.leaseSeconds = Number(options.leaseSeconds || process.env.FUMAI_WORKER_LEASE_SECONDS || 60);
     this.maxAttempts = Number(options.maxAttempts || process.env.FUMAI_WORKER_MAX_ATTEMPTS || 5);
     this.baseRetryMs = Number(options.baseRetryMs || 1000);
+    this.providerTimeoutMs = Number(options.providerTimeoutMs || process.env.FUMAI_PROVIDER_TIMEOUT_MS || 10_000);
   }
 
   recoverExpiredLeases() {
@@ -90,7 +91,7 @@ export class NotificationWorker {
       if (!provider) throw new ProviderError('CHANNEL_NOT_CONFIGURED', '发送渠道未配置');
       const result = await Promise.race([
         provider.send(delivery),
-        sleep(10_000).then(() => { throw new ProviderError('PROVIDER_TIMEOUT', '服务商请求超时，接收状态待核验', { unknownAcceptance: true }); })
+        sleep(this.providerTimeoutMs).then(() => { throw new ProviderError('PROVIDER_TIMEOUT', '服务商请求超时，接收状态待核验', { unknownAcceptance: true }); })
       ]);
       this.complete(delivery, result);
       return { id: delivery.id, status: result.simulated ? 'simulated_sent' : 'sent' };
@@ -123,4 +124,3 @@ export class NotificationWorker {
       WHERE status IN ('pending','retry_wait','processing')`).get().count };
   }
 }
-

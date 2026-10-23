@@ -1,5 +1,7 @@
 import { randomUUID } from 'node:crypto';
+import { execFile as nodeExecFile } from 'node:child_process';
 import { parseJson } from './service.mjs';
+import { sendSmtpMail } from './smtp.mjs';
 
 export class ProviderError extends Error {
   constructor(code, message, { transient = false, unknownAcceptance = false } = {}) {
@@ -37,6 +39,7 @@ export function buildMessage(delivery) {
 
 export class MockProvider {
   constructor({ fail = null } = {}) {
+    this.name = 'mock';
     this.fail = fail;
     this.sent = [];
   }
@@ -58,15 +61,104 @@ export class MockProvider {
 }
 
 export class UnconfiguredRealProvider {
-  constructor(channel) { this.channel = channel; }
+  constructor(channel) { this.channel = channel; this.name = 'unconfigured'; }
   async send() {
     throw new ProviderError('PROVIDER_NOT_CONFIGURED', `${this.channel} 真实服务商尚未配置`, { transient: false });
   }
   async lookup() { return { status: 'unknown' }; }
 }
 
-export function createProviders(mode = process.env.FUMAI_NOTIFICATION_MODE || 'mock') {
-  if (mode === 'mock') return { sms: new MockProvider(), email: new MockProvider() };
-  return { sms: new UnconfiguredRealProvider('sms'), email: new UnconfiguredRealProvider('email') };
+export class SmtpEmailProvider {
+  constructor(config = {}, transport = sendSmtpMail) {
+    this.name = 'smtp';
+    this.config = config;
+    this.transport = transport;
+  }
+
+  async send(delivery) {
+    if (!this.config.host || !this.config.from) {
+      throw new ProviderError('SMTP_NOT_CONFIGURED', 'SMTP 主机或发件人尚未配置');
+    }
+    try {
+      return await this.transport(this.config, { to: delivery.address_snapshot, ...buildMessage(delivery) });
+    } catch (error) {
+      if (error instanceof ProviderError) throw error;
+      throw new ProviderError(error.code || 'SMTP_SEND_FAILED', '邮件服务商发送失败', {
+        transient: error.transient ?? !/^SMTP_5/.test(error.code || ''),
+        unknownAcceptance: Boolean(error.unknownAcceptance)
+      });
+    }
+  }
+
+  async lookup() { return { status: 'unsupported' }; }
 }
 
+function executeFile(execFile, command, args, options) {
+  return new Promise((resolve, reject) => {
+    execFile(command, args, options, (error, stdout, stderr) => {
+      if (error) {
+        error.stdout = stdout;
+        error.stderr = stderr;
+        reject(error);
+      } else resolve({ stdout, stderr });
+    });
+  });
+}
+
+export class GammuSmsProvider {
+  constructor(config = {}, execFile = nodeExecFile) {
+    this.name = 'gammu';
+    this.config = config;
+    this.execFile = execFile;
+  }
+
+  async send(delivery) {
+    const command = this.config.command || 'gammu-smsd-inject';
+    const args = [];
+    if (this.config.configFile) args.push('-c', this.config.configFile);
+    args.push('TEXT', delivery.address_snapshot, '-text', buildMessage(delivery).text);
+    try {
+      const { stdout } = await executeFile(this.execFile, command, args, {
+        timeout: Number(this.config.timeoutMs || 10_000), windowsHide: true,
+        maxBuffer: 64 * 1024, encoding: 'utf8'
+      });
+      const matched = String(stdout || '').match(/(?:ID|reference)\D+(\d+)/i);
+      return { accepted: true, simulated: false, providerMessageId: matched?.[1] || `gammu-${randomUUID()}` };
+    } catch (error) {
+      const timedOut = error.killed || error.code === 'ETIMEDOUT';
+      throw new ProviderError(timedOut ? 'GAMMU_TIMEOUT' : 'GAMMU_SEND_FAILED',
+        timedOut ? '短信猫命令超时，发送状态待核验' : '短信猫发送失败', {
+          transient: !timedOut,
+          unknownAcceptance: timedOut
+        });
+    }
+  }
+
+  async lookup() { return { status: 'unsupported' }; }
+}
+
+function bool(value, fallback) {
+  if (value == null || value === '') return fallback;
+  return !['0', 'false', 'no', 'off'].includes(String(value).toLowerCase());
+}
+
+export function createProviders(mode = process.env.FUMAI_NOTIFICATION_MODE || 'mock') {
+  const emailMode = process.env.FUMAI_EMAIL_PROVIDER || (mode === 'real' ? 'smtp' : 'mock');
+  const smsMode = process.env.FUMAI_SMS_PROVIDER || (mode === 'real' ? 'gammu' : 'mock');
+  const email = emailMode === 'mock' ? new MockProvider() : (emailMode === 'smtp' ? new SmtpEmailProvider({
+    host: process.env.FUMAI_SMTP_HOST,
+    port: Number(process.env.FUMAI_SMTP_PORT || 465),
+    secure: bool(process.env.FUMAI_SMTP_SECURE, true),
+    user: process.env.FUMAI_SMTP_USER,
+    password: process.env.FUMAI_SMTP_PASSWORD,
+    from: process.env.FUMAI_SMTP_FROM,
+    helo: process.env.FUMAI_SMTP_HELO,
+    timeoutMs: Number(process.env.FUMAI_PROVIDER_TIMEOUT_MS || 10_000)
+  }) : new UnconfiguredRealProvider('email'));
+  const sms = smsMode === 'mock' ? new MockProvider() : (smsMode === 'gammu' ? new GammuSmsProvider({
+    command: process.env.FUMAI_GAMMU_COMMAND || 'gammu-smsd-inject',
+    configFile: process.env.FUMAI_GAMMU_CONFIG,
+    timeoutMs: Number(process.env.FUMAI_PROVIDER_TIMEOUT_MS || 10_000)
+  }) : new UnconfiguredRealProvider('sms'));
+  return { sms, email };
+}

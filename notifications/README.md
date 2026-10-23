@@ -1,102 +1,97 @@
-# 数据库事件与短信、邮件通知
+# 数据库事件、登录与双渠道通知
 
-本目录实现 N1–N6 的 SQLite + mock 闭环，并为 N7 提供 `frontend/dist/notifications.html` 管理页。默认 `FUMAI_NOTIFICATION_MODE=mock`，只记录模拟发送，不访问短信或邮件服务商。
+本目录实现 SQLite 事务性通知、网站多用户登录、SMTP 邮件和 Gammu 短信猫适配器。默认两个渠道都是 `mock`，配置真实服务商前不会发送外部消息。
 
-## 架构与边界
+## 业务流程
 
 ```mermaid
 flowchart LR
   A[观测 / 模型结果 / 人工确认 / 日发电量] -->|同一事务| B[(SQLite 触发器)]
   B --> C[notification_event]
-  C --> D[notification_delivery<br/>每人 × sms/email]
-  D --> E[独立 Worker<br/>领取 / 租约 / 退避]
-  E --> F[Mock SMS]
-  E --> G[Mock Email]
-  E --> H[notification_attempt]
-  I[管理页] --> J[查询 API / 异步处理任务]
-  J -->|SSE 进度| I
+  C -->|故障| D[启用的设备负责人]
+  C -->|日发电| E[全部启用人员]
+  D --> F[每人 SMS + Email]
+  E --> F
+  F --> G[独立 Worker / 租约 / 退避]
+  G --> H[Mock 或 Gammu 短信猫]
+  G --> I[Mock 或 SMTP 邮件]
 ```
 
-SQLite 是本次比赛交付的明确数据库引擎。触发器只写库，不访问外网；业务事务回滚时事件与 delivery 一起回滚。`notification_event.dedupe_key` 和 `UNIQUE(event_id, recipient_id, channel)` 是业务幂等边界。
+故障通知包含 `model_anomaly`（疑似异常）和 `confirmed_fault`（人工确认故障），日发电通知为 `daily_generation_ready`。接口和管理页可按 `fault`、`daily` 分开查询。`notification_event.dedupe_key` 与 `UNIQUE(event_id, recipient_id, channel)` 防止业务任务重复展开。
 
-模型 anomaly 的文案固定为“疑似异常”。只有独立的 `human_confirmation` 记录为 `confirmed_fault` 且原模型结果 `quality_status=ready` 时，才生成“人工确认故障”事件。`uncertain`、`blocked`、缺失质量不会被触发器发成确认故障。
+模型 anomaly 始终写成“疑似异常”。只有人工确认且模型质量为 `ready` 时才生成确认故障事件。`uncertain`、`blocked` 和缺失数据不会被写成确认故障。当前日发电预测仍是明确标注的测试值，不能用异常分数代替预测电量。
 
-当前项目只有运行异常检测，没有真实日发电量预测服务。API 只接受明确标注的测试预测值，通知正文显示“模拟预测值”。不能把异常分数写入 `forecast_kwh`。
+## 数据库与登录
 
-## 表关系
+SQLite 迁移包含人员、设备、观测、模型结果、日发电、通知事件、双渠道 delivery、尝试历史、问题记录、操作审计，以及：
 
-```mermaid
-erDiagram
-  personnel ||--o{ equipment : owns
-  equipment ||--o{ equipment_owner_history : traces
-  equipment ||--o{ equipment_observation : produces
-  equipment_observation ||--o{ model_result : evaluated_by
-  model_result ||--o{ human_confirmation : reviewed_as
-  notification_event ||--o{ notification_delivery : expands
-  personnel ||--o{ notification_delivery : receives
-  notification_delivery ||--o{ notification_attempt : attempts
-  notification_event ||--o{ notification_problem : exposes
+- `app_user`：用户名、显示名称、角色、启用状态和 scrypt 密码哈希；
+- `auth_session`：只保存会话令牌的 SHA-256 哈希和过期时间；
+- 浏览器只接收 `HttpOnly; SameSite=Lax` Cookie，前端不能读取令牌；
+- 角色分为 `admin`、`operator`、`viewer`，后端逐接口校验权限；
+- 登录按 IP + 用户名限制连续失败次数。
+
+首次启动时，在服务器私密环境文件中设置 `FUMAI_BOOTSTRAP_ADMIN_USERNAME` 和 `FUMAI_BOOTSTRAP_ADMIN_PASSWORD`。只有用户表为空时才创建该管理员。创建后可删除这两个变量。
+
+## 真实邮件与短信猫
+
+邮件适配器使用 SMTP implicit TLS（通常为 465 端口），支持 AUTH LOGIN。服务器环境配置示例：
+
+```dotenv
+FUMAI_EMAIL_PROVIDER=smtp
+FUMAI_SMTP_HOST=smtp.example.com
+FUMAI_SMTP_PORT=465
+FUMAI_SMTP_SECURE=true
+FUMAI_SMTP_USER=noreply@example.com
+FUMAI_SMTP_PASSWORD=server-secret-only
+FUMAI_SMTP_FROM=伏脉智维 <noreply@example.com>
 ```
 
-`equipment_observation` 使用 `(equipment_id, observed_at)` 唯一约束，时间为带时区的 ISO 8601。日发电量使用 `(plant_id, local_date, revision)` 唯一约束，`0 kWh` 与 `NULL` 含义不同。负责人通过 `equipment.owner_id` 表达，一人可负责多台设备；变更由触发器写入历史表。
+短信猫适配器通过参数数组调用 `gammu-smsd-inject`，避免 shell 拼接。先在服务器安装并配置 Gammu，让系统用户 `fumai-notify` 有权连接 USB/串口设备：
 
-## 触发和修订策略
+```dotenv
+FUMAI_SMS_PROVIDER=gammu
+FUMAI_GAMMU_COMMAND=/usr/bin/gammu-smsd-inject
+FUMAI_GAMMU_CONFIG=/etc/gammu-smsdrc
+```
 
-- 模型事件用 `equipment + incident_key + state_level` 去重。服务默认将 30 分钟冷却窗口内、同设备、同疑似类别的异常归到同一 `incident_key`；相同等级不重复通知，明确升级等级可通知一次。
-- 人工确认用 `equipment + incident_key + confirmed` 去重，不覆写模型原始结果。
-- 每日发电 INSERT 和 UPDATE 都检查双值齐备。实际先到、预测先到都能触发；同一修订版本只触发一次。
-- 新修订版本会补发一轮，并在事实快照和消息中注明修订版。重复写同一版本不补发。
-- 事件创建时固定启用收件人、渠道和地址快照。后续人员联系方式变化只影响新事件。
-- 负责人缺失、负责人停用、手机或邮箱缺失/非法会产生 `notification_problem` 或 `needs_attention`，管理页可见。
+邮件与短信模式独立，例如可以先启用 SMTP，短信继续 mock。账号授权码、邮箱密码和短信猫配置不进入 Git。服务商超时且接收状态未知时进入 `verify_pending`，不会直接重复发送。
 
-## 本地 mock 验收
+## 本地验收
 
-需要 Node.js 24 或以上，使用 Node 内置 `node:sqlite`，无需 npm 安装第三方依赖。
+需要 Node.js 24 或以上，项目只使用 Node 内置模块。
 
 ```bash
 cd notifications
 npm run check
 npm test
 npm run migrate
+FUMAI_BOOTSTRAP_ADMIN_USERNAME=admin \
+FUMAI_BOOTSTRAP_ADMIN_PASSWORD='replace-with-a-long-password' \
 npm run serve
 ```
 
-打开 `http://127.0.0.1:8787/notifications.html`。点击“异步处理待发送任务”会创建持久化 `async_task`，HTTP 立即返回 202，页面通过 SSE 显示进度。也可独立运行 Worker：
+打开 `http://127.0.0.1:8787/login.html`。登录后首页和 `/notifications.html` 都会校验数据库会话。通知中心提供网站账号、人员联系方式、设备负责人、故障通知、日发电通知和每个渠道的发送状态。
 
-```bash
-npm run worker
-node src/run-worker.mjs --once
-```
+## 主要 API
 
-## API 冻结契约
-
-| 方法 | 路径 | 行为 |
+| 方法 | 路径 | 最低角色与行为 |
 | --- | --- | --- |
-| GET/POST | `/api/personnel` | 人员列表；手机号、邮箱格式校验并返回缺失警告 |
-| GET/POST | `/api/equipment` | 设备列表；负责人选择与变更历史 |
-| POST | `/api/observations` | 写入设备唯一时刻观测 |
-| POST | `/api/model-results` | 写入模型原始结果；触发器按质量与事件键生成通知 |
-| POST | `/api/human-confirmations` | 追加人工确认，不覆盖模型结果 |
-| POST | `/api/daily-generation` | 写入实际/测试预测电量，双值就绪触发 |
-| GET | `/api/notifications/events` | 通知事件列表与聚合状态 |
-| GET | `/api/notifications/events/:id` | 事实快照、每位人员双渠道状态、尝试历史与问题 |
-| POST | `/api/notifications/deliveries/:id/retry` | 仅管理员重试确定失败项，写操作审计 |
-| POST | `/api/notification-jobs` | 创建异步 Worker drain 任务 |
-| GET | `/api/notification-jobs/:id/events` | SSE 流式任务进度 |
+| POST | `/api/auth/login` | 公开登录，成功写 HttpOnly Cookie |
+| GET | `/api/auth/me` | 已登录用户信息 |
+| GET/POST | `/api/users` | 管理员查询或保存网站账号 |
+| GET/POST | `/api/personnel` | 登录查看；管理员保存手机和邮箱 |
+| GET/POST | `/api/equipment` | 登录查看；管理员分配负责人 |
+| POST | `/api/observations`、`/api/model-results`、`/api/daily-generation` | 操作员及以上写入业务数据 |
+| POST | `/api/human-confirmations` | 管理员追加人工确认 |
+| GET | `/api/notifications/events?category=fault|daily|all` | 登录后按类别查询通知 |
+| GET | `/api/notifications/events/:id` | 事件、收件人、双渠道状态、尝试与问题 |
+| POST | `/api/notifications/deliveries/:id/retry` | 管理员人工重试确定失败项并审计 |
+| POST | `/api/notification-jobs` | 管理员创建异步发送任务 |
+| GET | `/api/notification-jobs/:id/events` | Cookie 鉴权的 SSE 进度流 |
 
-管理写接口要求 `X-Fumai-Role: admin` 和 `X-Fumai-Actor`。这是比赛 mock 的最小权限契约，生产环境需由统一认证网关注入可信身份，不能信任浏览器自报角色。
+## Worker 与部署
 
-## Worker 可靠性
+Worker 用 `BEGIN IMMEDIATE` 原子领取任务，设置有限并发和租约。崩溃后的过期租约会恢复，临时错误指数退避，短信和邮件互不连带重发。数据库只能保证业务任务幂等，不能保证外部服务商严格只发送一次。
 
-Worker 用 `BEGIN IMMEDIATE` 原子领取任务，限制并发并设置租约。进程崩溃后，过期 `processing` 会恢复为 `retry_wait`。临时失败采用指数退避并限制最大次数；短信和邮件各自完成，成功渠道不会因另一渠道失败而重发。
-
-服务商超时且无法判断是否已接收时进入 `verify_pending`，人工重试接口会拒绝直接重试。真实适配器必须先调用服务商查询接口核验，再决定记账或重发。数据库幂等不能保证外部短信严格只发一次。
-
-## 迁移、部署与回退
-
-`src/db.mjs` 启动时幂等执行 `migrations/001_notifications.sql`。空库可重复重放。部署时分别运行 API 和 Worker，systemd 示例在 `ops/`；生产数据库文件应放持久磁盘并定期备份。
-
-回退前先停 API 与 Worker并备份数据库，再执行 `migrations/001_notifications.down.sql`。该脚本会删除本模块全部表和审计记录，仅适用于确认不再需要数据的回退；已有数据环境优先做前向迁移。
-
-真实短信签名、模板、邮件服务商和密钥尚未提供，因此 `UnconfiguredRealProvider` 会明确失败。接入时实现与 `MockProvider.send/lookup` 相同的接口，把密钥放服务器 secret 配置，日志只记错误码和脱敏信息。发出任何真实测试消息前仍需团队明确授权。
-
+`ops/deploy_server.sh` 创建隔离服务用户、持久数据库目录、systemd API/Worker 服务和 Nginx 路由。部署脚本会保留 `/etc/fumai-notifications.env` 中已有的账号与服务商密钥，只更新发布路径等受管配置。回退前先停 API 与 Worker并备份数据库；`001_notifications.down.sql` 会删除本模块全部表，仅适用于确认不再需要数据的完整回退。

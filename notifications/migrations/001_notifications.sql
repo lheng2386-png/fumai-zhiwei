@@ -9,6 +9,28 @@ CREATE TABLE IF NOT EXISTS personnel (
     updated_at TEXT NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS app_user (
+    id TEXT PRIMARY KEY,
+    username TEXT NOT NULL,
+    username_normalized TEXT NOT NULL UNIQUE,
+    display_name TEXT NOT NULL CHECK (length(trim(display_name)) BETWEEN 1 AND 100),
+    role TEXT NOT NULL CHECK (role IN ('admin', 'operator', 'viewer')),
+    password_salt TEXT NOT NULL,
+    password_hash TEXT NOT NULL,
+    enabled INTEGER NOT NULL DEFAULT 1 CHECK (enabled IN (0, 1)),
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    last_login_at TEXT
+);
+
+CREATE TABLE IF NOT EXISTS auth_session (
+    token_hash TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL REFERENCES app_user(id) ON DELETE CASCADE,
+    expires_at TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    last_seen_at TEXT NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS equipment (
     id TEXT PRIMARY KEY,
     plant_id TEXT NOT NULL,
@@ -162,6 +184,7 @@ CREATE INDEX IF NOT EXISTS idx_delivery_claim
 ON notification_delivery(status, next_retry_at, lease_expires_at, created_at);
 CREATE INDEX IF NOT EXISTS idx_event_created ON notification_event(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_model_equipment_time ON model_result(equipment_id, observed_at DESC);
+CREATE INDEX IF NOT EXISTS idx_auth_session_user ON auth_session(user_id, expires_at);
 
 CREATE TRIGGER IF NOT EXISTS trg_equipment_owner_insert
 AFTER INSERT ON equipment
@@ -346,4 +369,3 @@ BEGIN
         '收件地址缺失或格式非法，请在人员管理中修正；本事件保留原地址快照。', NEW.created_at
     );
 END;
-

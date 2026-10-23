@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#133d34">
+  <title>登录 · 伏脉智维</title>
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="login.css">
+  <script src="login.js" defer></script>
+</head>
+<body>
+  <main class="login-shell">
+    <section class="story" aria-label="产品说明">
+      <div class="brand"><span>伏</span><strong>伏脉智维<small>FUMAI ZHIWEI</small></strong></div>
+      <div><p class="eyebrow">PHOTOVOLTAIC OPERATIONS</p><h1>让每一度电，<br>都有迹可循。</h1><p>设备异常筛查、人工复核与双渠道通知统一在一个工作空间。</p></div>
+      <p class="foot">数据库事件 · 邮件 · 短信猫</p>
+    </section>
+    <section class="login-panel">
+      <form id="login-form" autocomplete="on">
+        <p class="eyebrow">WELCOME BACK</p>
+        <h2>登录工作台</h2>
+        <p class="lead">使用项目管理员分配的账号。</p>
+        <label>用户名<input name="username" autocomplete="username" required autofocus maxlength="40" placeholder="请输入用户名"></label>
+        <label>密码<input name="password" type="password" autocomplete="current-password" required maxlength="128" placeholder="请输入密码"></label>
+        <button type="submit">进入伏脉智维</button>
+        <p id="error" class="error" role="alert" aria-live="polite"></p>
+      </form>
+      <p class="security">登录状态保存在安全会话 Cookie 中；密码不会写入浏览器存储。</p>
+    </section>
+  </main>
+</body>
+</html>

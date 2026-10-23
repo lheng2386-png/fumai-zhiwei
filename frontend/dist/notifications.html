@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="zh-CN">
+<html lang="zh-CN" class="auth-pending">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -7,23 +7,44 @@
   <title>通知中心 · 伏脉智维</title>
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="notification-admin.css">
+  <script src="auth-guard.js"></script>
   <script src="notifications.js" defer></script>
 </head>
 <body>
   <header class="topbar">
     <a class="brand" href="index.html"><span class="mark">伏</span><span><strong>伏脉智维</strong><small>通知中心</small></span></a>
-    <div class="mode"><i></i> MOCK / DRY-RUN</div>
-    <label class="actor">操作人 <input id="actor" value="demo-admin" maxlength="64" aria-label="操作人"></label>
+    <div id="provider-mode" class="mode"><i></i>正在读取渠道</div>
+    <div id="current-user" class="current-user"></div>
   </header>
   <main>
     <section class="hero">
-      <div><p class="eyebrow">TRANSACTIONAL NOTIFICATION OUTBOX</p><h1>数据库事件与双渠道通知</h1><p>短信与邮件独立生成、独立重试、独立留痕。当前只模拟发送，任何号码与邮箱都不会收到真实消息。</p></div>
-      <button id="run-worker" class="primary">异步处理待发送任务</button>
+      <div><p class="eyebrow">TRANSACTIONAL NOTIFICATION OUTBOX</p><h1>数据库事件与双渠道通知</h1><p>故障通知定向负责人，日发电通知面向全部启用人员；短信与邮件分别发送、重试和留痕。</p></div>
+      <button id="run-worker" class="primary" data-admin-only>异步处理待发送任务</button>
     </section>
     <div id="job-progress" class="progress" hidden><span></span><strong>任务排队中…</strong></div>
     <div id="message" class="message" role="status" aria-live="polite"></div>
 
-    <div class="grid two">
+    <section class="channel-summary">
+      <div><small>邮件渠道</small><strong id="email-provider">—</strong></div>
+      <div><small>短信渠道</small><strong id="sms-provider">—</strong></div>
+      <p>真实服务商密钥仅保存在服务器环境变量，页面和 Git 仓库不保存密钥。</p>
+    </section>
+
+    <section class="card users" data-admin-only>
+      <div class="section-head"><div><p class="eyebrow">ACCESS CONTROL</p><h2>网站账号与角色</h2></div><span id="user-count" class="count">0</span></div>
+      <form id="user-form" class="form-grid user-form">
+        <label>用户名<input name="username" required pattern="[A-Za-z0-9._-]{3,40}" placeholder="例如 yzx"></label>
+        <label>显示名称<input name="display_name" required maxlength="100" placeholder="成员姓名"></label>
+        <label>角色<select name="role"><option value="viewer">查看者</option><option value="operator">操作员</option><option value="admin">管理员</option></select></label>
+        <label>初始/新密码<input name="password" type="password" minlength="10" maxlength="128" placeholder="新建时必填，至少 10 位"></label>
+        <label class="toggle"><input name="enabled" type="checkbox" checked> 启用账号</label>
+        <button class="secondary" type="submit">保存账号</button>
+      </form>
+      <p class="hint">管理员可管理账号和通知配置；操作员可写入业务数据；查看者只能查看。再次保存同名账号可更新角色或密码。</p>
+      <div id="user-list" class="list horizontal"></div>
+    </section>
+
+    <div class="grid two" data-admin-only>
       <section class="card">
         <div class="section-head"><div><p class="eyebrow">PERSONNEL</p><h2>人员与联系方式</h2></div><span id="person-count" class="count">0</span></div>
         <form id="person-form" class="form-grid">
@@ -34,7 +55,7 @@
           <label class="toggle"><input name="enabled" type="checkbox" checked> 启用通知</label>
           <button class="secondary" type="submit">保存人员</button>
         </form>
-        <p class="hint">手机号或邮箱可以暂缺，但页面会明确提示，相关 delivery 会进入“待处理”。</p>
+        <p class="hint">联系方式缺失会生成可追踪的“待处理”任务，不会被标成双渠道成功。</p>
         <div id="person-list" class="list"></div>
       </section>
 
@@ -47,13 +68,17 @@
           <label>当前负责人<select name="owner_id" id="owner-select"><option value="">未分配</option></select></label>
           <button class="secondary" type="submit">保存设备</button>
         </form>
-        <p class="hint">每台设备一个当前负责人，负责人变更会进入历史表。</p>
+        <p class="hint">故障通知只发给当前启用负责人，负责人变更会留存历史。</p>
         <div id="equipment-list" class="list"></div>
       </section>
     </div>
 
     <section class="card notifications">
       <div class="section-head"><div><p class="eyebrow">EVENTS & DELIVERIES</p><h2>通知事件与双渠道状态</h2></div><button id="refresh" class="quiet">刷新</button></div>
+      <div class="category-tabs" role="tablist" aria-label="通知分类">
+        <button class="category-tab active" data-category="fault" role="tab">故障通知 <span id="fault-count">0</span></button>
+        <button class="category-tab" data-category="daily" role="tab">日发电通知 <span id="daily-count">0</span></button>
+      </div>
       <div class="event-layout">
         <div id="event-list" class="event-list"><p class="empty">暂无通知事件</p></div>
         <aside id="event-detail" class="event-detail"><p class="empty">选择事件查看每位收件人的短信、邮件状态和尝试历史。</p></aside>
@@ -62,4 +87,3 @@
   </main>
 </body>
 </html>
-

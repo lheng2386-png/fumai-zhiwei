@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="zh-CN">
+<html lang="zh-CN" class="auth-pending">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -9,6 +9,8 @@
     <link rel="icon" href="favicon.svg" type="image/svg+xml">
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="agent.css">
+    <style>.auth-pending body{visibility:hidden}.fumai-logout{border:1px solid #d8dfda;background:#fff;color:#31534a;border-radius:8px;padding:7px 10px;cursor:pointer;font:inherit;font-size:12px}</style>
+    <script src="auth-guard.js"></script>
     <script src="data.js" defer></script>
     <script src="intent.js" defer></script>
     <script src="agent.js" defer></script>

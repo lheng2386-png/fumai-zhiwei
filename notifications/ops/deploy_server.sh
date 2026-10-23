@@ -159,9 +159,14 @@ import pathlib, shutil, sys, tarfile
 archive, stage, commit = pathlib.Path(sys.argv[1]), pathlib.Path(sys.argv[2]), sys.argv[3]
 prefix = f'fumai-zhiwei-{commit}/'
 allowed_files = {
+    'frontend/dist/index.html',
     'frontend/dist/notifications.html',
     'frontend/dist/notifications.js',
     'frontend/dist/notification-admin.css',
+    'frontend/dist/login.html',
+    'frontend/dist/login.js',
+    'frontend/dist/login.css',
+    'frontend/dist/auth-guard.js',
 }
 total = 0
 with tarfile.open(archive, 'r:gz') as source:
@@ -185,6 +190,8 @@ with tarfile.open(archive, 'r:gz') as source:
 required = [
     'notifications/package.json', 'notifications/src/server.mjs',
     'notifications/src/run-worker.mjs', 'notifications/migrations/001_notifications.sql',
+    'frontend/dist/index.html', 'frontend/dist/auth-guard.js',
+    'frontend/dist/login.html', 'frontend/dist/login.js', 'frontend/dist/login.css',
     'frontend/dist/notifications.html', 'frontend/dist/notifications.js',
     'frontend/dist/notification-admin.css',
 ]
@@ -221,17 +228,45 @@ runuser -u fumai-notify -- test -r "$CURRENT/notifications/src/migrate.mjs" || {
     exit 1
 }
 
-cat > "$ENV_FILE" <<EOF
-FUMAI_DB_PATH=$DB_PATH
-FUMAI_NOTIFICATION_MODE=mock
-FUMAI_NOTIFICATION_PORT=8787
-FUMAI_PUBLIC_ORIGIN=$PUBLIC_ORIGIN
-FUMAI_STATIC_ROOT=$CURRENT/frontend/dist
-FUMAI_WORKER_ID=worker-server-1
-FUMAI_WORKER_CONCURRENCY=4
-FUMAI_WORKER_LEASE_SECONDS=60
-FUMAI_WORKER_MAX_ATTEMPTS=5
-EOF
+python3 - "$ENV_FILE" "$DB_PATH" "$PUBLIC_ORIGIN" "$CURRENT/frontend/dist" <<'PY'
+import pathlib, sys
+path = pathlib.Path(sys.argv[1])
+updates = {
+    'FUMAI_DB_PATH': sys.argv[2],
+    'FUMAI_NOTIFICATION_PORT': '8787',
+    'FUMAI_PUBLIC_ORIGIN': sys.argv[3],
+    'FUMAI_STATIC_ROOT': sys.argv[4],
+    'FUMAI_SESSION_HOURS': '12',
+    'FUMAI_WORKER_ID': 'worker-server-1',
+    'FUMAI_WORKER_CONCURRENCY': '4',
+    'FUMAI_WORKER_LEASE_SECONDS': '60',
+    'FUMAI_WORKER_MAX_ATTEMPTS': '5',
+}
+defaults = {
+    'FUMAI_NOTIFICATION_MODE': 'mock',
+    'FUMAI_EMAIL_PROVIDER': 'mock',
+    'FUMAI_SMS_PROVIDER': 'mock',
+}
+existing = []
+seen = set()
+if path.exists():
+    for line in path.read_text(encoding='utf-8').splitlines():
+        key = line.split('=', 1)[0] if '=' in line and not line.lstrip().startswith('#') else None
+        if key in updates:
+            existing.append(f'{key}={updates[key]}')
+            seen.add(key)
+        else:
+            existing.append(line)
+        if key:
+            seen.add(key)
+for key, value in updates.items():
+    if key not in seen:
+        existing.append(f'{key}={value}')
+for key, value in defaults.items():
+    if key not in seen:
+        existing.append(f'{key}={value}')
+path.write_text('\n'.join(existing).strip() + '\n', encoding='utf-8')
+PY
 chown root:fumai-notify "$ENV_FILE"
 chmod 0640 "$ENV_FILE"
 
@@ -301,7 +336,8 @@ for attempt in {1..20}; do
 import json, urllib.request
 with urllib.request.urlopen('http://127.0.0.1:8787/api/health', timeout=2) as response:
     body = json.load(response)
-assert body['status'] == 'ok' and body['notification_mode'] == 'mock'
+assert body['status'] == 'ok'
+assert body['authentication_ready'] is True
 PY
     then break; fi
     if [[ $attempt -eq 20 ]]; then
@@ -349,6 +385,22 @@ block = begin + '''    location /api/ {
         proxy_pass http://127.0.0.1:8787;
         proxy_set_header Host $host;
     }
+
+    location = / {
+        proxy_pass http://127.0.0.1:8787;
+        proxy_set_header Host $host;
+    }
+
+    location = /index.html {
+        proxy_pass http://127.0.0.1:8787;
+        proxy_set_header Host $host;
+    }
+
+    location ~ ^/(login\.html|login\.js|login\.css|auth-guard\.js)$ {
+        proxy_pass http://127.0.0.1:8787;
+        proxy_set_header Host $host;
+        add_header Cache-Control "no-store" always;
+    }
 ''' + end
 if begin in text:
     start = text.index(begin)
@@ -388,11 +440,14 @@ import json, urllib.request
 with urllib.request.urlopen('http://127.0.0.1/api/health', timeout=5) as response:
     health = json.load(response)
 assert health['status'] == 'ok'
-assert health['notification_mode'] == 'mock'
+assert health['authentication_ready'] is True
+with urllib.request.urlopen('http://127.0.0.1/login.html', timeout=5) as response:
+    login = response.read().decode('utf-8')
+assert response.status == 200 and '登录工作台' in login
 with urllib.request.urlopen('http://127.0.0.1/notifications.html', timeout=5) as response:
     page = response.read().decode('utf-8')
 assert response.status == 200 and '通知' in page
-print(json.dumps({'health': health, 'notifications_page': 'ok'}, ensure_ascii=False))
+print(json.dumps({'health': health, 'login_page': 'ok', 'notifications_page': 'ok'}, ensure_ascii=False))
 PY
 systemctl --no-pager --full status fumai-notification-api.service fumai-notification-worker.service | sed -n '1,24p'
 
@@ -400,6 +455,6 @@ DEPLOY_SUCCEEDED=1
 trap - ERR
 printf '\nDEPLOYMENT COMPLETE\n'
 printf 'Commit: %s\n' "$COMMIT"
-printf 'Mode: mock (no real SMS or email)\n'
+printf 'Mode: authenticated website, mock providers until server secrets are configured\n'
 printf 'Page: %s/notifications.html\n' "$PUBLIC_ORIGIN"
 printf 'Backup: %s\n' "$BACKUP_ROOT"

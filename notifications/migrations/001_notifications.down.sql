@@ -21,5 +21,6 @@ DROP TABLE IF EXISTS equipment_observation;
 DROP TABLE IF EXISTS equipment_owner_history;
 DROP TABLE IF EXISTS equipment;
 DROP TABLE IF EXISTS personnel;
+DROP TABLE IF EXISTS auth_session;
+DROP TABLE IF EXISTS app_user;
 PRAGMA foreign_keys = ON;
-

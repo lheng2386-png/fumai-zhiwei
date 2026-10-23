@@ -4,6 +4,7 @@ import { extname, resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { randomUUID } from 'node:crypto';
 import { openDatabase } from './db.mjs';
+import { AuthService } from './auth.mjs';
 import { createProviders } from './providers.mjs';
 import { NotificationService, now, parseJson } from './service.mjs';
 import { NotificationWorker } from './worker.mjs';
@@ -11,19 +12,25 @@ import { NotificationWorker } from './worker.mjs';
 const here = dirname(fileURLToPath(import.meta.url));
 const db = openDatabase();
 const service = new NotificationService(db);
-const worker = new NotificationWorker(db, createProviders());
+const auth = new AuthService(db);
+const bootstrapUser = auth.ensureBootstrapFromEnv();
+const providers = createProviders();
+const worker = new NotificationWorker(db, providers);
 const port = Number(process.env.FUMAI_NOTIFICATION_PORT || 8787);
 const publicOrigin = process.env.FUMAI_PUBLIC_ORIGIN || `http://127.0.0.1:${port}`;
+const expectedOrigin = new URL(publicOrigin).origin;
 const staticRoot = resolve(process.env.FUMAI_STATIC_ROOT || resolve(here, '../../frontend/dist'));
+const loginAttempts = new Map();
 let drainRunning = false;
 
-function sendJson(res, status, value) {
+if (bootstrapUser) console.log(`Created bootstrap administrator: ${bootstrapUser.username}`);
+if (!auth.userCount()) console.warn('No application user exists. Create the first administrator before opening the site.');
+
+function sendJson(res, status, value, extraHeaders = {}) {
   const body = Buffer.from(JSON.stringify(value));
   res.writeHead(status, {
-    'Content-Type': 'application/json; charset=utf-8',
-    'Content-Length': body.length,
-    'Cache-Control': 'no-store',
-    'X-Content-Type-Options': 'nosniff'
+    'Content-Type': 'application/json; charset=utf-8', 'Content-Length': body.length,
+    'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff', ...extraHeaders
   });
   res.end(body);
 }
@@ -42,11 +49,27 @@ async function readJson(req) {
   return value;
 }
 
-function requireAdmin(req) {
-  if (req.headers['x-fumai-role'] !== 'admin') throw Object.assign(new Error('需要管理员权限'), { status: 403 });
-  const actor = String(req.headers['x-fumai-actor'] || '').trim();
-  if (!actor) throw Object.assign(new Error('需要 X-Fumai-Actor 审计标识'), { status: 400 });
-  return actor;
+const roleLevel = { viewer: 1, operator: 2, admin: 3 };
+
+function requireUser(req, minimumRole = 'viewer') {
+  const user = auth.resolveRequest(req);
+  if (!user) throw Object.assign(new Error('请先登录'), { status: 401 });
+  if (roleLevel[user.role] < roleLevel[minimumRole]) throw Object.assign(new Error('当前账号权限不足'), { status: 403 });
+  return user;
+}
+
+function checkLoginLimit(req, username) {
+  const key = `${req.socket.remoteAddress || 'unknown'}:${String(username || '').trim().toLowerCase()}`;
+  const cutoff = Date.now() - 15 * 60_000;
+  const attempts = (loginAttempts.get(key) || []).filter(time => time > cutoff);
+  loginAttempts.set(key, attempts);
+  if (attempts.length >= 5) throw Object.assign(new Error('登录失败次数过多，请 15 分钟后再试'), { status: 429 });
+  return { key, attempts };
+}
+
+function audit(actor, action, targetId, detail) {
+  db.prepare(`INSERT INTO operator_audit(id, actor, action, target_id, detail, created_at)
+    VALUES (?, ?, ?, ?, ?, ?)`).run(randomUUID(), actor, action, targetId, JSON.stringify(detail || {}), now());
 }
 
 function createDrainTask() {
@@ -62,17 +85,15 @@ function createDrainTask() {
       const pending = db.prepare(`SELECT count(*) count FROM notification_delivery
         WHERE status IN ('pending','retry_wait','processing')`).get().count || 1;
       const result = await worker.runUntilIdle({
-        progress: ({ processed }) => db.prepare(`UPDATE async_task SET progress=?,updated_at=? WHERE id=?`)
+        progress: ({ processed }) => db.prepare('UPDATE async_task SET progress=?,updated_at=? WHERE id=?')
           .run(Math.min(95, 5 + Math.round(processed / pending * 90)), now(), id)
       });
-      db.prepare(`UPDATE async_task SET status='succeeded',progress=100,result=?,updated_at=? WHERE id=?`)
+      db.prepare("UPDATE async_task SET status='succeeded',progress=100,result=?,updated_at=? WHERE id=?")
         .run(JSON.stringify(result), now(), id);
     } catch (error) {
-      db.prepare(`UPDATE async_task SET status='failed',error=?,updated_at=? WHERE id=?`)
+      db.prepare("UPDATE async_task SET status='failed',error=?,updated_at=? WHERE id=?")
         .run(error.message, now(), id);
-    } finally {
-      drainRunning = false;
-    }
+    } finally { drainRunning = false; }
   });
   return db.prepare('SELECT * FROM async_task WHERE id=?').get(id);
 }
@@ -83,14 +104,10 @@ function getTask(id) {
 }
 
 async function streamTask(req, res, id) {
+  requireUser(req, 'admin');
   const first = getTask(id);
   if (!first) return sendJson(res, 404, { error: '任务不存在' });
-  res.writeHead(200, {
-    'Content-Type': 'text/event-stream; charset=utf-8',
-    'Cache-Control': 'no-store',
-    'Connection': 'keep-alive',
-    'X-Accel-Buffering': 'no'
-  });
+  res.writeHead(200, { 'Content-Type': 'text/event-stream; charset=utf-8', 'Cache-Control': 'no-store', 'Connection': 'keep-alive', 'X-Accel-Buffering': 'no' });
   const deadline = Date.now() + 60_000;
   while (!res.destroyed && Date.now() < deadline) {
     const task = getTask(id);
@@ -105,9 +122,11 @@ async function streamTask(req, res, id) {
 function serveStatic(pathname, res) {
   const allowed = new Map([
     ['/', 'index.html'], ['/index.html', 'index.html'], ['/app.js', 'app.js'], ['/data.js', 'data.js'],
-    ['/styles.css', 'styles.css'], ['/favicon.svg', 'favicon.svg'],
+    ['/styles.css', 'styles.css'], ['/favicon.svg', 'favicon.svg'], ['/agent.css', 'agent.css'],
+    ['/agent.js', 'agent.js'], ['/intent.js', 'intent.js'],
     ['/notifications.html', 'notifications.html'], ['/notifications.js', 'notifications.js'],
-    ['/notification-admin.css', 'notification-admin.css']
+    ['/notification-admin.css', 'notification-admin.css'], ['/login.html', 'login.html'],
+    ['/login.js', 'login.js'], ['/login.css', 'login.css'], ['/auth-guard.js', 'auth-guard.js']
   ]);
   const name = allowed.get(pathname);
   if (!name) return false;
@@ -124,47 +143,77 @@ const server = createServer(async (req, res) => {
   try {
     const url = new URL(req.url, publicOrigin);
     const path = url.pathname;
-    if (req.headers.origin && req.headers.origin !== publicOrigin) throw Object.assign(new Error('来源不匹配'), { status: 403 });
+    if (req.headers.origin && new URL(req.headers.origin).origin !== expectedOrigin) throw Object.assign(new Error('来源不匹配'), { status: 403 });
 
     if (req.method === 'GET' && path === '/api/health') return sendJson(res, 200, {
       status: 'ok', notification_mode: process.env.FUMAI_NOTIFICATION_MODE || 'mock',
-      real_daily_forecast: false, database: 'sqlite'
+      providers: { sms: providers.sms.name, email: providers.email.name },
+      authentication_ready: auth.userCount() > 0, real_daily_forecast: false, database: 'sqlite'
     });
-    if (req.method === 'GET' && path === '/api/personnel') return sendJson(res, 200, { personnel: service.listPersonnel() });
-    if (req.method === 'POST' && path === '/api/personnel') {
-      requireAdmin(req);
-      return sendJson(res, 200, service.upsertPersonnel(await readJson(req)));
+    if (req.method === 'POST' && path === '/api/auth/login') {
+      const input = await readJson(req);
+      const rate = checkLoginLimit(req, input.username);
+      const user = auth.authenticate(input.username, input.password);
+      if (!user) {
+        rate.attempts.push(Date.now());
+        loginAttempts.set(rate.key, rate.attempts);
+        throw Object.assign(new Error('用户名或密码错误'), { status: 401 });
+      }
+      loginAttempts.delete(rate.key);
+      const session = auth.createSession(user.id);
+      return sendJson(res, 200, { user, expires_at: session.expires_at }, { 'Set-Cookie': auth.sessionCookie(session.token) });
     }
-    if (req.method === 'GET' && path === '/api/equipment') return sendJson(res, 200, { equipment: service.listEquipment() });
+    if (req.method === 'POST' && path === '/api/auth/logout') {
+      auth.revokeRequest(req);
+      return sendJson(res, 200, { logged_out: true }, { 'Set-Cookie': auth.clearCookie() });
+    }
+    if (req.method === 'GET' && path === '/api/auth/me') return sendJson(res, 200, { user: requireUser(req) });
+
+    if (req.method === 'GET' && path === '/api/users') {
+      const current = requireUser(req, 'admin');
+      return sendJson(res, 200, { users: auth.listUsers(), current_user: current });
+    }
+    if (req.method === 'POST' && path === '/api/users') {
+      const actor = requireUser(req, 'admin');
+      const saved = auth.saveUser(await readJson(req));
+      audit(actor.username, 'save_user', saved.id, { username: saved.username, role: saved.role, enabled: saved.enabled });
+      return sendJson(res, 200, saved);
+    }
+    if (req.method === 'GET' && path === '/api/personnel') { requireUser(req); return sendJson(res, 200, { personnel: service.listPersonnel() }); }
+    if (req.method === 'POST' && path === '/api/personnel') { requireUser(req, 'admin'); return sendJson(res, 200, service.upsertPersonnel(await readJson(req))); }
+    if (req.method === 'GET' && path === '/api/equipment') { requireUser(req); return sendJson(res, 200, { equipment: service.listEquipment() }); }
     if (req.method === 'POST' && path === '/api/equipment') {
-      const actor = requireAdmin(req);
-      return sendJson(res, 200, service.upsertEquipment(await readJson(req), actor));
+      const actor = requireUser(req, 'admin');
+      return sendJson(res, 200, service.upsertEquipment(await readJson(req), actor.username));
     }
-    if (req.method === 'POST' && path === '/api/observations') return sendJson(res, 201, service.recordObservation(await readJson(req)));
-    if (req.method === 'POST' && path === '/api/model-results') return sendJson(res, 201, service.recordModelResult(await readJson(req)));
+    if (req.method === 'POST' && path === '/api/observations') { requireUser(req, 'operator'); return sendJson(res, 201, service.recordObservation(await readJson(req))); }
+    if (req.method === 'POST' && path === '/api/model-results') { requireUser(req, 'operator'); return sendJson(res, 201, service.recordModelResult(await readJson(req))); }
     if (req.method === 'POST' && path === '/api/human-confirmations') {
-      requireAdmin(req);
-      return sendJson(res, 201, service.confirmFault(await readJson(req)));
+      const actor = requireUser(req, 'admin');
+      return sendJson(res, 201, service.confirmFault({ ...(await readJson(req)), actor: actor.username }));
     }
-    if (req.method === 'POST' && path === '/api/daily-generation') return sendJson(res, 200, service.upsertDailyGeneration(await readJson(req)));
-    if (req.method === 'GET' && path === '/api/notifications/events') return sendJson(res, 200, {
-      events: service.listEvents({ limit: url.searchParams.get('limit'), offset: url.searchParams.get('offset') })
-    });
+    if (req.method === 'POST' && path === '/api/daily-generation') { requireUser(req, 'operator'); return sendJson(res, 200, service.upsertDailyGeneration(await readJson(req))); }
+    if (req.method === 'GET' && path === '/api/notifications/events') {
+      requireUser(req);
+      return sendJson(res, 200, { events: service.listEvents({ limit: url.searchParams.get('limit'), offset: url.searchParams.get('offset'), category: url.searchParams.get('category') || 'all' }) });
+    }
     const eventMatch = path.match(/^\/api\/notifications\/events\/([^/]+)$/);
     if (req.method === 'GET' && eventMatch) {
+      requireUser(req);
       const event = service.getEvent(eventMatch[1]);
       return event ? sendJson(res, 200, event) : sendJson(res, 404, { error: '事件不存在' });
     }
     const retryMatch = path.match(/^\/api\/notifications\/deliveries\/([^/]+)\/retry$/);
-    if (req.method === 'POST' && retryMatch) return sendJson(res, 200, service.retryDelivery(retryMatch[1], requireAdmin(req)));
-    if (req.method === 'POST' && path === '/api/notification-jobs') {
-      requireAdmin(req);
-      return sendJson(res, 202, createDrainTask());
+    if (req.method === 'POST' && retryMatch) {
+      const actor = requireUser(req, 'admin');
+      return sendJson(res, 200, service.retryDelivery(retryMatch[1], actor.username));
     }
+    if (req.method === 'POST' && path === '/api/notification-jobs') { requireUser(req, 'admin'); return sendJson(res, 202, createDrainTask()); }
     const taskEventMatch = path.match(/^\/api\/notification-jobs\/([^/]+)\/events$/);
     if (req.method === 'GET' && taskEventMatch) return streamTask(req, res, taskEventMatch[1]);
     const taskMatch = path.match(/^\/api\/notification-jobs\/([^/]+)$/);
     if (req.method === 'GET' && taskMatch) {
+      requireUser(req, 'admin');
       const task = getTask(taskMatch[1]);
       return task ? sendJson(res, 200, task) : sendJson(res, 404, { error: '任务不存在' });
     }
@@ -176,12 +225,6 @@ const server = createServer(async (req, res) => {
   }
 });
 
-server.listen(port, '127.0.0.1', () => {
-  console.log(`Fumai notification service: ${publicOrigin} (mode=${process.env.FUMAI_NOTIFICATION_MODE || 'mock'})`);
-});
+server.listen(port, '127.0.0.1', () => console.log(`Fumai notification service: ${publicOrigin} (sms=${providers.sms.name}, email=${providers.email.name})`));
 
-for (const signal of ['SIGINT', 'SIGTERM']) process.on(signal, () => server.close(() => {
-  db.close();
-  process.exit(0);
-}));
-
+for (const signal of ['SIGINT', 'SIGTERM']) process.on(signal, () => server.close(() => { db.close(); process.exit(0); }));

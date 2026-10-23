@@ -164,14 +164,21 @@ export class NotificationService {
       WHERE plant_id=? AND local_date=? AND revision=?`).get(plantId, localDate, revision);
   }
 
-  listEvents({ limit = 100, offset = 0 } = {}) {
+  listEvents({ limit = 100, offset = 0, category = 'all' } = {}) {
+    if (!['all', 'fault', 'daily'].includes(category)) throw new Error('通知分类无效');
+    const where = category === 'fault' ? "WHERE e.type IN ('model_anomaly','confirmed_fault')" :
+      (category === 'daily' ? "WHERE e.type='daily_generation_ready'" : '');
     return this.db.prepare(`SELECT e.*,
       SUM(CASE WHEN d.status IN ('sent','simulated_sent') THEN 1 ELSE 0 END) delivered,
       SUM(CASE WHEN d.status IN ('failed','needs_attention','verify_pending') THEN 1 ELSE 0 END) attention,
       COUNT(d.id) delivery_count
       FROM notification_event e LEFT JOIN notification_delivery d ON d.event_id=e.id
+      ${where}
       GROUP BY e.id ORDER BY e.created_at DESC LIMIT ? OFFSET ?`).all(Math.min(Number(limit) || 100, 500), Number(offset) || 0)
-      .map(row => ({ ...row, fact_snapshot: parseJson(row.fact_snapshot) }));
+      .map(row => ({ ...row,
+        category: row.type === 'daily_generation_ready' ? 'daily' : 'fault',
+        fact_snapshot: parseJson(row.fact_snapshot)
+      }));
   }
 
   getEvent(id) {
@@ -182,7 +189,10 @@ export class NotificationService {
       .map(delivery => ({ ...delivery, attempts: this.db.prepare(
         'SELECT * FROM notification_attempt WHERE delivery_id=? ORDER BY attempt_number').all(delivery.id) }));
     const problems = this.db.prepare('SELECT * FROM notification_problem WHERE event_id=? ORDER BY created_at').all(id);
-    return { ...event, fact_snapshot: parseJson(event.fact_snapshot), deliveries, problems };
+    return { ...event,
+      category: event.type === 'daily_generation_ready' ? 'daily' : 'fault',
+      fact_snapshot: parseJson(event.fact_snapshot), deliveries, problems
+    };
   }
 
   retryDelivery(id, actor) {
@@ -201,4 +211,3 @@ export class NotificationService {
     return this.db.prepare('SELECT * FROM notification_delivery WHERE id=?').get(id);
   }
 }
-

@@ -1,18 +1,17 @@
 {
   "name": "fumai-notification-service",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "type": "module",
-  "description": "SQLite transactional notification outbox and mock SMS/email worker",
+  "description": "SQLite notification outbox, authenticated admin API, SMTP email and Gammu SMS worker",
   "scripts": {
     "test": "node --test",
     "migrate": "node src/migrate.mjs",
     "serve": "node src/server.mjs",
     "worker": "node src/run-worker.mjs",
-    "check": "node --check src/db.mjs && node --check src/service.mjs && node --check src/worker.mjs && node --check src/server.mjs"
+    "check": "node --check src/db.mjs && node --check src/auth.mjs && node --check src/smtp.mjs && node --check src/providers.mjs && node --check src/service.mjs && node --check src/worker.mjs && node --check src/server.mjs"
   },
   "engines": {
     "node": ">=24"
   }
 }
-
