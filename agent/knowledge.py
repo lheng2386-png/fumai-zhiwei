@@ -136,6 +136,10 @@ class Knowledge:
         try:
             with self.store.connect() as db:
                 db.execute('BEGIN IMMEDIATE')
+                existing=db.execute('SELECT id FROM kb_documents WHERE owner=? AND digest=?',(owner,digest)).fetchone()
+                if existing:
+                    self.slots.release()
+                    return self.get(owner,existing['id'])
                 if db.execute('SELECT count(*) FROM kb_documents').fetchone()[0]>=500:
                     raise InputError('资料库已达到 500 份上限，请清理过期资料后再上传。')
                 db.execute('INSERT INTO kb_documents(id,owner,title,filename,digest,status,stage,created_at,started,source) VALUES(?,?,?,?,?,?,?,?,?,?)',
@@ -229,3 +233,6 @@ class Knowledge:
         with self.store.connect() as db:
             rows=db.execute('SELECT id AS chunk_id,ordinal,location,text FROM kb_chunks WHERE document_id=? ORDER BY ordinal LIMIT 80',(doc_id,)).fetchall()
         return {'document':document,'chunks':[dict(row) for row in rows],'truncated':document['chunk_count']>80}
+
+# Compatibility with the versioned general-knowledge and follow-up module.
+from .knowledge_notes import answer, knowledge_context, guard_knowledge

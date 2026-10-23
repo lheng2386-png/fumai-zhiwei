@@ -99,7 +99,7 @@ def deploy(commit):
             subprocess.run(['systemctl','restart','fumai-agent'],check=True,timeout=20)
             health(commit)
             subprocess.run(['/usr/bin/python3','/srv/fumai-zhiwei/ops/deploy_frontend.py','--commit',commit],check=True,timeout=120)
-            for asset in ('agent.js','agent.css'):
+            for asset in ('agent.js','agent.css','intent.js'):
                 with urllib.request.urlopen('http://127.0.0.1/'+asset,timeout=5) as response:
                     if response.status!=200 or not response.read(64):
                         raise RuntimeError('Agent UI asset unavailable')

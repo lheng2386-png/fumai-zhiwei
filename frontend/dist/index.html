@@ -10,6 +10,7 @@
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="agent.css">
     <script src="data.js" defer></script>
+    <script src="intent.js" defer></script>
     <script src="agent.js" defer></script>
     <script src="app.js" defer></script>
 </head>
@@ -24,10 +25,11 @@
         <div class="workspace-label">运维工作空间 <span>WORKSPACE</span></div>
         <nav id="navigation">
             <a href="#overview" data-nav="overview" aria-label="电站概览" title="电站概览"><span data-icon="grid"></span><span class="nav-label">电站概览</span></a>
-            <a href="#events" data-nav="events" aria-label="异常事件" title="异常事件"><span data-icon="activity"></span><span class="nav-label">异常事件</span><span class="nav-count" id="nav-count">8</span></a>
+            <a href="#events" data-nav="events" aria-label="异常事件" aria-describedby="nav-count-label" title="异常事件"><span data-icon="activity"></span><span class="nav-label">异常事件</span><span class="nav-count" id="nav-count" aria-hidden="true" hidden></span><span class="sr-only" id="nav-count-label"></span></a>
             <a href="#devices" data-nav="devices" aria-label="设备监测" title="设备监测"><span data-icon="panel"></span><span class="nav-label">设备监测</span></a>
             <a href="#reviews" data-nav="reviews" aria-label="复核记录" title="复核记录"><span data-icon="clipboard"></span><span class="nav-label">复核记录</span></a>
             <a href="#agent" data-nav="agent" aria-label="运维智能体" title="运维智能体"><span data-icon="brain"></span><span class="nav-label">运维智能体</span></a>
+            <a href="/notifications.html" aria-label="通知中心" title="通知中心"><span data-icon="activity"></span><span class="nav-label">通知中心</span></a>
             <div class="nav-divider"></div>
             <div class="workspace-label nav-subtitle">项目资料</div>
             <a href="#models" data-nav="models" aria-label="数据与模型" title="数据与模型"><span data-icon="layers"></span><span class="nav-label">数据与模型</span></a>

@@ -35,7 +35,7 @@ class AnalysisTasks:
             db.execute("UPDATE analysis_tasks SET status='failed', stage='interrupted', finished_epoch=?, error=? "
                        "WHERE status IN ('queued','running')", (time.time(), "服务已重启，本次分析中断，请重新提交。"))
 
-    def submit(self, owner, body):
+    def submit(self, owner, body, reserve_model_slot=True):
         request_id = body.get("request_id")
         try:
             uuid.UUID(request_id)
@@ -49,10 +49,10 @@ class AnalysisTasks:
             if existing["request_json"] != encoded:
                 raise InputError("request_id 已用于其他请求，请生成新的编号")
             return self.get(owner, existing["id"])
-        if not self.slots.acquire(blocking=False):
+        if reserve_model_slot and not self.slots.acquire(blocking=False):
             raise TaskBusy("模型正在处理其他任务，请稍后重试")
         task_id, created = str(uuid.uuid4()), time.time()
-        owns_slot = True
+        owns_slot = reserve_model_slot
         try:
             with self.store.connect() as db:
                 db.execute("BEGIN IMMEDIATE")
@@ -63,7 +63,8 @@ class AnalysisTasks:
                                       (task_id, owner, request_id, encoded, "queued", "queued", utcnow(), created)).rowcount
                 row = db.execute("SELECT id,request_json FROM analysis_tasks WHERE owner=? AND request_id=?", (owner, request_id)).fetchone()
             if not inserted:
-                self.slots.release()
+                if owns_slot:
+                    self.slots.release()
                 owns_slot = False
                 if row["request_json"] != encoded:
                     raise InputError("request_id 已用于其他请求，请生成新的编号")
@@ -73,6 +74,9 @@ class AnalysisTasks:
             if owns_slot:
                 self.slots.release()
             raise
+        if not reserve_model_slot:
+            self.run(owner, task_id, request, release_slot=False)
+            return self.get(owner, task_id)
         try:
             worker = threading.Thread(target=self.run, args=(owner, task_id, request), daemon=True, name="agent-analysis")
             worker.start()
@@ -109,7 +113,7 @@ class AnalysisTasks:
             if self._pending_failures.get(task_id) == failure:
                 self._pending_failures.pop(task_id, None)
 
-    def run(self, owner, task_id, request):
+    def run(self, owner, task_id, request, release_slot=True):
         try:
             result = self.analyze(owner, request, lambda stage: self.progress(task_id, stage))
             with self.store.connect() as db:
@@ -120,7 +124,8 @@ class AnalysisTasks:
             # exceptions (which can contain provider credentials or payloads).
             self.fail(task_id, "分析任务未完成，请稍后重试；如持续失败请联系管理员。")
         finally:
-            self.slots.release()
+            if release_slot:
+                self.slots.release()
 
     def get(self, owner, task_id):
         try:
@@ -128,7 +133,8 @@ class AnalysisTasks:
         except (ValueError, TypeError, AttributeError):
             raise InputError("无效的任务编号") from None
         with self.store.connect() as db:
-            row = db.execute("SELECT * FROM analysis_tasks WHERE id=? AND owner=?", (task_id, owner)).fetchone()
+            allowed=self.store.owners(owner)
+            row = db.execute('SELECT * FROM analysis_tasks WHERE id=? AND owner IN ('+','.join('?' for _ in allowed)+')',(task_id,*allowed)).fetchone()
         if not row:
             raise InputError("任务不存在或无权访问")
         with self._failure_lock:

@@ -9,3 +9,5 @@ python -m unittest discover -s agent/tests -v
 ```
 
 测试不调用外部模型、不需要密钥；HTTP 测试使用本机回环地址，需要本机网络权限。
+
+文档上传、知识库 RAG、MCP 工具与使用边界见 [RAG 与 MCP 说明](../docs/AGENT_RAG_MCP.md)。

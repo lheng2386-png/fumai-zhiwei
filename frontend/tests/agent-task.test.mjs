@@ -31,7 +31,7 @@ async function harness(handler,{saved,token}={}) {
     // Auth is entered through the actual form submit path; this exercises header propagation.
     context.FormData=class {get(name){return name==='token'?token:null;}};
     vm.runInNewContext(source,context,{filename:'agent.js'});await flush();
-    return {storage,calls,nodes,workbench,get paints(){return paints;},get clockCount(){return intervals.size;},async advance(ms){now+=ms;for(const {fn} of intervals.values())fn();await flush();},async timer(ms){const entry=[...timers].find(([,t])=>t.ms===ms);assert.ok(entry,`Expected ${ms} ms timer`);timers.delete(entry[0]);entry[1].fn();await flush();},async prompt(text='分析设备'){await listeners.click({target:{closest:selector=>selector==='[data-agent-prompt]'?{dataset:{agentPrompt:text}}:null}});await flush();},async login(){await listeners.submit({preventDefault(){},target:{id:'agent-login',matches:()=>false,reset(){},querySelector:()=>({})}});await flush();},async action(action){await listeners.click({target:{closest:selector=>selector==='[data-agent-action]'?{dataset:{agentAction:action}}:null}});await flush();}};
+    return {storage,calls,nodes,workbench,get paints(){return paints;},get clockCount(){return intervals.size;},async advance(ms){now+=ms;for(const {fn} of intervals.values())fn();await flush();},async timer(ms){const entry=[...timers].find(([,t])=>t.ms===ms);assert.ok(entry,`Expected ${ms} ms timer`);timers.delete(entry[0]);entry[1].fn();await flush();},async prompt(text='分析设备'){await listeners.click({target:{closest:selector=>selector==='[data-agent-prompt]'?{dataset:{agentPrompt:text}}:null}});await flush();},async login(){await listeners.submit({preventDefault(){},target:{id:'agent-login',matches:()=>false,reset(){},querySelector:()=>({})}});await flush();},async scope(value){await listeners.change({target:{id:'agent-analysis-scope',value,matches:()=>false}});await flush();},async action(action){await listeners.click({target:{closest:selector=>selector==='[data-agent-action]'?{dataset:{agentAction:action}}:null}});await flush();}};
 }
 function streamResponse(signal) {
     let controller;
@@ -133,4 +133,21 @@ test('auth expiry pauses without retry storm; definitive missing task releases t
     assert.equal(h.storage.has(storageKey),true);assert.equal(h.calls.length,2);
     const missing=await harness(async()=>json({error:'任务已过期，请重新分析'},404),{saved});
     assert.match(missing.workbench.innerHTML,/任务已过期/);assert.equal(missing.storage.has(storageKey),false);assert.equal(missing.clockCount,0);
+});
+
+
+test('knowledge scope reaches the backend and document citations render safely with MCP trace',async()=>{
+    const rag={...result,evidence_ids:[],response_type:'answer',intent:'knowledge',presentation:'question_answer',mcp_status:'connected',
+        answers:[{question:'查手册',answer:'按原文核对',status:'answered'}],
+        knowledge_sources:[{citation_id:'KB:real',chunk_id:'real',title:'<script>bad()</script>',filename:'manual.txt',location:'第 2 页',ordinal:3,text:'原文 <img src=x onerror=bad()>',digest:'abcdef123456'}],
+        model_analysis:{summary:'按原文核对',hypotheses:[],checks:[],unknowns:[],evidence_ids:['KB:real']},
+        trace:[{tool:'search_knowledge',transport:'mcp',status:'ok',result_count:1}]};
+    const h=await harness(async(url,options)=>{
+        if(url.endsWith('/analysis-tasks')){const body=JSON.parse(options.body);assert.equal(body.scope,'knowledge');assert.equal(body.event_id,null);return json(snapshot('completed',{result:rag}));}
+        assert.fail(`Unexpected request ${url}`);
+    });
+    await h.scope('knowledge');await h.prompt('查手册');
+    assert.match(h.workbench.innerHTML,/知识库原文出处/);assert.match(h.workbench.innerHTML,/模型已引用/);
+    assert.match(h.workbench.innerHTML,/第 2 页/);assert.match(h.workbench.innerHTML,/查看 MCP 工具调用记录/);
+    assert.match(h.workbench.innerHTML,/&lt;script&gt;/);assert.doesNotMatch(h.workbench.innerHTML,/<script>bad|<img src=x/);
 });

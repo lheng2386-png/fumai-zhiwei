@@ -59,7 +59,7 @@ class AgentTests(unittest.TestCase):
                 s.tool(name,args)
 
     def test_unknown_identifiers(self):
-        for body in [{'message':'分析 inv_999'},{'message':'test','event_id':'missing'}]:
+        for body in [{'message':'分析 inv_999'},{'message':'分析事件','event_id':'missing'}]:
             with self.assertRaises(InputError):
                 self.request('analyze',body)
 

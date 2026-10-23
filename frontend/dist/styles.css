@@ -9,6 +9,7 @@
     --line:#e7ece7;
     --amber:#bd8531;
     --red:#bb695b;
+    --alert:#cf3541;
     --font:"Inter","Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
 }
 * {
@@ -161,16 +162,41 @@ nav a.active:before {
     border-radius:0 2px 2px 0;
 }
 .nav-count {
+    position:relative;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    flex-shrink:0;
     margin-left:auto;
     font-size:10px;
-    line-height:18px;
-    min-width:20px;
-    border-radius:4px;
-    background:#ffffff15;
+    font-weight:700;
+    line-height:22px;
+    min-width:22px;
+    padding:0 5px;
+    border-radius:999px;
+    color:#fff;
+    background:var(--alert);
     text-align:center;
 }
 .active .nav-count {
-    background:#193e2d13;
+    background:var(--alert);
+}
+.nav-count[hidden] {
+    display:none;
+}
+.nav-count:after {
+    content:"";
+    position:absolute;
+    inset:-3px;
+    border:1px solid #ef727b;
+    border-radius:inherit;
+    pointer-events:none;
+    animation:alert-bubble 2.8s ease-out 3;
+    opacity:0;
+}
+@keyframes alert-bubble {
+    0% { transform:scale(.85); opacity:.6; }
+    65%,100% { transform:scale(1.45); opacity:0; }
 }
 .nav-divider {
     height:1px;
@@ -819,6 +845,19 @@ main {
     color:#587795;
     background:#edf3f8;
 }
+.status-pill.unreviewed,.status-pill.candidate-alert {
+    color:#b42d39;
+    background:#fff0f1;
+    border-radius:999px;
+}
+.status-pill.unreviewed:before,.status-pill.candidate-alert:before {
+    content:"";
+    width:6px;
+    height:6px;
+    flex-shrink:0;
+    border-radius:50%;
+    background:var(--alert);
+}
 .status-pill.expected_operation {
     color:#638266;
     background:#eff5eb;
@@ -876,12 +915,20 @@ main {
     transform:translateY(-2px);
 }
 .device-cell.attention {
-    background:#fbf1da;
-    border-color:#f0dcae;
-    color:#b2904b;
+    background:#fff0f1;
+    border-color:#f2c8cd;
+    color:#b42d39;
 }
 .device-cell.attention:after {
-    background:#c8a15d;
+    top:4px;
+    right:4px;
+    bottom:auto;
+    width:8px;
+    height:8px;
+    border:2px solid #fff;
+    box-sizing:content-box;
+    background:var(--alert);
+    box-shadow:0 0 0 2px #cf354118;
 }
 .fleet-legend {
     display:flex;
@@ -899,8 +946,9 @@ main {
     background:#d7e5ce;
     margin-right:4px;
 }
-.fleet-legend i.amber {
-    background:#efdaad;
+.fleet-legend i.alert {
+    border-radius:50%;
+    background:var(--alert);
 }
 .fleet-footer {
     border-top:1px solid #edf0e7;
@@ -2165,6 +2213,7 @@ main[aria-busy="true"] {
         min-width: 13px;
         line-height: 13px;
         font-size: 8px;
+        padding: 0 3px;
         margin: 0;
     }
     .sidebar-collapsed .nav-divider { margin-left: 10px; margin-right: 10px; }

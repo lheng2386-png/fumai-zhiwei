@@ -102,7 +102,7 @@ class TaskTests(unittest.TestCase):
                 self.submit(body)
 
     def test_bounded_workers_and_duplicate_at_capacity(self):
-        body = {'message': 'test', 'request_id': str(uuid.uuid4())}
+        body = {'message': '分析设备异常', 'request_id': str(uuid.uuid4())}
         first = self.submit(body)
         self.submit()
         self.submit()
