@@ -14,6 +14,8 @@ export class NotificationWorker {
     this.leaseSeconds = Number(options.leaseSeconds || process.env.FUMAI_WORKER_LEASE_SECONDS || 60);
     this.maxAttempts = Number(options.maxAttempts || process.env.FUMAI_WORKER_MAX_ATTEMPTS || 5);
     this.baseRetryMs = Number(options.baseRetryMs || 1000);
+    this.emailStartAt=options.emailStartAt || process.env.FUMAI_EMAIL_START_AT || null;
+    this.registeredEmailOnly=options.registeredEmailOnly ?? process.env.FUMAI_EMAIL_REGISTERED_ONLY==='true';
     this.providerTimeoutMs = Number(options.providerTimeoutMs || process.env.FUMAI_PROVIDER_TIMEOUT_MS || 10_000);
   }
 
@@ -88,6 +90,13 @@ export class NotificationWorker {
   async processOne(delivery) {
     try {
       const provider = this.providers[delivery.channel];
+      if(delivery.channel==='email' && provider?.name==='smtp') {
+        if(this.emailStartAt && delivery.created_at<this.emailStartAt)throw new ProviderError('SMTP_BEFORE_ACTIVATION','该通知早于真实邮件启用时间，属于历史任务，未发送；不会自动补发历史演示数据');
+        const person=this.db.prepare('SELECT enabled FROM personnel WHERE id=?').get(delivery.recipient_id);
+        if(!person?.enabled)throw new ProviderError('RECIPIENT_DISABLED','收件员工已停用，未发送');
+        if(this.registeredEmailOnly && !this.db.prepare(`SELECT 1 FROM app_user_contact c JOIN app_user u ON u.id=c.user_id WHERE c.personnel_id=? AND u.enabled=1`).get(delivery.recipient_id))
+          throw new ProviderError('RECIPIENT_NOT_REGISTERED','当前只向已注册且启用的员工发信；该人员尚未关联注册账号，未发送');
+      }
       if (!provider) throw new ProviderError('CHANNEL_NOT_CONFIGURED', '发送渠道未配置');
       const result = await Promise.race([
         provider.send(delivery),

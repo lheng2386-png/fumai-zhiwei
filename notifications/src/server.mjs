@@ -185,8 +185,17 @@ const server = createServer(async (req, res) => {
       auth.revokeRequest(req);
       return sendJson(res, 200, { logged_out: true }, { 'Set-Cookie': auth.clearCookie() });
     }
-    if (req.method === 'GET' && path === '/api/auth/me') return sendJson(res, 200, { user: requireUser(req) });
+    if (req.method === 'GET' && path === '/api/auth/me') return sendJson(res, 200, { user: {...requireUser(req),notification_contact:auth.contact(requireUser(req).id)} });
 
+    if (path==='/api/auth/notification-email') {
+      const user=requireUser(req);
+      if(req.method==='GET') return sendJson(res,200,{contact:auth.contact(user.id)});
+      if(req.method==='POST') {
+        const contact=auth.saveContact(user.id,await readJson(req));
+        audit(user.username,'save_own_notification_email',user.id,{personnel_id:contact.personnel_id});
+        return sendJson(res,200,{contact,message:'通知邮箱已保存。新通知将使用此地址，历史发送记录保持原地址。'});
+      }
+    }
     if (req.method === 'GET' && path === '/api/users') {
       const current = requireUser(req, 'admin');
       return sendJson(res, 200, { users: auth.listUsers(), current_user: current });

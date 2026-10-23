@@ -22,7 +22,7 @@ export function buildMessage(delivery) {
   const facts = parseJson(delivery.fact_snapshot) || {};
   const prefix = delivery.event_type === 'daily_generation_ready' ? '日发电通知' :
     (delivery.event_type === 'confirmed_fault' ? '确认故障通知' : '疑似异常通知');
-  const subject = `[伏脉智维] ${prefix}`;
+  const subject = `[伏脉智维] ${delivery.simulated ? '演练 / ' : ''}${prefix}`;
   let text;
   if (delivery.event_type === 'daily_generation_ready') {
     const testLabel = facts.is_test_forecast ? '（模拟预测值）' : '';
@@ -33,7 +33,7 @@ export function buildMessage(delivery) {
   return {
     subject,
     text,
-    html: `<p>${escapeHtml(text)}</p><p><a href="/notifications.html">返回伏脉智维通知中心</a></p>`
+    html: `<p>${escapeHtml(text)}</p><p>请登录伏脉智维网站的通知中心查看详情。</p>`
   };
 }
 
@@ -78,6 +78,10 @@ export class SmtpEmailProvider {
   async send(delivery) {
     if (!this.config.host || !this.config.from) {
       throw new ProviderError('SMTP_NOT_CONFIGURED', 'SMTP 主机或发件人尚未配置');
+    }
+    const allowed=this.config.testRecipients;
+    if(Array.isArray(allowed) && allowed.length && !allowed.includes(String(delivery.address_snapshot||'').toLowerCase())) {
+      throw new ProviderError('SMTP_TEST_RECIPIENT_BLOCKED','当前为邮件测试模式，仅允许发往配置的测试邮箱；该员工的通知尚未发送');
     }
     try {
       return await this.transport(this.config, { to: delivery.address_snapshot, ...buildMessage(delivery) });
@@ -147,6 +151,7 @@ export function createProviders(mode = process.env.FUMAI_NOTIFICATION_MODE || 'm
   const smsMode = process.env.FUMAI_SMS_PROVIDER || (mode === 'real' ? 'gammu' : 'mock');
   const email = emailMode === 'mock' ? new MockProvider() : (emailMode === 'smtp' ? new SmtpEmailProvider({
     host: process.env.FUMAI_SMTP_HOST,
+    testRecipients:(process.env.FUMAI_EMAIL_TEST_RECIPIENTS||'').split(',').map(s=>s.trim().toLowerCase()).filter(Boolean),
     port: Number(process.env.FUMAI_SMTP_PORT || 465),
     secure: bool(process.env.FUMAI_SMTP_SECURE, true),
     user: process.env.FUMAI_SMTP_USER,

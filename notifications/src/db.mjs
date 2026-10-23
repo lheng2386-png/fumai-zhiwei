@@ -11,6 +11,7 @@ export function openDatabase(path = process.env.FUMAI_DB_PATH || './var/fumai-no
   const db = new DatabaseSync(path);
   db.exec('PRAGMA foreign_keys = ON; PRAGMA journal_mode = WAL; PRAGMA busy_timeout = 5000;');
   db.exec(readFileSync(migrationFile, 'utf8'));
+  db.exec(readFileSync(resolve(here, '../migrations/002_account_email.sql'), 'utf8'));
   return db;
 }
 

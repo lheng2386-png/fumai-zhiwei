@@ -94,6 +94,7 @@ class SmtpConnection {
 }
 
 export async function sendSmtpMail(config, message) {
+  if(config.secure===false && !['127.0.0.1','localhost','::1'].includes(config.host))throw Object.assign(new Error('公网 SMTP 必须使用 TLS 加密；当前支持 465 隐式 TLS'),{code:'SMTP_TLS_REQUIRED'});
   const timeoutMs = Number(config.timeoutMs || 10_000);
   const socket = config.secure === false
     ? net.createConnection({ host: config.host, port: config.port })
@@ -118,7 +119,8 @@ export async function sendSmtpMail(config, message) {
     socket.write(`${createMessage({ ...message, from: config.from, messageId })}.\r\n`);
     await smtp.command(null, [250]);
     bodySubmitted = false;
-    await smtp.command('QUIT', [221]);
+    // DATA 250 is the acceptance boundary. A QUIT disconnect must not turn an accepted mail into a retry.
+    try { await smtp.command('QUIT', [221]); } catch { /* Already accepted by the SMTP server. */ }
     return { accepted: true, simulated: false, providerMessageId: messageId };
   } catch (error) {
     error.unknownAcceptance = bodySubmitted;

@@ -1,3 +1,4 @@
+import { transaction } from './db.mjs';
 import { createHash, randomBytes, randomUUID, scryptSync, timingSafeEqual } from 'node:crypto';
 
 const USERNAME = /^[a-zA-Z0-9._-]{3,40}$/;
@@ -63,7 +64,53 @@ export class AuthService {
     return this.saveUser({ username, password, display_name: '系统管理员', role: 'admin', enabled: true });
   }
 
+  contact(userId) {
+    const row=this.db.prepare(`SELECT p.id personnel_id,p.email,p.phone,p.enabled FROM app_user_contact c
+      JOIN personnel p ON p.id=c.personnel_id WHERE c.user_id=?`).get(userId);
+    return row ? {personnel_id:row.personnel_id,email:row.email,phone:row.phone,enabled:Boolean(row.enabled)} :
+      {personnel_id:null,email:null,phone:null,enabled:false};
+  }
+
+  validateEmail(email) {
+    if (typeof email!=='string' || email.length>254 || !/^[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+$/.test(email.trim()))
+      throw new Error('请填写有效的通知邮箱，例如 name@qq.com');
+    return email.trim().toLowerCase();
+  }
+
+  setContact(userId,input) {
+    const user=this.db.prepare('SELECT id,display_name,enabled FROM app_user WHERE id=?').get(userId);
+    if(!user) throw new Error('账号不存在');
+    const email=this.validateEmail(input.email);
+    const existing=this.contact(userId),id=existing.personnel_id||`account-${user.id}`;
+    if(!existing.personnel_id && this.db.prepare('SELECT 1 FROM personnel WHERE id=?').get(id))throw new Error('员工通知档案编号冲突，请联系管理员关联已有档案');
+    this.db.prepare(`INSERT INTO personnel(id,name,phone,email,enabled,updated_at) VALUES(?,?,?,?,?,?)
+      ON CONFLICT(id) DO UPDATE SET name=excluded.name,email=excluded.email,enabled=excluded.enabled,updated_at=excluded.updated_at`)
+      .run(id,user.display_name,existing.phone,email,user.enabled,utcNow());
+    this.db.prepare(`INSERT INTO app_user_contact(user_id,personnel_id,updated_at) VALUES(?,?,?)
+      ON CONFLICT(user_id) DO UPDATE SET updated_at=excluded.updated_at`).run(user.id,id,utcNow());
+    return this.contact(userId);
+  }
+
+  saveContact(userId,input) {
+    if (Object.keys(input).some(key=>key!=='email')) throw new Error('只能修改当前账号的通知邮箱');
+    return transaction(this.db,()=>this.setContact(userId,input));
+  }
+
   saveUser(input) {
+    if(Object.hasOwn(input,'email'))this.validateEmail(input.email);
+    return transaction(this.db,()=>{
+      const user=this.saveAccount(input);
+      if(Object.hasOwn(input,'email'))this.setContact(user.id,input);
+      else {
+        const contact=this.contact(user.id);
+        if(contact.personnel_id)this.db.prepare('UPDATE personnel SET name=?,enabled=?,updated_at=? WHERE id=?')
+          .run(user.display_name,user.enabled?1:0,utcNow(),contact.personnel_id);
+      }
+      return {...user,notification_contact:this.contact(user.id)};
+    });
+  }
+
+  saveAccount(input) {
     const username = required(input.username, '用户名');
     if (!USERNAME.test(username)) throw new Error('用户名只能包含字母、数字、点、下划线或短横线，长度 3–40');
     const normalized = username.toLowerCase();
@@ -115,6 +162,7 @@ export class AuthService {
       return this.saveUser({
         username,
         display_name: input.display_name,
+        ...(Object.hasOwn(input,'email')?{email:input.email}:{}),
         password: input.password,
         role,
         enabled: true

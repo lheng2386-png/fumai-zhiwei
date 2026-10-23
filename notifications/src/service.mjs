@@ -174,7 +174,7 @@ export class NotificationService {
       COUNT(d.id) delivery_count
       FROM notification_event e LEFT JOIN notification_delivery d ON d.event_id=e.id
       ${where}
-      GROUP BY e.id ORDER BY e.created_at DESC LIMIT ? OFFSET ?`).all(Math.min(Number(limit) || 100, 500), Number(offset) || 0)
+      GROUP BY e.id ORDER BY e.created_at DESC, e.rowid DESC LIMIT ? OFFSET ?`).all(Math.min(Number(limit) || 100, 500), Number(offset) || 0)
       .map(row => ({ ...row,
         category: row.type === 'daily_generation_ready' ? 'daily' : 'fault',
         fact_snapshot: parseJson(row.fact_snapshot)

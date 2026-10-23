@@ -31,11 +31,18 @@
       <p>真实服务商密钥仅保存在服务器环境变量，页面和 Git 仓库不保存密钥。</p>
     </section>
 
+    <section class="card">
+      <div class="section-head"><div><p class="eyebrow">MY NOTIFICATION EMAIL</p><h2>我的通知邮箱</h2></div></div>
+      <form id="my-email-form" class="form-grid"><label>接收工作通知的邮箱<input id="my-email" name="email" type="email" required maxlength="254" placeholder="name@qq.com"></label><button class="secondary" type="submit">保存我的邮箱</button></form>
+      <p class="hint">注册填写的邮箱会关联到自己的员工通知档案。设备故障按管理员分配的负责人通知，日发电消息发给启用人员。SMTP 发件人由系统统一配置，与这里的收件邮箱不同。</p>
+    </section>
+
     <section class="card users" data-admin-only>
       <div class="section-head"><div><p class="eyebrow">ACCESS CONTROL</p><h2>网站账号与角色</h2></div><span id="user-count" class="count">0</span></div>
       <form id="user-form" class="form-grid user-form">
         <label>用户名<input name="username" required pattern="[A-Za-z0-9._-]{3,40}" placeholder="例如 yzx"></label>
         <label>显示名称<input name="display_name" required maxlength="100" placeholder="成员姓名"></label>
+        <label>通知邮箱<input name="email" type="email" maxlength="254" placeholder="选填；留空不修改已有邮箱"></label>
         <label>角色<select name="role"><option value="viewer">查看者</option><option value="operator">操作员</option><option value="admin">管理员</option></select></label>
         <label>初始/新密码<input name="password" type="password" minlength="10" maxlength="128" placeholder="新建时必填，至少 10 位"></label>
         <label class="toggle"><input name="enabled" type="checkbox" checked> 启用账号</label>

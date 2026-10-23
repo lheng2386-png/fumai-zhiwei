@@ -96,11 +96,13 @@
   }
 
   function bindForms() {
+    $('#my-email-form')?.addEventListener('submit',async event=>{event.preventDefault();const button=event.currentTarget.querySelector('button');button.disabled=true;try{const result=await api('/api/auth/notification-email',{method:'POST',body:JSON.stringify(Object.fromEntries(new FormData(event.currentTarget)))});message(result.message,true);await loadPeople();}catch(error){message(error.message);}finally{button.disabled=false;}});
     $('#user-form')?.addEventListener('submit', async event => {
       event.preventDefault();
       const form = new FormData(event.currentTarget);
       const input = Object.fromEntries(form);
       input.enabled = form.has('enabled');
+      if(input.email==='')delete input.email;
       try { await api('/api/users', { method: 'POST', body: JSON.stringify(input) }); message('网站账号已保存。', true); event.currentTarget.reset(); event.currentTarget.elements.enabled.checked = true; await loadUsers(); }
       catch (error) { message(error.message); }
     });
@@ -150,6 +152,7 @@
     $('#current-user').textContent = `${user.display_name} · ${roleNames[user.role]}`;
     if (user.role !== 'admin') document.querySelectorAll('[data-admin-only]').forEach(element => element.hidden = true);
     bindForms();
+    const ownContact=await api('/api/auth/notification-email');$('#my-email').value=ownContact.contact.email||'';
     await Promise.all([loadHealth(), loadPeople(), loadEquipment(), loadEvents(), loadUsers()]);
   }).catch(error => message(error.message));
 })();
