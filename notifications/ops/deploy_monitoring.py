@@ -83,7 +83,17 @@ def deploy(commit, expected):
             else:raise RuntimeError('Monitoring health failed')
             subprocess.run(['systemctl','reload','nginx'],check=True,timeout=10)
             for name in ('app.js','monitoring.js','monitoring.css','index.html'):
-                with urllib.request.urlopen('http://127.0.0.1/'+name,timeout=5) as response:assert response.read()==(release/'frontend/dist'/name).read_bytes(),name+' mismatch'
+                expected_asset=(release/'frontend/dist'/name).read_bytes()
+                with urllib.request.urlopen('http://127.0.0.1:8787/'+name,timeout=5) as response:
+                    assert response.read()==expected_asset, name+' backend asset mismatch'
+                # reload returns before every old worker exits; wait for the new route to serve.
+                for _ in range(30):
+                    try:
+                        with urllib.request.urlopen('http://127.0.0.1/'+name,timeout=3) as response:
+                            if response.read()==expected_asset:break
+                    except OSError:pass
+                    time.sleep(.5)
+                else:raise RuntimeError(name+' public asset mismatch after nginx reload')
             with urllib.request.urlopen('http://127.0.0.1/agent-api/health',timeout=5) as response:assert json.load(response)['mcp_tools']==5
             assert agent==Path('/srv/fumai-zhiwei/agent/current').resolve()
             assert frontend==Path('/srv/fumai-zhiwei/frontend/current').resolve()
