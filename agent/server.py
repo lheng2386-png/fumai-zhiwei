@@ -111,7 +111,7 @@ class Application:
         result.update(knowledge_sources=[],retrieval='bm25',mcp_status='connecting')
         if scope=='knowledge' or not body.get('event_id') and not body.get('device_id'):
             result.update(events=[],evidence_ids=[],hypotheses=[],checks=[],trace=[])
-        result.update(response_type='answer',intent='knowledge',presentation='question_answer',reply_mode='rag',questions=[{'question_id':'q1','question':body['message']}],knowledge_question=body['message'])
+        result.update(response_type='answer',intent='knowledge',presentation='question_answer',reply_mode='rag',allow_tools=False,questions=[{'question_id':'q1','question':body['message']}],knowledge_question=body['message'])
         result['conversation_context']=[context_excerpt(r) for r in self.store.turns(owner,conversation_id,limit=6)]
         tools=None
         try:
@@ -136,8 +136,10 @@ class Application:
                 result = self.model.enrich(tools, body['message'], copy.deepcopy(result), **({'progress':progress} if progress else {}))
                 for trace in result['trace']:
                     if trace.get('tool') in {t['name'] for t in tools.tools}:trace['transport']='mcp'
-            except Exception:
+            except Exception as error:
                 result['model_status'] = 'failed_fallback'
+                result['model_error_code']=type(error).__name__
+                result['trace'].append({'tool':'qwen_generate','status':'failed','result_count':0,'error_code':type(error).__name__})
                 result['unknowns'].insert(0, '模型请求失败或输出未通过校验，已保留检索原文及规则分析；可稍后重试。')
         elif self.model and not tools:
             result['model_status']='failed_fallback'
