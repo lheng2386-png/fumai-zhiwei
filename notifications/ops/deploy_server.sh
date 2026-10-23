@@ -237,6 +237,7 @@ updates = {
     'FUMAI_PUBLIC_ORIGIN': sys.argv[3],
     'FUMAI_STATIC_ROOT': sys.argv[4],
     'FUMAI_SESSION_HOURS': '12',
+    'FUMAI_SELF_REGISTRATION': 'true',
     'FUMAI_WORKER_ID': 'worker-server-1',
     'FUMAI_WORKER_CONCURRENCY': '4',
     'FUMAI_WORKER_LEASE_SECONDS': '60',

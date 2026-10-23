@@ -17,15 +17,32 @@
       <p class="foot">数据库事件 · 邮件 · 短信猫</p>
     </section>
     <section class="login-panel">
+      <div class="account-box">
+      <div class="account-tabs" role="tablist" aria-label="账号操作">
+        <button class="account-tab active" type="button" data-panel="login-form">登录</button>
+        <button class="account-tab" type="button" data-panel="register-form">创建账号</button>
+      </div>
       <form id="login-form" autocomplete="on">
         <p class="eyebrow">WELCOME BACK</p>
         <h2>登录工作台</h2>
-        <p class="lead">使用项目管理员分配的账号。</p>
+        <p class="lead">使用已有账号进入工作台。</p>
         <label>用户名<input name="username" autocomplete="username" required autofocus maxlength="40" placeholder="请输入用户名"></label>
         <label>密码<input name="password" type="password" autocomplete="current-password" required maxlength="128" placeholder="请输入密码"></label>
         <button type="submit">进入伏脉智维</button>
-        <p id="error" class="error" role="alert" aria-live="polite"></p>
       </form>
+      <form id="register-form" autocomplete="on" hidden>
+        <p class="eyebrow">CREATE ACCOUNT</p>
+        <h2>创建新账号</h2>
+        <p class="lead">注册成功后会直接进入工作台。</p>
+        <label>姓名<input name="display_name" autocomplete="name" required maxlength="100" placeholder="请输入姓名"></label>
+        <label>用户名<input name="username" autocomplete="username" required pattern="[A-Za-z0-9._-]{3,40}" maxlength="40" placeholder="3–40 位字母、数字或下划线"></label>
+        <label>账号类型<select name="role"><option value="operator">操作员</option><option value="viewer">查看者</option></select></label>
+        <label>密码<input name="password" type="password" autocomplete="new-password" required minlength="10" maxlength="128" placeholder="至少 10 位"></label>
+        <label>确认密码<input name="password_confirm" type="password" autocomplete="new-password" required minlength="10" maxlength="128" placeholder="再次输入密码"></label>
+        <button type="submit">创建并进入网站</button>
+      </form>
+      <p id="error" class="error" role="alert" aria-live="polite"></p>
+      </div>
       <p class="security">登录状态保存在安全会话 Cookie 中；密码不会写入浏览器存储。</p>
     </section>
   </main>

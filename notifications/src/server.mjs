@@ -21,6 +21,7 @@ const publicOrigin = process.env.FUMAI_PUBLIC_ORIGIN || `http://127.0.0.1:${port
 const expectedOrigin = new URL(publicOrigin).origin;
 const staticRoot = resolve(process.env.FUMAI_STATIC_ROOT || resolve(here, '../../frontend/dist'));
 const loginAttempts = new Map();
+const registrationAttempts = new Map();
 let drainRunning = false;
 
 if (bootstrapUser) console.log(`Created bootstrap administrator: ${bootstrapUser.username}`);
@@ -65,6 +66,15 @@ function checkLoginLimit(req, username) {
   loginAttempts.set(key, attempts);
   if (attempts.length >= 5) throw Object.assign(new Error('登录失败次数过多，请 15 分钟后再试'), { status: 429 });
   return { key, attempts };
+}
+
+function checkRegistrationLimit(req) {
+  const key = req.socket.remoteAddress || 'unknown';
+  const cutoff = Date.now() - 60 * 60_000;
+  const attempts = (registrationAttempts.get(key) || []).filter(time => time > cutoff);
+  if (attempts.length >= 5) throw Object.assign(new Error('该地址创建账号次数过多，请稍后再试'), { status: 429 });
+  attempts.push(Date.now());
+  registrationAttempts.set(key, attempts);
 }
 
 function audit(actor, action, targetId, detail) {
@@ -162,6 +172,14 @@ const server = createServer(async (req, res) => {
       loginAttempts.delete(rate.key);
       const session = auth.createSession(user.id);
       return sendJson(res, 200, { user, expires_at: session.expires_at }, { 'Set-Cookie': auth.sessionCookie(session.token) });
+    }
+    if (req.method === 'POST' && path === '/api/auth/register') {
+      if (process.env.FUMAI_SELF_REGISTRATION === 'false') throw Object.assign(new Error('当前未开放自行创建账号'), { status: 403 });
+      checkRegistrationLimit(req);
+      const user = auth.registerUser(await readJson(req));
+      const session = auth.createSession(user.id);
+      audit(user.username, 'self_register', user.id, { role: user.role });
+      return sendJson(res, 201, { user, expires_at: session.expires_at }, { 'Set-Cookie': auth.sessionCookie(session.token) });
     }
     if (req.method === 'POST' && path === '/api/auth/logout') {
       auth.revokeRequest(req);

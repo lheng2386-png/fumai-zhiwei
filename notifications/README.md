@@ -29,6 +29,7 @@ SQLite 迁移包含人员、设备、观测、模型结果、日发电、通知�
 - `auth_session`：只保存会话令牌的 SHA-256 哈希和过期时间；
 - 浏览器只接收 `HttpOnly; SameSite=Lax` Cookie，前端不能读取令牌；
 - 角色分为 `admin`、`operator`、`viewer`，后端逐接口校验权限；
+- 登录页开放自助注册，可创建操作员或查看者账号，不能自行注册管理员；
 - 登录按 IP + 用户名限制连续失败次数。
 
 首次启动时，在服务器私密环境文件中设置 `FUMAI_BOOTSTRAP_ADMIN_USERNAME` 和 `FUMAI_BOOTSTRAP_ADMIN_PASSWORD`。只有用户表为空时才创建该管理员。创建后可删除这两个变量。
@@ -78,6 +79,7 @@ npm run serve
 | 方法 | 路径 | 最低角色与行为 |
 | --- | --- | --- |
 | POST | `/api/auth/login` | 公开登录，成功写 HttpOnly Cookie |
+| POST | `/api/auth/register` | 公开创建操作员/查看者并自动登录 |
 | GET | `/api/auth/me` | 已登录用户信息 |
 | GET/POST | `/api/users` | 管理员查询或保存网站账号 |
 | GET/POST | `/api/personnel` | 登录查看；管理员保存手机和邮箱 |

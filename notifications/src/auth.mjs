@@ -104,6 +104,29 @@ export class AuthService {
     return safeUser(this.db.prepare('SELECT * FROM app_user WHERE id=?').get(id));
   }
 
+  registerUser(input) {
+    const username = required(input.username, '用户名');
+    const normalized = username.toLowerCase();
+    if (this.db.prepare('SELECT 1 FROM app_user WHERE username_normalized=?').get(normalized)) {
+      throw Object.assign(new Error('用户名已存在，请换一个用户名'), { status: 409 });
+    }
+    const role = input.role === 'viewer' ? 'viewer' : 'operator';
+    try {
+      return this.saveUser({
+        username,
+        display_name: input.display_name,
+        password: input.password,
+        role,
+        enabled: true
+      });
+    } catch (error) {
+      if (String(error.message).includes('UNIQUE constraint')) {
+        throw Object.assign(new Error('用户名已存在，请换一个用户名'), { status: 409 });
+      }
+      throw error;
+    }
+  }
+
   validatePassword(password) {
     if (typeof password !== 'string' || password.length < 10 || password.length > 128) {
       throw new Error('密码长度必须为 10–128 个字符');
