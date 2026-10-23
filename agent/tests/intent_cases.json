@@ -309,5 +309,20 @@
     "question": "这台逆变器欠压的判断依据是什么？",
     "context": true,
     "intent": "followup"
+  },
+  {
+    "question": "同群数量能说明什么？",
+    "context": true,
+    "intent": "followup"
+  },
+  {
+    "question": "这个差异有多大？",
+    "context": true,
+    "intent": "followup"
+  },
+  {
+    "question": "参考模型一定准确吗？",
+    "context": true,
+    "intent": "followup"
   }
 ]

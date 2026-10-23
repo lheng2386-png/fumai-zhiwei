@@ -71,7 +71,7 @@ class KnowledgeTests(unittest.TestCase):
 
     def test_basis_variants_reference_original_analysis_without_new_diagnosis(self):
         first=self.ask('分析 inv_07 的异常证据')
-        variants=['判断依据是什么？','你做出这个判断的依据是什么？','为什么这么判断？','有哪些数据支持这个判断？','能展开解释一下吗？','解释一下']
+        variants=['判断依据是什么？','你做出这个判断的依据是什么？','为什么这么判断？','有哪些数据支持这个判断？','能展开解释一下吗？','解释一下','同群数量能说明什么？','这个差异有多大？','参考模型一定准确吗？']
         with patch.object(self.snapshot,'analyze',side_effect=AssertionError('No repeat diagnosis')):
             for question in variants:
                 result=self.ask(question)

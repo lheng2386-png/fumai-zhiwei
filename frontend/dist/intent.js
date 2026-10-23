@@ -20,6 +20,7 @@
         }
         if(hasContext&&new RegExp("^(?:那|如果|要是|假如|为什么|怎么|如何|能否|是不是|也就是说|接下来|还需要|(?:请)?(?:解释|展开|详细说明)|能.{0,3}(?:解释|展开|详细)|你.{0,5}(?:判断|依据|认为))|(?:数据|证据).{0,10}支持.{0,10}(?:结论|判断)|(?:解释|说明|告诉|给出|说说).{0,10}(?:依据|理由)").test(text))return 'followup';
         if(operation.test(text)&&(new RegExp(rules.analysis).test(text)||/^(?:inv[_ -]?\d+|demo-2107-[a-z0-9-]+)$/.test(text))) return 'maintenance';
+        if(hasContext&&/(?:数据|观测|差异|同群|模型|参考).{0,18}(?:说明什么|意味着什么|证明什么|有多大|可靠|准确|支持什么)/.test(text))return 'followup';
         if (hasContext && /分析|看看|查看|检查|核对|查一下|看一下|继续|\b(?:analyze|check)\b/.test(text)) return 'maintenance';
         return /^(?:你好|您好|嗨|hello|hi|谢谢|感谢)[!！。,.，?？\s]*$/.test(text) ? 'greeting' : 'out_of_scope';
     }

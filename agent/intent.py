@@ -76,6 +76,8 @@ def classify_question(message, has_context=False):
         return 'followup'
     if OPERATIONS.search(text) and (ANALYSIS.search(text) or re.fullmatch(r'(?:inv[_ -]?\d+|demo-2107-[a-z0-9-]+)',text)):
         return "maintenance"
+    if has_context and re.search(r'(?:数据|观测|差异|同群|模型|参考).{0,18}(?:说明什么|意味着什么|证明什么|有多大|可靠|准确|支持什么)',text):
+        return 'followup'
     if has_context and re.search(r"分析|看看|查看|检查|核对|查一下|看一下|继续|\b(?:analyze|check)\b", text):
         return "maintenance"
     if re.fullmatch(r"(?:你好|您好|嗨|hello|hi|谢谢|感谢)[!！。,.，?？\s]*", text):
