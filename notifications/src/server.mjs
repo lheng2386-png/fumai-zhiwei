@@ -2,16 +2,18 @@ import { createReadStream, existsSync, statSync } from 'node:fs';
 import { createServer } from 'node:http';
 import { extname, resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { randomUUID } from 'node:crypto';
+import { randomUUID, createHash, timingSafeEqual } from 'node:crypto';
 import { openDatabase } from './db.mjs';
 import { AuthService } from './auth.mjs';
 import { createProviders } from './providers.mjs';
 import { NotificationService, now, parseJson } from './service.mjs';
 import { NotificationWorker } from './worker.mjs';
+import { MonitoringService } from './monitoring.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const db = openDatabase();
 const service = new NotificationService(db);
+const monitoring = new MonitoringService(db, service);
 const auth = new AuthService(db);
 const bootstrapUser = auth.ensureBootstrapFromEnv();
 const providers = createProviders();
@@ -57,6 +59,18 @@ function requireUser(req, minimumRole = 'viewer') {
   if (!user) throw Object.assign(new Error('请先登录'), { status: 401 });
   if (roleLevel[user.role] < roleLevel[minimumRole]) throw Object.assign(new Error('当前账号权限不足'), { status: 403 });
   return user;
+}
+
+function requireModelSender(req) {
+  const key = process.env.FUMAI_MODEL_INGEST_TOKEN;
+  const supplied = req.headers.authorization;
+  if (supplied) {
+    if (!key || key.length < 32 || !supplied.startsWith('Bearer ') ||
+      !timingSafeEqual(createHash('sha256').update(supplied.slice(7)).digest(), createHash('sha256').update(key).digest()))
+      throw Object.assign(new Error('模型接入凭证无效，请检查服务器上的接入配置'), {status: 401});
+    return {username: 'model-service'};
+  }
+  return requireUser(req, 'operator');
 }
 
 function checkLoginLimit(req, username) {
@@ -134,6 +148,7 @@ function serveStatic(pathname, res) {
     ['/', 'index.html'], ['/index.html', 'index.html'], ['/app.js', 'app.js'], ['/data.js', 'data.js'],
     ['/styles.css', 'styles.css'], ['/favicon.svg', 'favicon.svg'], ['/agent.css', 'agent.css'],
     ['/agent.js', 'agent.js'], ['/intent.js', 'intent.js'],
+    ['/monitoring.js', 'monitoring.js'], ['/monitoring.css', 'monitoring.css'],
     ['/notifications.html', 'notifications.html'], ['/notifications.js', 'notifications.js'],
     ['/notification-admin.css', 'notification-admin.css'], ['/login.html', 'login.html'],
     ['/login.js', 'login.js'], ['/login.css', 'login.css'], ['/auth-guard.js', 'auth-guard.js']
@@ -158,7 +173,8 @@ const server = createServer(async (req, res) => {
     if (req.method === 'GET' && path === '/api/health') return sendJson(res, 200, {
       status: 'ok', notification_mode: process.env.FUMAI_NOTIFICATION_MODE || 'mock',
       providers: { sms: providers.sms.name, email: providers.email.name },
-      authentication_ready: auth.userCount() > 0, real_daily_forecast: false, database: 'sqlite'
+      authentication_ready: auth.userCount() > 0, real_daily_forecast: false, database: 'sqlite',
+      model_result_ingestion: 'competition-inference-v1', equipment_monitor_logs: true
     });
     if (req.method === 'POST' && path === '/api/auth/login') {
       const input = await readJson(req);
@@ -215,6 +231,33 @@ const server = createServer(async (req, res) => {
     }
     if (req.method === 'POST' && path === '/api/observations') { requireUser(req, 'operator'); return sendJson(res, 201, service.recordObservation(await readJson(req))); }
     if (req.method === 'POST' && path === '/api/model-results') { requireUser(req, 'operator'); return sendJson(res, 201, service.recordModelResult(await readJson(req))); }
+    if (req.method === 'POST' && path === '/api/model-ingestions') {
+      const sender = requireModelSender(req);
+      const result = monitoring.receive(await readJson(req), sender.username);
+      return sendJson(res, result.replayed ? 200 : 201, result);
+    }
+    const receiptMatch = path.match(/^\/api\/model-ingestions\/([^/]+)$/);
+    if (req.method === 'GET' && receiptMatch) {
+      requireModelSender(req);
+      const receipt = monitoring.receipt(decodeURIComponent(receiptMatch[1]));
+      return receipt ? sendJson(res, 200, receipt) : sendJson(res, 404, {error: '接收记录不存在'});
+    }
+    if (path === '/api/model-asset-mappings') {
+      if (req.method === 'GET') {requireUser(req); return sendJson(res, 200, {mappings: monitoring.mappings()});}
+      if (req.method === 'POST') {const actor = requireUser(req, 'admin'); return sendJson(res, 200, monitoring.saveMapping(await readJson(req), actor.username));}
+    }
+    if (req.method === 'GET' && path === '/api/monitoring/equipment') {
+      requireUser(req); return sendJson(res, 200, {equipment: monitoring.devices()});
+    }
+    if (req.method === 'GET' && path === '/api/monitoring/logs') {
+      requireUser(req); return sendJson(res, 200, monitoring.logs(Object.fromEntries(url.searchParams)));
+    }
+    const monitorMatch = path.match(/^\/api\/monitoring\/logs\/([^/]+)$/);
+    if (req.method === 'GET' && monitorMatch) {
+      requireUser(req);
+      const detail = monitoring.detail(monitorMatch[1]);
+      return detail ? sendJson(res, 200, detail) : sendJson(res, 404, {error: '设备监控日志不存在'});
+    }
     if (req.method === 'POST' && path === '/api/human-confirmations') {
       const actor = requireUser(req, 'admin');
       return sendJson(res, 201, service.confirmFault({ ...(await readJson(req)), actor: actor.username }));
@@ -247,8 +290,11 @@ const server = createServer(async (req, res) => {
     if (req.method === 'GET' && serveStatic(path, res)) return;
     return sendJson(res, 404, { error: '接口不存在', request_id: requestId });
   } catch (error) {
-    const status = error.status || (error instanceof SyntaxError ? 400 : 400);
-    sendJson(res, status, { error: error.message || '请求失败', request_id: requestId });
+    const databaseFailure = String(error.code || '').startsWith('SQLITE') || String(error.code || '').startsWith('ERR_SQLITE');
+    const constraintFailure = databaseFailure && (Number(error.errcode) & 255) === 19;
+    const status = constraintFailure ? 400 : databaseFailure ? 503 : error.status || 400;
+    sendJson(res, status, { error: constraintFailure ? '记录编号重复或关联记录不存在，请检查请求编号和设备信息' : databaseFailure ? '数据暂未保存，请稍后使用相同请求编号重试' : error.message || '请求失败',
+      ...(error.action ? {action: error.action, code: error.code} : {}), request_id: requestId });
   }
 });
 

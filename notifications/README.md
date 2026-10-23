@@ -109,3 +109,9 @@ Worker 用 `BEGIN IMMEDIATE` 原子领取任务，设置有限并发和租约。
 试运行可设置 `FUMAI_EMAIL_TEST_RECIPIENTS=test@example.com`。SMTP 适配器只允许这个白名单里的地址，其余通知会明确标记失败而不发出，不能显示为成功。正式启用真实员工发信前应确认收件人与触发范围，再解除测试白名单。当前还未提供邮箱所有权验证；试运行使用管理员已核对的员工地址，不宣称已完成验证。
 
 真实发信启用时设置 `FUMAI_EMAIL_START_AT`（UTC ISO 时间），时间之前的历史任务保留记录并标记未发送，不自动补发。设置 `FUMAI_EMAIL_REGISTERED_ONLY=true` 后，仅关联启用注册账号且人员启用的邮箱可发送；未关联人员明确失败，不宣称成功。短信渠道保持 mock。
+
+## 三模型接收与监控日志
+
+已新增 `/api/model-ingestions`、设备编号映射和数据库监控日志。
+详细结果格式、逐条校验、去重、权限与后续模型接入步骤见 [MODEL_RESULT_INTEGRATION.md](../docs/MODEL_RESULT_INTEGRATION.md)。
+模型推理服务仍需单独部署；本模块不执行 GPU 推理。

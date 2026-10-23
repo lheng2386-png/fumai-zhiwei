@@ -125,12 +125,17 @@ export class NotificationService {
     const model = this.db.prepare('SELECT * FROM model_result WHERE id=?').get(input.model_result_id);
     if (!model) throw new Error('模型结果不存在');
     const id = input.id || randomUUID();
-    this.db.prepare(`INSERT INTO human_confirmation(id, model_result_id, status, note, actor, created_at)
-      VALUES (?, ?, ?, ?, ?, ?)`)
-      .run(id, model.id, required(input.status, '确认状态'), required(input.note, '确认说明'), required(input.actor, '操作人'), now());
-    const eventCreated = input.status === 'confirmed_fault' && model.quality_status === 'ready';
-    return { id, event_created: eventCreated, blocked_reason: eventCreated ? null :
-      (input.status === 'confirmed_fault' ? `QUALITY_${model.quality_status.toUpperCase()}` : 'NOT_CONFIRMED') };
+    return transaction(this.db, () => {
+      this.db.prepare(`INSERT INTO human_confirmation(id, model_result_id, status, note, actor, created_at)
+        VALUES (?, ?, ?, ?, ?, ?)`)
+        .run(id, model.id, required(input.status, '确认状态'), required(input.note, '确认说明'), required(input.actor, '操作人'), now());
+      const origin = this.db.prepare('SELECT data_kind FROM model_evidence_receipt WHERE model_result_id=?').get(model.id);
+      if (origin) this.db.prepare("UPDATE notification_event SET simulated=? WHERE source_table='human_confirmation' AND source_id=?")
+        .run(origin.data_kind === 'site_observation' ? 0 : 1, id);
+      const eventCreated = input.status === 'confirmed_fault' && model.quality_status === 'ready';
+      return { id, event_created: eventCreated, blocked_reason: eventCreated ? null :
+        (input.status === 'confirmed_fault' ? `QUALITY_${model.quality_status.toUpperCase()}` : 'NOT_CONFIRMED') };
+    });
   }
 
   upsertDailyGeneration(input) {
