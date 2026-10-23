@@ -3,7 +3,7 @@ import {readFileSync,existsSync,openSync,writeFileSync,closeSync,chmodSync} from
 import {createHash} from 'node:crypto';
 import {sendSmtpMail} from './smtp.mjs';
 const [envPath,receiptPath]=process.argv.slice(2);
-if(!envPath||!receiptPath)throw new Error('Usage: node src/test-smtp.mjs PRIVATE_ENV_PATH PRIVATE_RECEIPT_PATH');
+if(!envPath||!receiptPath)throw new Error('Usage: node src/smtp-self-check.mjs PRIVATE_ENV_PATH PRIVATE_RECEIPT_PATH');
 const settings=Object.fromEntries(readFileSync(envPath,'utf8').split(/\r?\n/).filter(line=>line&& !line.startsWith('#')&&line.includes('=')).map(line=>{const i=line.indexOf('=');return [line.slice(0,i).trim(),line.slice(i+1).trim().replace(/^['"]|['"]$/g,'')];}));
 const user=settings.FUMAI_SMTP_USER,to=settings.FUMAI_SMTP_TEST_TO;
 if(!user||to!==user||settings.FUMAI_SMTP_FROM!==user)throw new Error('测试邮件必须为同一邮箱自收自发。');

@@ -104,7 +104,7 @@ Worker 用 `BEGIN IMMEDIATE` 原子领取任务，设置有限并发和租约。
 
 复用已有 SMTP 发件账号，无需另外部署邮件服务器或调用大模型生成每封邮件。保留原有后台 Worker、指数退避和事件去重。SMTP DATA 250 表示服务商接受邮件，后续 QUIT 断开不能触发重复发送；发送结果不等于已进入收件箱。公网连接必须使用 TLS，本实现支持 465 隐式 TLS。
 
-上线前先测试自收自发：将已有 QQ 邮箱和授权码放入服务器 root 私有文件，运行 `node src/test-smtp.mjs PRIVATE_ENV_PATH PRIVATE_RECEIPT_PATH`。命令只向配置的同一邮箱发一封固定测试邮件，记录防重复发送回执，不处理正式员工 outbox，不自动修改生产渠道。
+上线前先测试自收自发：将已有 QQ 邮箱和授权码放入服务器 root 私有文件，运行 `node src/smtp-self-check.mjs PRIVATE_ENV_PATH PRIVATE_RECEIPT_PATH`。命令只向配置的同一邮箱发一封固定测试邮件，记录防重复发送回执，不处理正式员工 outbox，不自动修改生产渠道。
 
 试运行可设置 `FUMAI_EMAIL_TEST_RECIPIENTS=test@example.com`。SMTP 适配器只允许这个白名单里的地址，其余通知会明确标记失败而不发出，不能显示为成功。正式启用真实员工发信前应确认收件人与触发范围，再解除测试白名单。当前还未提供邮箱所有权验证；试运行使用管理员已核对的员工地址，不宣称已完成验证。
 
