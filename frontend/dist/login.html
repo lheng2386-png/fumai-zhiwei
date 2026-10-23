@@ -34,7 +34,7 @@
         <p class="eyebrow">CREATE ACCOUNT</p>
         <h2>创建新账号</h2>
         <p class="lead">注册成功后会直接进入工作台。</p>
-        <label>姓名<input name="display_name" autocomplete="name" required maxlength="100" placeholder="请输入姓名"></label>
+        <label>显示名称（选填）<input name="display_name" autocomplete="name" maxlength="100" placeholder="不填则使用用户名"></label>
         <label>用户名<input name="username" autocomplete="username" required pattern="[A-Za-z0-9._-]{3,40}" maxlength="40" placeholder="3–40 位字母、数字或下划线"></label>
         <label>账号类型<select name="role"><option value="operator">操作员</option><option value="viewer">查看者</option></select></label>
         <label>密码<input name="password" type="password" autocomplete="new-password" required minlength="10" maxlength="128" placeholder="至少 10 位"></label>
