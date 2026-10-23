@@ -4,6 +4,7 @@ import re
 
 from .core import InputError, RUNBOOKS
 from .intent import classify_question, direct_answer, normalized
+from .knowledge import answer as knowledge_answer, knowledge_context
 
 
 def questions(message):
@@ -102,8 +103,11 @@ class Conversation:
         return any(kind=='maintenance' for _,kind in self.routes(owner,body)) or self.can_enrich_reply(owner,body)
 
     def can_enrich_reply(self,owner,body):
-        _,reference=self.context(owner,body.get('_conversation_id') or self.store.default_conversation(owner))
-        return bool(reference and reference.get('events')) and any(kind=='followup' and not re.search(r'通信|缺失|排序|首位|第一|原因|为什么.*先|而不是',q) for q,kind in self.routes(owner,body))
+        turns,reference=self.context(owner,body.get('_conversation_id') or self.store.default_conversation(owner))
+        routes=self.routes(owner,body)
+        return (any(kind=='knowledge' for _,kind in routes)
+                or bool(knowledge_context(turns)) and any(kind=='followup' and not device_ids(q) and not re.search(r'设备分析|分析报告|设备的|这台|事件',q) for q,kind in routes)
+                or bool(reference and reference.get('events')) and any(kind=='followup' and not re.search(r'通信|缺失|排序|首位|第一|原因|欠压|电压|为什么.*先|而不是',q) for q,kind in routes))
 
     def direct(self,owner,body,model=None,reference_override=None):
         conversation=body.get('_conversation_id') or self.store.default_conversation(owner)
@@ -112,15 +116,17 @@ class Conversation:
         routes=self.routes(owner,body)
         if len(routes)==1 and routes[0][1] in {'identity','capabilities','help','greeting','out_of_scope'}:
             return direct_answer(routes[0][1],model)
-        answers=[];records=[];referenced=[];facts=[];feedback=None;collected={};sources={}
+        answers=[];records=[];referenced=[];facts=[];feedback=None;collected={};sources={};knowledge=None;knowledge_qids=[];knowledge_notes=[]
+        previous_knowledge=knowledge_context(turns)
         for number,(question,kind) in enumerate(routes,1):
             text=normalized(question);devices=device_ids(question)
+            knowledge_follow=kind=='followup' and previous_knowledge and not devices and not re.search(r'设备分析|分析报告|设备的|这台|事件',text)
             if not devices and body.get('event_id') and (kind=='evidence_query' or kind in {'history','business'} and re.search(r'该设备|这台|它',text)):
                 devices=[self.snapshot.event(body['event_id'])['inverter']]
             correction=next((r.get('user_feedback') for r in reversed(turns) if r.get('user_feedback',{}).get('device_ids')),None)
-            if not devices and correction and kind in {'followup','evidence_query'}:
+            if not knowledge_follow and not devices and correction and kind in {'followup','evidence_query'}:
                 devices=correction['device_ids'][-1:]
-            if not devices and reference and (kind in {'followup','evidence_query'} or kind=='history' and re.search(r'该设备|这台|它',text)):
+            if not knowledge_follow and not devices and reference and (kind in {'followup','evidence_query'} or kind=='history' and re.search(r'该设备|这台|它',text)):
                 devices=reference.get('target_device_ids') or list(dict.fromkeys(e['inverter'] for e in reference.get('events',[])))
             cited=[];status='answered'
             if kind=='history':
@@ -153,16 +159,9 @@ class Conversation:
                 if not reference:
                     answer+='当前会话还没有可引用的设备分析，请说明设备或先打开一条自己的历史分析。'
             elif kind=='knowledge':
-                if '同群' in text:
-                    answer='同群证据是将本机与同一时刻、可比条件下的其他设备对照。有效其他同群不含本机；同群不足时先核对可比性、缺测和时间对齐。证据不足不能据此认定设备正常或确认故障。'
-                elif '残差' in text:
-                    answer='残差是实测值与参考值的差异，符号取决于具体定义。持续偏差可以形成核查线索，但不能单独证明故障原因。'
-                elif '阈值' in text:
-                    answer='阈值是筛查规则的判定边界，应结合模型版本、单位和运行条件解释；超过阈值形成候选线索，不等于故障已确认。'
-                elif '功率' in text:
-                    answer='参考功率是给定运行条件下的比较基准，实测功率是测点观测值；两者差异需要结合运行背景与数据质量核查，不能直接解释为可挽回收益。'
-                else:
-                    answer='告警或异常是需要核查的线索；确认故障需要现场记录等独立证据。模型推测、人工结论和原始观测应分别保存，不能自动互相替代。'
+                knowledge=knowledge_answer(question)
+                answer=knowledge['answer'];status='insufficient' if knowledge['knowledge_topic']=='pv_general' else 'answered'
+                knowledge_qids.append(str(number));knowledge_notes.append({'question_id':str(number),**knowledge})
             elif kind=='evidence_query':
                 rows=[e for e in (reference or {}).get('events',[]) if not devices or e['inverter'] in devices]
                 if not rows and devices:
@@ -179,7 +178,11 @@ class Conversation:
                 else:
                     answer='请说明设备或事件。当前没有可供此问题引用的设备观测，不能凭空填写功率或同群数量。';status='insufficient'
             elif kind=='followup':
-                if not reference:
+                if knowledge_follow:
+                    knowledge=knowledge_answer(question,previous_knowledge)
+                    answer=knowledge['answer'];status='insufficient' if knowledge['knowledge_topic']=='pv_general' else 'answered'
+                    knowledge_qids.append(str(number));knowledge_notes.append({'question_id':str(number),**knowledge})
+                elif not reference:
                     answer='当前会话没有可以对应“刚才/上一条”的设备分析。请先分析设备，或打开自己的一条历史分析后再追问。';status='insufficient'
                 else:
                     rows=[e for e in reference['events'] if not devices or e['inverter'] in devices]
@@ -189,15 +192,19 @@ class Conversation:
                         cited=[e['event_id'] for e in rows]
                         referenced.extend(reference.get('source_run_ids') or ([reference['run_id']] if reference.get('response_type')=='analysis' and reference.get('run_id') else []))
                         facts.extend(fact_rows(rows))
-                        if re.search(r'通信|缺失|排序|第一|首位|原因',text):
-                            answer='此前证据只支持观测到的功率/同群差异，没有通信日志或缺失采样明细。因此不能确认通信故障、声称已发现数据缺失，或对故障原因强行排序。'
+                        if re.search(r'欠压|电压',text):
+                            answer='；'.join(f['text'] for f in fact_rows(rows)[:2])+' 上一轮只有功率和同群观测，没有对应的电压测点或欠压告警记录。因此不能把候选功率偏离判断为欠压；需要完整告警、机型及同一时刻的交流/直流电压记录来验证。'
+                        elif re.search(r'通信|缺失|排序|第一|首位|原因',text):
+                            answer='；'.join(f['text'] for f in fact_rows(rows)[:2])+' 此前证据只支持观测到的功率/同群差异，没有通信日志或缺失采样明细。因此不能确认通信故障、声称已发现数据缺失，或对故障原因强行排序。'
                         elif re.search(r'为什么.*(?:先|而不是|优先)',text):
                             answer='此前清单是信息核对步骤，不是原因概率排名。当前没有限发指令或检修记录，不能断定某个原因更可能；应根据资料可得性并行核对运行安排和维护背景，再用独立记录验证。'
                         elif re.search(r'先|下一步|怎么|如何|建议',text):
                             checks=dedupe(c for e in rows for c in RUNBOOKS[e['evidence']]['checks'])
                             answer='基于上一轮证据，建议先核对运行背景和现场记录；'+('；'.join(checks[:2]))+' 这些是核查建议，不是已发现的故障。'
                         else:
-                            answer='判断依据来自上一轮保存的事件观测：'+ '；'.join(f['text'] for f in fact_rows(rows)[:2])+'这些观测支持候选偏离，无法单独确认原因。'
+                            answer='判断依据来自上一轮保存的事件观测：'+ '；'.join(f['text'] for f in fact_rows(rows)[:2])+'\n判断链条是：实测与模型参考存在差异，再结合事件的同群对照类别形成候选线索。'
+                            labels={'device_specific_candidate':'单机偏离候选','shared_or_model_candidate':'同群共性/模型偏离候选','insufficient_peers':'同群证据不足'}
+                            answer+='本次类别为'+ '、'.join(dict.fromkeys(labels[e['evidence']] for e in rows))+'；模型参考不是同群实测均值，候选异常也不等于已确认故障。'
                         if any(r.get('user_feedback') for r in turns):
                             answer+=' 已同时保留你在本会话中的纠正；未验证的反馈与观测事实分开处理。'
             else:
@@ -222,6 +229,12 @@ class Conversation:
             result['metadata']=reference['metadata']
             result['limitations']=['当前观测不足以确认具体故障原因；未提供的通信、告警和调度/维修记录不能用于证明或排除某种原因。']
         if feedback:result['user_feedback']=feedback
+        if knowledge:
+            result.update({k:v for k,v in knowledge.items() if k!='answer'})
+            result['knowledge_question_ids']=knowledge_qids
+            result['knowledge_notes']=knowledge_notes
+            result['knowledge_sources']=list({s['id']:s for note in knowledge_notes for s in note['knowledge_sources']}.values())
+            result['limitations']=[knowledge['knowledge_scope'],*result.get('limitations',[])]
         return result
 
     def prepare_analysis(self,owner,body):

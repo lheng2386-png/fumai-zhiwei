@@ -119,6 +119,10 @@ body:has(#main[data-view="agent"]) .app-footer {
 .agent-session-list .agent-history { padding:13px 0; }
 .agent-report-explanation { color:#607459; font-size:12px; }
 .agent-reply-limit { margin-top:12px; font-size:10px; color:#8a805d; line-height:1.8; }
+.agent-knowledge-sources { margin-top:14px; border-top:1px solid #edf0e8; padding-top:10px; color:#69805c; font-size:11px; }
+.agent-knowledge-sources summary { cursor:pointer; }
+.agent-knowledge-sources p { margin:9px 0; line-height:1.8; }
+.agent-knowledge-sources small { display:block; color:#8b947f; }
 @media (max-width:760px) {
     .agent-chat-top { gap:8px; padding-left:14px; padding-right:14px; }
     .agent-chat-top > span { display:none; }

@@ -194,5 +194,120 @@
     "question": "生成电站运行日报",
     "context": true,
     "intent": "business"
+  },
+  {
+    "question": "光伏逆变器出现欠压，一般是什么原因？",
+    "context": false,
+    "intent": "knowledge"
+  },
+  {
+    "question": "逆变器欠压一般有哪些原因",
+    "context": false,
+    "intent": "knowledge"
+  },
+  {
+    "question": "为什么光伏逆变器会欠压？",
+    "context": false,
+    "intent": "knowledge"
+  },
+  {
+    "question": "欠压怎么区分交流侧和直流侧？",
+    "context": false,
+    "intent": "knowledge"
+  },
+  {
+    "question": "如何区分交流侧和直流侧欠压？",
+    "context": true,
+    "intent": "knowledge"
+  },
+  {
+    "question": "什么是 MPPT？",
+    "context": false,
+    "intent": "knowledge"
+  },
+  {
+    "question": "光伏组串一般如何设计？",
+    "context": false,
+    "intent": "knowledge"
+  },
+  {
+    "question": "逆变器过温通常是什么原因？",
+    "context": false,
+    "intent": "knowledge"
+  },
+  {
+    "question": "光伏组件为什么会出现热斑？",
+    "context": false,
+    "intent": "knowledge"
+  },
+  {
+    "question": "判断依据是什么？",
+    "context": true,
+    "intent": "followup"
+  },
+  {
+    "question": "你做出这个判断的依据是什么？",
+    "context": true,
+    "intent": "followup"
+  },
+  {
+    "question": "你是根据什么做出这个判断的？",
+    "context": true,
+    "intent": "followup"
+  },
+  {
+    "question": "为什么这么判断？",
+    "context": true,
+    "intent": "followup"
+  },
+  {
+    "question": "有什么证据？",
+    "context": true,
+    "intent": "followup"
+  },
+  {
+    "question": "有哪些数据支持这个判断？",
+    "context": true,
+    "intent": "followup"
+  },
+  {
+    "question": "你的理由是什么？",
+    "context": true,
+    "intent": "followup"
+  },
+  {
+    "question": "能展开解释一下吗？",
+    "context": true,
+    "intent": "followup"
+  },
+  {
+    "question": "解释一下",
+    "context": true,
+    "intent": "followup"
+  },
+  {
+    "question": "那如果只在清晨出现呢？",
+    "context": true,
+    "intent": "followup"
+  },
+  {
+    "question": "如果只在清晨出现呢？",
+    "context": true,
+    "intent": "followup"
+  },
+  {
+    "question": "告诉我判断依据",
+    "context": true,
+    "intent": "followup"
+  },
+  {
+    "question": "分析 inv_07 的异常证据",
+    "context": true,
+    "intent": "maintenance"
+  },
+  {
+    "question": "这台逆变器欠压的判断依据是什么？",
+    "context": true,
+    "intent": "followup"
   }
 ]

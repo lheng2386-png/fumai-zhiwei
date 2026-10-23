@@ -22,6 +22,7 @@ from .intent import classify_question, direct_answer, informational_intent, norm
 from .store import Store
 from .tasks import AnalysisTasks, TaskBusy, TERMINAL
 from .conversation import Conversation, guard_model, context_excerpt
+from .knowledge import guard_knowledge
 
 
 class HTTPError(Exception):
@@ -55,7 +56,7 @@ class Application:
             if progress:
                 progress("answering")
             result=self.conversation.direct(owner,body,self.model)
-            if self.model and self.conversation.can_enrich_reply(owner,body) and result.get('events'):
+            if self.model and self.conversation.can_enrich_reply(owner,body) and (result.get('events') or result.get('knowledge_question_ids')):
                 try:
                     bundle={**copy.deepcopy(result),'allow_tools':False,'hypotheses':[],'checks':[],'unknowns':[],
                             'questions':[{'question_id':a['question_id'],'question':a['question']} for a in result['answers']],
@@ -64,15 +65,24 @@ class Application:
                     bundle.pop('answers',None)
                     bundle['summary']='请直接回答当前追问的具体问题；已有观测是引用材料，不是要重复输出的报告。'
                     bundle['reply_requirements']={'mode':'followup','no_new_diagnosis':True,'do_not_repeat_previous_reply':True}
+                    knowledge_ids=result.get('knowledge_question_ids',[])
+                    if knowledge_ids:
+                        bundle={'events':[],'evidence_ids':[],'trace':[],'allow_tools':False,'reply_mode':'knowledge',
+                                'questions':[{'question_id':a['question_id'],'question':a['question']} for a in result['answers'] if a['question_id'] in knowledge_ids],
+                                'knowledge_notes':result['knowledge_notes'],
+                                'conversation_context':[context_excerpt(r) for r in self.store.turns(owner,conversation_id,limit=8) if r.get('knowledge_topic') or r.get('user_feedback')]}
                     enriched=self.model.enrich(self.snapshot,body['message'],bundle,progress=progress) if progress else self.model.enrich(self.snapshot,body['message'],bundle)
                     if enriched.get('model_analysis'):
                         enriched['model_analysis']['hypotheses']=[]  # No model-generated cause list is published.
-                    guard_model(enriched.get('model_analysis'),result['events'])
+                    if knowledge_ids:guard_knowledge(enriched.get('model_analysis',{}),result['knowledge_topic'])
+                    else:guard_model(enriched.get('model_analysis'),result['events'])
                     analysis=enriched['model_analysis'];answers={a['question_id']:a for a in analysis.get('answers',[])}
                     for entry in result['answers']:
-                        if entry['intent']=='followup' and not re.search(r'通信|缺失|排序|首位|第一|原因',entry['question']):
+                        if entry['question_id'] in knowledge_ids or not knowledge_ids and entry['intent']=='followup' and not re.search(r'通信|缺失|排序|首位|第一|原因',entry['question']):
                             answer=answers.get(entry['question_id'])
-                            if answer:entry['answer']=answer['answer']
+                            if answer:
+                                entry['answer']=answer['answer']
+                                if entry['question_id'] in knowledge_ids:entry['status']='answered'
                             elif len(result['answers'])==1:entry['answer']=analysis['summary']
                     result.update(engine=enriched['engine'],model_status='connected',model_name=enriched['model_name'])
                     if len(result['answers'])==1:result['summary']=result['answers'][0]['answer']
