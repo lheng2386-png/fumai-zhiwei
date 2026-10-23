@@ -5,7 +5,7 @@
     const drawer = document.querySelector('#event-dialog');
     const statusNames = { unreviewed: '待复核', needs_investigation: '待进一步调查', expected_operation: '预期运行', data_issue: '数据问题', confirmed_fault: '确认故障' };
     const evidenceNames = { device_specific_candidate: '单机偏离同群', shared_or_model_candidate: '同群共性变化', insufficient_peers: '同群证据不足' };
-    const pageNames = { overview: '电站概览', events: '异常事件', devices: '设备监测', reviews: '复核记录', models: '数据与模型', agent: '运维智能体' };
+    const pageNames = { overview: '电站概览', events: '异常事件', devices: '设备监测', reviews: '复核记录', models: '数据与模型', agent: '运维智能体', scene:'三维电站' };
     const paths = {
         grid: '<rect x="3" y="3" width="7" height="7" rx="1.4"/><rect x="14" y="3" width="7" height="7" rx="1.4"/><rect x="3" y="14" width="7" height="7" rx="1.4"/><rect x="14" y="14" width="7" height="7" rx="1.4"/>',
         activity: '<path d="M3 12h4l3-8 4 16 3-8h4"/>',
@@ -201,8 +201,9 @@
         });
     }
     function render() {
+        window.FumaiScene?.dispose();
         charts.clear();
-        const views = { overview, events: eventsPage, devices: devicesPage, reviews: reviewsPage, models: modelsPage, agent: () => window.FumaiAgent.render() };
+        const views = { overview, events: eventsPage, devices: devicesPage, reviews: reviewsPage, models: modelsPage, agent: () => window.FumaiAgent.render(), scene:()=>window.FumaiScene.render() };
         main.innerHTML = views[state.page]();
         main.dataset.view = state.page;
         document.querySelector('#breadcrumb-title').textContent = pageNames[state.page];
@@ -214,6 +215,7 @@
         bubble.hidden = waiting === 0;
         document.querySelector('#nav-count-label').textContent = waiting ? `${waiting} 条异常候选待复核` : '当前没有待复核异常候选';
         bindCharts(main);
+        if(state.page==='scene') void window.FumaiScene.mount(getEvents);
     }
     function updateNavigation(page) {
         document.querySelectorAll('[data-nav]').forEach(a => {

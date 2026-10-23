@@ -1,0 +1,25 @@
+{
+  "version": 1,
+  "source": "engineering_design",
+  "name": "自制压缩模型接入示例 · 非工程成果",
+  "units": "m",
+  "up": "Y",
+  "origin": [
+    0,
+    0,
+    0
+  ],
+  "assets": [
+    {
+      "id": "sample_inverter",
+      "name": "示意设备",
+      "type": "inverter",
+      "position": [
+        0,
+        0,
+        0
+      ],
+      "model": "./models/meshopt-sample.glb"
+    }
+  ]
+}
