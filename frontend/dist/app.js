@@ -201,7 +201,6 @@
         });
     }
     function render() {
-        window.FumaiMonitoring?.unmount();
         charts.clear();
         const views = { overview, events: eventsPage, devices: devicesPage, reviews: reviewsPage, models: modelsPage, agent: () => window.FumaiAgent.render() };
         main.innerHTML = views[state.page]();
@@ -215,7 +214,6 @@
         bubble.hidden = waiting === 0;
         document.querySelector('#nav-count-label').textContent = waiting ? `${waiting} 条异常候选待复核` : '当前没有待复核异常候选';
         bindCharts(main);
-        if (state.page === 'devices') window.FumaiMonitoring?.mount(main);
     }
     function updateNavigation(page) {
         document.querySelectorAll('[data-nav]').forEach(a => {

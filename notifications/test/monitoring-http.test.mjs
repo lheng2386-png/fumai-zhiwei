@@ -7,7 +7,7 @@ import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {once} from 'node:events';
 
-test('真实 HTTP：身份权限、模型专用凭证、接收回执、日志查询与静态页面',async()=>{
+test('真实 HTTP：身份权限、模型专用凭证、接收回执、日志查询与模型回传工具',async()=>{
   const socket=createServer();socket.listen(0,'127.0.0.1');await once(socket,'listening');const port=socket.address().port;await new Promise(r=>socket.close(r));
   const directory=mkdtempSync(join(tmpdir(),'fumai-ingestion-'));
   const origin=`http://127.0.0.1:${port}`;const token='isolated-test-ingestion-token-0000000000';
@@ -36,8 +36,6 @@ test('真实 HTTP：身份权限、模型专用凭证、接收回执、日志查
     assert.equal((await request('/api/model-ingestions',{...payload,request_id:'blocked-viewer'},viewer)).status,403);
     assert.equal((await request('/api/model-asset-mappings',{plant_id:'plant',asset_id:'alias',equipment_id:'TEST-A'},viewer)).status,403);
     assert.equal((await request('/api/model-asset-mappings',{plant_id:'plant',asset_id:'alias',equipment_id:'TEST-A'},admin)).status,200);
-    assert.match(await (await request('/index.html')).text(),/monitoring.js/);
-    assert.match(await (await request('/monitoring.js')).text(),/设备监控日志/);
     const report=join(directory,'report.json'),receipt=join(directory,'receipt.json');
     const cliPayload={...payload,evidence:[{...payload.evidence[0],evidence_id:'cli-evidence'}]};delete cliPayload.request_id;
     writeFileSync(report,JSON.stringify(cliPayload));

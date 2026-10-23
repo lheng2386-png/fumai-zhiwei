@@ -148,7 +148,6 @@ function serveStatic(pathname, res) {
     ['/', 'index.html'], ['/index.html', 'index.html'], ['/app.js', 'app.js'], ['/data.js', 'data.js'],
     ['/styles.css', 'styles.css'], ['/favicon.svg', 'favicon.svg'], ['/agent.css', 'agent.css'],
     ['/agent.js', 'agent.js'], ['/intent.js', 'intent.js'],
-    ['/monitoring.js', 'monitoring.js'], ['/monitoring.css', 'monitoring.css'],
     ['/notifications.html', 'notifications.html'], ['/notifications.js', 'notifications.js'],
     ['/notification-admin.css', 'notification-admin.css'], ['/login.html', 'login.html'],
     ['/login.js', 'login.js'], ['/login.css', 'login.css'], ['/auth-guard.js', 'auth-guard.js']
