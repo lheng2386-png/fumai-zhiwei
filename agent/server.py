@@ -19,6 +19,8 @@ from urllib.parse import urlsplit
 from .core import InputError, Snapshot
 from .config import configured_model
 from .store import Store
+from .knowledge import Knowledge
+from .mcp import MCPServer, MCPClient, VERSION
 from .tasks import AnalysisTasks, TaskBusy, TERMINAL
 
 
@@ -28,7 +30,7 @@ class HTTPError(Exception):
 
 
 class Application:
-    def __init__(self, snapshot, store, origin, users=None, model=None, release="development", static_root=None):
+    def __init__(self, snapshot, store, origin, users=None, model=None, release="development", static_root=None, mcp_endpoint=None):
         self.snapshot, self.store, self.origin = snapshot, store, origin.rstrip("/")
         self.users, self.model, self.release = users or {}, model, release
         self.static_root = Path(static_root).resolve() if static_root else None
@@ -43,25 +45,61 @@ class Application:
         for token, user in self.users.items():
             if len(token) < 32 or not isinstance(user, dict) or user.get("role") not in {"viewer", "operator"} or not re.fullmatch(r"[A-Za-z0-9_.-]{1,64}", user.get("id", "")):
                 raise ValueError("Invalid configured user token, id or role")
+        self.knowledge = Knowledge(store)
+        self.mcp = MCPServer(snapshot,self.knowledge)
+        self.mcp_endpoint = mcp_endpoint
         self.tasks = AnalysisTasks(store, self.slots, self.analyze)
 
+    def knowledge_owner(self,owner):
+        return 'site:'+self.snapshot.meta['site_id'] if self.snapshot.mode=='live' else owner
+
+    def tool_client(self,owner):
+        headers={'Origin':self.origin,'X-Forwarded-Proto':'https'}
+        if self.snapshot.mode=='demo':headers['X-Fumai-Session']=owner.removeprefix('demo:')
+        else:
+            for token,user in self.users.items():
+                if user['id']==owner:headers['Authorization']='Bearer '+token;break
+            else:raise InputError('当前身份无法连接 MCP。')
+        return MCPClient(self.mcp_endpoint,headers,transport=None if self.mcp_endpoint else lambda body:self.mcp.handle(self.knowledge_owner(owner),body))
+
     def analyze(self, owner, body, progress=None):
-        if progress:
-            progress("evidence")
-        result = self.snapshot.analyze(body.get("message"), body.get("event_id"), body.get("device_id"))
-        if self.model:
+        if progress:progress('evidence')
+        scope=body.get('scope','auto')
+        if scope not in {'auto','knowledge','events'}:raise InputError('请选择综合分析、知识库或事件分析。')
+        result = self.snapshot.analyze(body.get('message'), body.get('event_id'), body.get('device_id'))
+        result.update(knowledge_sources=[],retrieval='bm25',mcp_status='connecting')
+        if scope=='knowledge':
+            result.update(events=[],evidence_ids=[],hypotheses=[],checks=[],trace=[])
+        tools=None
+        try:
+            if progress:progress('mcp_connect')
+            tools=self.tool_client(owner)
+            result['mcp_status']='connected'
+            result['trace'].append({'tool':'mcp_initialize','status':'ok','result_count':len(tools.tools)})
+            if scope!='events':
+                if progress:progress('retrieving_knowledge')
+                evidence=tools.tool('search_knowledge',{'query':body['message'],'limit':5})
+                result['knowledge_sources']=evidence['chunks']
+                result['trace'].append({'tool':'search_knowledge','transport':'mcp','status':'ok','result_count':len(evidence['chunks'])})
+                result['knowledge_notice']=evidence['notice']
+                if scope=='knowledge':result['summary']='已检索到 '+str(len(evidence['chunks']))+' 段相关资料，请对照原文出处核查。' if evidence['chunks'] else evidence['notice']
+        except Exception:
+            result['mcp_status']='failed'
+            result['knowledge_notice']='知识工具连接失败，本次未完成知识库检索，请稍后重试。'
+            result['unknowns'].insert(0,result['knowledge_notice'])
+        if self.model and tools:
             try:
-                if progress:
-                    progress("model")
-                    result = self.model.enrich(self.snapshot, body["message"], copy.deepcopy(result), progress=progress)
-                else:
-                    result = self.model.enrich(self.snapshot, body["message"], copy.deepcopy(result))
+                if progress:progress('model')
+                result = self.model.enrich(tools, body['message'], copy.deepcopy(result), **({'progress':progress} if progress else {}))
+                for trace in result['trace']:
+                    if trace.get('tool') in {t['name'] for t in tools.tools}:trace['transport']='mcp'
             except Exception:
-                result["model_status"] = "failed_fallback"
-                result["unknowns"].insert(0, "模型请求失败或输出未通过校验，以下为规则分析；可稍后重试。")
-        if progress:
-            progress("saving")
-        return self.store.save_run(owner, body["message"], result)
+                result['model_status'] = 'failed_fallback'
+                result['unknowns'].insert(0, '模型请求失败或输出未通过校验，已保留检索原文及规则分析；可稍后重试。')
+        elif self.model:
+            result['model_status']='failed_fallback'
+        if progress:progress('saving')
+        return self.store.save_run(owner, body['message'], result)
 
     def identity(self, headers, write=False):
         origin = headers.get("Origin")
@@ -107,22 +145,48 @@ class Application:
         if path == "/agent-api/health" and method == "GET":
             return {"status": "ok", "release": self.release, "data_mode": self.snapshot.mode,
                     "model_configured": self.model is not None, "model_verified": False,
-                    "device_control": False}
+                    "device_control": False,"knowledge_retrieval":"bm25","mcp_protocol":VERSION,"mcp_tools":len(self.mcp.definitions())}
         write = method == "POST"
-        owner = self.identity(headers, write and path in {"/agent-api/drafts", "/agent-api/confirm"})
-        if write and self.snapshot.mode == "demo" and headers.get("Origin") != self.origin:
+        kb_write=path.startswith('/agent-api/knowledge/') and path!='/agent-api/knowledge/search'
+        owner = self.identity(headers, write and (path in {"/agent-api/drafts", "/agent-api/confirm"} or kb_write))
+        if write and self.snapshot.mode == "demo" and headers.get("Origin") != self.origin and path!="/agent-api/mcp":
             raise HTTPError(403, "提交需要同源页面")
-        if method == "GET" and path.startswith("/agent-api/analysis-tasks/"):
+        if path=="/agent-api/mcp":
+            self.limit(client+':mcp',180)
+            if method!='POST':raise HTTPError(405,'此 MCP 服务使用 POST JSON 响应，不提供独立 SSE 通道。')
+            if headers.get('MCP-Protocol-Version') not in {None,VERSION}:raise HTTPError(400,'不支持的 MCP 协议版本。')
+            accept=headers.get('Accept','')
+            if 'application/json' not in accept or 'text/event-stream' not in accept:raise HTTPError(406,'MCP 客户端需接受 application/json 和 text/event-stream。')
+            return self.mcp.handle(self.knowledge_owner(owner),body)
+        if method == "GET" and (path.startswith("/agent-api/analysis-tasks/") or path.startswith('/agent-api/knowledge/documents/')):
             self.limit(client + ":task-poll", 120)
         else:
             self.limit(client)
         snapshot = self.snapshot
+        kb_owner=self.knowledge_owner(owner)
+        if path=='/agent-api/tools' and method=='GET':
+            client_tools=self.tool_client(owner)
+            return {'status':'connected','protocol':VERSION,'endpoint':'/agent-api/mcp','tools':client_tools.tools}
+        if path=='/agent-api/knowledge/documents':
+            if method=='GET':return {'documents':self.knowledge.list(kb_owner),'retrieval':'bm25','formats':['pdf','docx','txt','md'],'max_file_mb':6}
+            if method=='POST':return self.knowledge.upload(kb_owner,body)
+        if path=='/agent-api/knowledge/search' and method=='POST':
+            return self.knowledge.search(kb_owner,body.get('query'),body.get('limit',5))
+        if path.startswith('/agent-api/knowledge/documents/'):
+            parts=path.removeprefix('/agent-api/knowledge/documents/').split('/')
+            doc_id=parts[0]
+            if len(parts)==1 and method=='GET':return self.knowledge.get(kb_owner,doc_id)
+            if len(parts)==2:
+                action=parts[1]
+                if method=='GET' and action=='preview':return self.knowledge.preview(kb_owner,doc_id)
+                if method=='POST' and action=='retry':return self.knowledge.retry(kb_owner,doc_id)
+                if method=='POST' and action=='delete':return self.knowledge.delete(kb_owner,doc_id)
         if method == "GET" and path == "/agent-api/bootstrap":
             return {"metadata": snapshot.meta, "mode": snapshot.mode, "model_configured": self.model is not None,
                     "stale": snapshot.stale, "devices": list(snapshot.devices.values()), "events": snapshot.list_events(limit=12)["events"],
-                    "history": self.store.history(owner), "device_control": False, "release": self.release}
+                    "history": self.store.history(owner), "device_control": False, "release": self.release,"knowledge":self.knowledge.list(kb_owner),"mcp_tools":len(self.mcp.definitions())}
         if method == "POST" and path == "/agent-api/analyze":
-            if set(body) - {"message", "event_id", "device_id"}:
+            if set(body) - {"message", "event_id", "device_id", "scope"}:
                 raise InputError("未知分析参数")
             if not self.slots.acquire(blocking=False):
                 raise HTTPError(503, "模型正在处理其他任务，请稍后重试")
@@ -131,7 +195,7 @@ class Application:
             finally:
                 self.slots.release()
         if method == "POST" and path == "/agent-api/analysis-tasks":
-            if set(body) - {"message", "event_id", "device_id", "request_id"}:
+            if set(body) - {"message", "event_id", "device_id", "request_id", "scope"}:
                 raise InputError("未知分析参数")
             snapshot.analyze(body.get("message"), body.get("event_id"), body.get("device_id"))
             try:
@@ -183,11 +247,12 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(raw)
 
-    def stream_task(self, app, task_id):
+    def stream_task(self, app, task_id, knowledge=False):
         # Authenticate and check ownership before committing SSE response headers.
         owner = app.identity(self.headers)
         app.limit(self.headers.get("X-Real-IP") or self.client_address[0])
-        task = app.tasks.get(owner, task_id)
+        get_task=(lambda: app.knowledge.get(app.knowledge_owner(owner),task_id)) if knowledge else (lambda: app.tasks.get(owner,task_id))
+        task = get_task()
         if not app.stream_slots.acquire(blocking=False):
             raise HTTPError(503, "进度连接繁忙，请使用任务查询接口")
         try:
@@ -201,14 +266,14 @@ class Handler(BaseHTTPRequestHandler):
             self.close_connection = True
             deadline = time.monotonic() + 60
             while True:
-                event = "done" if task["status"] in TERMINAL else "progress"
+                event = "done" if task["status"] in (TERMINAL | {"ready"}) else "progress"
                 data = json.dumps(task, ensure_ascii=False, allow_nan=False)
                 self.wfile.write(f"event: {event}\ndata: {data}\n\n".encode())
                 self.wfile.flush()
                 if event == "done" or time.monotonic() >= deadline:
                     return
                 time.sleep(1)
-                task = app.tasks.get(owner, task_id)
+                task = get_task()
         except Exception:
             # Headers are already sent: never append a second HTTP response.
             # The client falls back to polling, and the worker keeps running.
@@ -221,6 +286,9 @@ class Handler(BaseHTTPRequestHandler):
         try:
             app = self.server.app
             path = urlsplit(self.path).path
+            if self.command=='GET' and path.startswith('/agent-api/knowledge/documents/') and path.endswith('/events'):
+                self.stream_task(app,path[len('/agent-api/knowledge/documents/'):-len('/events')],knowledge=True)
+                return
             if self.command == "GET" and path.startswith("/agent-api/analysis-tasks/") and path.endswith("/events"):
                 self.stream_task(app, path[len("/agent-api/analysis-tasks/"):-len("/events")])
                 return
@@ -246,13 +314,15 @@ class Handler(BaseHTTPRequestHandler):
                 if self.headers.get("Transfer-Encoding"):
                     raise HTTPError(400, "不支持流式请求体")
                 length = int(self.headers.get("Content-Length", "0"))
-                if not 1 <= length <= 16384:
-                    raise HTTPError(413, "请求体必须在 16 KiB 以内")
+                if not 1 <= length <= (9*1024*1024 if path=="/agent-api/knowledge/documents" else 16384):
+                    raise HTTPError(413, "请求内容过大，资料上传上限为 6 MB，普通请求上限为 16 KiB。")
                 body = json.loads(self.rfile.read(length))
                 if not isinstance(body, dict):
                     raise InputError("JSON 必须为对象")
             document = app.dispatch(self.command, path, self.headers, body, self.headers.get("X-Real-IP") or self.client_address[0])
-            self.reply(200, document)
+            if document is None and path=='/agent-api/mcp':
+                self.send_response(202);self.send_header('Content-Length','0');self.end_headers()
+            else:self.reply(200, document)
         except HTTPError as exc:
             self.reply(exc.status, {"error": exc.message, "request_id": request_id})
         except (InputError, ValueError, TypeError, KeyError) as exc:
@@ -285,7 +355,7 @@ def main():
     # must not mark the active process's jobs interrupted. One service per DB.
     try:
         server.app = Application(snapshot, Store(args.database), os.environ["AGENT_ORIGIN"], json.loads(os.getenv("AGENT_USERS_JSON", "{}")), model,
-                                 release, args.static_root)
+                                 release, args.static_root,mcp_endpoint=f"http://127.0.0.1:{args.port}/agent-api/mcp")
         print(f"Fumai agent listening on loopback:{args.port}, mode={snapshot.mode}", flush=True)
         server.serve_forever()
     finally:
