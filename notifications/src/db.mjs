@@ -1,16 +1,19 @@
-import { mkdirSync, readFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, readdirSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { DatabaseSync } from 'node:sqlite';
 
 const here = dirname(fileURLToPath(import.meta.url));
-const migrationFile = resolve(here, '../migrations/001_notifications.sql');
+const migrationRoot = resolve(here, '../migrations');
 
 export function openDatabase(path = process.env.FUMAI_DB_PATH || './var/fumai-notifications.sqlite3') {
   if (path !== ':memory:') mkdirSync(dirname(resolve(path)), { recursive: true });
   const db = new DatabaseSync(path);
   db.exec('PRAGMA foreign_keys = ON; PRAGMA journal_mode = WAL; PRAGMA busy_timeout = 5000;');
-  db.exec(readFileSync(migrationFile, 'utf8'));
+  const migrations = readdirSync(migrationRoot)
+    .filter(name => /^\d+_.+\.sql$/.test(name) && !name.endsWith('.down.sql'))
+    .sort();
+  for (const migration of migrations) db.exec(readFileSync(resolve(migrationRoot, migration), 'utf8'));
   return db;
 }
 
@@ -25,4 +28,3 @@ export function transaction(db, work) {
     throw error;
   }
 }
-

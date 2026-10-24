@@ -8,6 +8,7 @@ import { AuthService } from './auth.mjs';
 import { createProviders } from './providers.mjs';
 import { NotificationService, now, parseJson } from './service.mjs';
 import { NotificationWorker } from './worker.mjs';
+import { OperationsService } from './operations.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const db = openDatabase();
@@ -16,6 +17,7 @@ const auth = new AuthService(db);
 const bootstrapUser = auth.ensureBootstrapFromEnv();
 const providers = createProviders();
 const worker = new NotificationWorker(db, providers);
+const operations = new OperationsService(db);
 const port = Number(process.env.FUMAI_NOTIFICATION_PORT || 8787);
 const publicOrigin = process.env.FUMAI_PUBLIC_ORIGIN || `http://127.0.0.1:${port}`;
 const expectedOrigin = new URL(publicOrigin).origin;
@@ -42,7 +44,7 @@ async function readJson(req) {
   let size = 0;
   for await (const chunk of req) {
     size += chunk.length;
-    if (size > 64 * 1024) throw Object.assign(new Error('请求体不能超过 64 KiB'), { status: 413 });
+    if (size > 1024 * 1024) throw Object.assign(new Error('请求体不能超过 1 MiB'), { status: 413 });
     chunks.push(chunk);
   }
   const value = JSON.parse(Buffer.concat(chunks).toString('utf8'));
@@ -129,6 +131,24 @@ async function streamTask(req, res, id) {
   res.end();
 }
 
+async function streamOperations(req, res, substationId) {
+  requireUser(req);
+  res.writeHead(200, { 'Content-Type': 'text/event-stream; charset=utf-8', 'Cache-Control': 'no-store',
+    'Connection': 'keep-alive', 'X-Accel-Buffering': 'no' });
+  let previous = '';
+  const deadline = Date.now() + 60_000;
+  while (!res.destroyed && Date.now() < deadline) {
+    const snapshot = operations.snapshot(substationId);
+    const encoded = JSON.stringify(snapshot);
+    if (encoded !== previous) {
+      res.write(`event: snapshot\ndata: ${encoded}\n\n`);
+      previous = encoded;
+    } else res.write(': keep-alive\n\n');
+    await new Promise(resolveTimer => setTimeout(resolveTimer, 2000));
+  }
+  res.end();
+}
+
 function serveStatic(pathname, res) {
   const allowed = new Map([
     ['/', 'index.html'], ['/index.html', 'index.html'], ['/app.js', 'app.js'], ['/data.js', 'data.js'],
@@ -158,7 +178,8 @@ const server = createServer(async (req, res) => {
     if (req.method === 'GET' && path === '/api/health') return sendJson(res, 200, {
       status: 'ok', notification_mode: process.env.FUMAI_NOTIFICATION_MODE || 'mock',
       providers: { sms: providers.sms.name, email: providers.email.name },
-      authentication_ready: auth.userCount() > 0, real_daily_forecast: false, database: 'sqlite'
+      authentication_ready: auth.userCount() > 0, real_daily_forecast: false, database: 'sqlite-wal',
+      operations: operations.status()
     });
     if (req.method === 'POST' && path === '/api/auth/login') {
       const input = await readJson(req);
@@ -211,6 +232,82 @@ const server = createServer(async (req, res) => {
       return sendJson(res, 201, service.confirmFault({ ...(await readJson(req)), actor: actor.username }));
     }
     if (req.method === 'POST' && path === '/api/daily-generation') { requireUser(req, 'operator'); return sendJson(res, 200, service.upsertDailyGeneration(await readJson(req))); }
+
+    if (req.method === 'GET' && path === '/api/operations/status') {
+      requireUser(req); return sendJson(res, 200, operations.status());
+    }
+    if (req.method === 'POST' && path === '/api/operations/substations') {
+      requireUser(req, 'admin'); return sendJson(res, 200, operations.upsertSubstation(await readJson(req)));
+    }
+    if (req.method === 'POST' && path === '/api/operations/equipment') {
+      requireUser(req, 'admin'); return sendJson(res, 200, operations.upsertEquipment(await readJson(req)));
+    }
+    if (req.method === 'POST' && path === '/api/operations/iec104/endpoints') {
+      requireUser(req, 'admin'); return sendJson(res, 200, operations.upsertEndpoint(await readJson(req)));
+    }
+    if (req.method === 'POST' && path === '/api/operations/iec104/points') {
+      requireUser(req, 'admin'); return sendJson(res, 200, operations.upsertPoint(await readJson(req)));
+    }
+    if (req.method === 'POST' && path === '/api/operations/iec104/ingest') {
+      requireUser(req, 'operator'); return sendJson(res, 202, operations.ingestIec104(await readJson(req)));
+    }
+    if (req.method === 'GET' && path === '/api/operations/device-tree') {
+      requireUser(req); return sendJson(res, 200, operations.deviceTree(url.searchParams.get('substation_id')));
+    }
+    if (req.method === 'GET' && path === '/api/operations/snapshot') {
+      requireUser(req); return sendJson(res, 200, operations.snapshot(url.searchParams.get('substation_id')));
+    }
+    if (req.method === 'GET' && path === '/api/operations/stream') {
+      return streamOperations(req, res, url.searchParams.get('substation_id'));
+    }
+    if (req.method === 'GET' && path === '/api/operations/topology') {
+      requireUser(req); return sendJson(res, 200, operations.topology(url.searchParams.get('substation_id')));
+    }
+    if (req.method === 'GET' && path === '/api/operations/warnings') {
+      requireUser(req); return sendJson(res, 200, { warnings: operations.warnings({ status: url.searchParams.get('status'), limit: url.searchParams.get('limit') }) });
+    }
+    const warningAckMatch = path.match(/^\/api\/operations\/warnings\/([^/]+)\/ack$/);
+    if (req.method === 'POST' && warningAckMatch) {
+      const actor = requireUser(req, 'operator');
+      const warning = operations.acknowledgeWarning(warningAckMatch[1], actor.username);
+      audit(actor.username, 'acknowledge_warning', warning.id, { previous_status: 'active' });
+      return sendJson(res, 200, warning);
+    }
+    if (req.method === 'POST' && path === '/api/operations/generation') {
+      requireUser(req, 'operator');
+      const input = await readJson(req);
+      const report = operations.upsertGeneration(input);
+      const station = db.prepare('SELECT code FROM substation_info WHERE id=?').get(report.substation_id);
+      service.upsertDailyGeneration({ plant_id: station.code, local_date: report.local_date,
+        actual_kwh: report.actual_kwh, forecast_kwh: report.forecast_kwh,
+        business_timezone: report.timezone, revision: report.revision,
+        is_test_forecast: Boolean(report.is_simulated), forecast_model_version: input.forecast_model_version,
+        forecast_generated_at: input.forecast_generated_at });
+      return sendJson(res, 200, report);
+    }
+    if (req.method === 'GET' && path === '/api/operations/reports/generation') {
+      requireUser(req); return sendJson(res, 200, { reports: operations.generation({ substationId: url.searchParams.get('substation_id'),
+        from: url.searchParams.get('from'), to: url.searchParams.get('to') }) });
+    }
+    if (req.method === 'GET' && path === '/api/operations/reports/calendar') {
+      requireUser(req); return sendJson(res, 200, operations.calendar({ substationId: url.searchParams.get('substation_id'),
+        from: url.searchParams.get('from'), to: url.searchParams.get('to') }));
+    }
+    if (req.method === 'POST' && path === '/api/operations/model-results') {
+      requireUser(req, 'operator'); return sendJson(res, 201, operations.recordModelOutput(await readJson(req)));
+    }
+    if (req.method === 'GET' && path === '/api/operations/diagnosis') {
+      requireUser(req); return sendJson(res, 200, { results: operations.diagnosis({ equipmentId: url.searchParams.get('equipment_id'),
+        modelFamily: url.searchParams.get('model_family'), limit: url.searchParams.get('limit') }) });
+    }
+    if (req.method === 'POST' && path === '/api/operations/retention/purge') {
+      const actor = requireUser(req, 'admin');
+      const result = operations.purgeExpired(); audit(actor.username, 'purge_operations_history', 'retention', result);
+      return sendJson(res, 200, { deleted: result });
+    }
+    if (req.method === 'GET' && path === '/agent-api/bootstrap') {
+      requireUser(req); return sendJson(res, 200, operations.agentBootstrap());
+    }
     if (req.method === 'GET' && path === '/api/notifications/events') {
       requireUser(req);
       return sendJson(res, 200, { events: service.listEvents({ limit: url.searchParams.get('limit'), offset: url.searchParams.get('offset'), category: url.searchParams.get('category') || 'all' }) });

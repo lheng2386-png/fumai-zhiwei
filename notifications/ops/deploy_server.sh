@@ -189,7 +189,8 @@ with tarfile.open(archive, 'r:gz') as source:
             shutil.copyfileobj(data, output)
 required = [
     'notifications/package.json', 'notifications/src/server.mjs',
-    'notifications/src/run-worker.mjs', 'notifications/migrations/001_notifications.sql',
+    'notifications/src/run-worker.mjs', 'notifications/src/operations.mjs',
+    'notifications/migrations/001_notifications.sql', 'notifications/migrations/002_operations.sql',
     'frontend/dist/index.html', 'frontend/dist/auth-guard.js',
     'frontend/dist/login.html', 'frontend/dist/login.js', 'frontend/dist/login.css',
     'frontend/dist/notifications.html', 'frontend/dist/notifications.js',
@@ -394,6 +395,19 @@ block = begin + '''    location /api/ {
         client_max_body_size 128k;
         add_header Cache-Control "no-store" always;
         add_header X-Content-Type-Options nosniff always;
+    }
+
+    location /agent-api/ {
+        proxy_pass http://127.0.0.1:8787;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 70s;
+        proxy_buffering off;
+        proxy_cache off;
+        client_max_body_size 1m;
+        add_header Cache-Control "no-store" always;
     }
 
     location = /notifications.html {

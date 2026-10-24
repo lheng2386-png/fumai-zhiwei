@@ -2,6 +2,8 @@
 
 本目录实现 SQLite 事务性通知、网站多用户登录、SMTP 邮件和 Gammu 短信猫适配器。默认两个渠道都是 `mock`，配置真实服务商前不会发送外部消息。
 
+设备运维、IEC 60870-5-104 标准化入库、告警/模型/发电报表接口见 [docs/OPERATIONS_BACKEND.md](docs/OPERATIONS_BACKEND.md)。
+
 ## 业务流程
 
 ```mermaid
