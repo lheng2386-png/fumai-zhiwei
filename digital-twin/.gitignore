@@ -1,0 +1,10 @@
+artifacts/
+unity/Library/
+unity/Temp/
+unity/Obj/
+unity/Logs/
+unity/UserSettings/
+unity/Assets/FumaiGenerated/
+unity/Assets/StreamingAssets/
+unity/*.csproj
+unity/*.sln

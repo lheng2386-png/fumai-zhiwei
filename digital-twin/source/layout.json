@@ -1,0 +1,9038 @@
+{
+  "version": 1,
+  "units": "m",
+  "up": "Y",
+  "source": "constructed_demo",
+  "assets": [
+    {
+      "id": "inv_01",
+      "type": "inverter",
+      "position": [
+        -25.3,
+        0,
+        -21.4
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "group": "inv_01"
+    },
+    {
+      "id": "pv_0001",
+      "type": "panel",
+      "position": [
+        -34.125,
+        1.25,
+        -31.05
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_01"
+    },
+    {
+      "id": "pv_0002",
+      "type": "panel",
+      "position": [
+        -32.475,
+        1.25,
+        -31.05
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_01"
+    },
+    {
+      "id": "pv_0003",
+      "type": "panel",
+      "position": [
+        -30.825,
+        1.25,
+        -31.05
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_01"
+    },
+    {
+      "id": "pv_0004",
+      "type": "panel",
+      "position": [
+        -29.175,
+        1.25,
+        -31.05
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_01"
+    },
+    {
+      "id": "pv_0005",
+      "type": "panel",
+      "position": [
+        -27.525,
+        1.25,
+        -31.05
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_01"
+    },
+    {
+      "id": "pv_0006",
+      "type": "panel",
+      "position": [
+        -25.875,
+        1.25,
+        -31.05
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_01"
+    },
+    {
+      "id": "pv_0007",
+      "type": "panel",
+      "position": [
+        -34.125,
+        1.25,
+        -28.35
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_01"
+    },
+    {
+      "id": "pv_0008",
+      "type": "panel",
+      "position": [
+        -32.475,
+        1.25,
+        -28.35
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_01"
+    },
+    {
+      "id": "pv_0009",
+      "type": "panel",
+      "position": [
+        -30.825,
+        1.25,
+        -28.35
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_01"
+    },
+    {
+      "id": "pv_0010",
+      "type": "panel",
+      "position": [
+        -29.175,
+        1.25,
+        -28.35
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_01"
+    },
+    {
+      "id": "pv_0011",
+      "type": "panel",
+      "position": [
+        -27.525,
+        1.25,
+        -28.35
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_01"
+    },
+    {
+      "id": "pv_0012",
+      "type": "panel",
+      "position": [
+        -25.875,
+        1.25,
+        -28.35
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_01"
+    },
+    {
+      "id": "pv_0013",
+      "type": "panel",
+      "position": [
+        -34.125,
+        1.25,
+        -25.65
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_01"
+    },
+    {
+      "id": "pv_0014",
+      "type": "panel",
+      "position": [
+        -32.475,
+        1.25,
+        -25.65
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_01"
+    },
+    {
+      "id": "pv_0015",
+      "type": "panel",
+      "position": [
+        -30.825,
+        1.25,
+        -25.65
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_01"
+    },
+    {
+      "id": "pv_0016",
+      "type": "panel",
+      "position": [
+        -29.175,
+        1.25,
+        -25.65
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_01"
+    },
+    {
+      "id": "pv_0017",
+      "type": "panel",
+      "position": [
+        -27.525,
+        1.25,
+        -25.65
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_01"
+    },
+    {
+      "id": "pv_0018",
+      "type": "panel",
+      "position": [
+        -25.875,
+        1.25,
+        -25.65
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_01"
+    },
+    {
+      "id": "pv_0019",
+      "type": "panel",
+      "position": [
+        -34.125,
+        1.25,
+        -22.95
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_01"
+    },
+    {
+      "id": "pv_0020",
+      "type": "panel",
+      "position": [
+        -32.475,
+        1.25,
+        -22.95
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_01"
+    },
+    {
+      "id": "pv_0021",
+      "type": "panel",
+      "position": [
+        -30.825,
+        1.25,
+        -22.95
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_01"
+    },
+    {
+      "id": "pv_0022",
+      "type": "panel",
+      "position": [
+        -29.175,
+        1.25,
+        -22.95
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_01"
+    },
+    {
+      "id": "pv_0023",
+      "type": "panel",
+      "position": [
+        -27.525,
+        1.25,
+        -22.95
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_01"
+    },
+    {
+      "id": "pv_0024",
+      "type": "panel",
+      "position": [
+        -25.875,
+        1.25,
+        -22.95
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_01"
+    },
+    {
+      "id": "inv_02",
+      "type": "inverter",
+      "position": [
+        -13.3,
+        0,
+        -21.4
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "group": "inv_02"
+    },
+    {
+      "id": "pv_0025",
+      "type": "panel",
+      "position": [
+        -22.125,
+        1.25,
+        -31.05
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_02"
+    },
+    {
+      "id": "pv_0026",
+      "type": "panel",
+      "position": [
+        -20.475,
+        1.25,
+        -31.05
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_02"
+    },
+    {
+      "id": "pv_0027",
+      "type": "panel",
+      "position": [
+        -18.825,
+        1.25,
+        -31.05
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_02"
+    },
+    {
+      "id": "pv_0028",
+      "type": "panel",
+      "position": [
+        -17.175,
+        1.25,
+        -31.05
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_02"
+    },
+    {
+      "id": "pv_0029",
+      "type": "panel",
+      "position": [
+        -15.525,
+        1.25,
+        -31.05
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_02"
+    },
+    {
+      "id": "pv_0030",
+      "type": "panel",
+      "position": [
+        -13.875,
+        1.25,
+        -31.05
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_02"
+    },
+    {
+      "id": "pv_0031",
+      "type": "panel",
+      "position": [
+        -22.125,
+        1.25,
+        -28.35
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_02"
+    },
+    {
+      "id": "pv_0032",
+      "type": "panel",
+      "position": [
+        -20.475,
+        1.25,
+        -28.35
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_02"
+    },
+    {
+      "id": "pv_0033",
+      "type": "panel",
+      "position": [
+        -18.825,
+        1.25,
+        -28.35
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_02"
+    },
+    {
+      "id": "pv_0034",
+      "type": "panel",
+      "position": [
+        -17.175,
+        1.25,
+        -28.35
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_02"
+    },
+    {
+      "id": "pv_0035",
+      "type": "panel",
+      "position": [
+        -15.525,
+        1.25,
+        -28.35
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_02"
+    },
+    {
+      "id": "pv_0036",
+      "type": "panel",
+      "position": [
+        -13.875,
+        1.25,
+        -28.35
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_02"
+    },
+    {
+      "id": "pv_0037",
+      "type": "panel",
+      "position": [
+        -22.125,
+        1.25,
+        -25.65
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_02"
+    },
+    {
+      "id": "pv_0038",
+      "type": "panel",
+      "position": [
+        -20.475,
+        1.25,
+        -25.65
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_02"
+    },
+    {
+      "id": "pv_0039",
+      "type": "panel",
+      "position": [
+        -18.825,
+        1.25,
+        -25.65
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_02"
+    },
+    {
+      "id": "pv_0040",
+      "type": "panel",
+      "position": [
+        -17.175,
+        1.25,
+        -25.65
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_02"
+    },
+    {
+      "id": "pv_0041",
+      "type": "panel",
+      "position": [
+        -15.525,
+        1.25,
+        -25.65
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_02"
+    },
+    {
+      "id": "pv_0042",
+      "type": "panel",
+      "position": [
+        -13.875,
+        1.25,
+        -25.65
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_02"
+    },
+    {
+      "id": "pv_0043",
+      "type": "panel",
+      "position": [
+        -22.125,
+        1.25,
+        -22.95
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_02"
+    },
+    {
+      "id": "pv_0044",
+      "type": "panel",
+      "position": [
+        -20.475,
+        1.25,
+        -22.95
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_02"
+    },
+    {
+      "id": "pv_0045",
+      "type": "panel",
+      "position": [
+        -18.825,
+        1.25,
+        -22.95
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_02"
+    },
+    {
+      "id": "pv_0046",
+      "type": "panel",
+      "position": [
+        -17.175,
+        1.25,
+        -22.95
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_02"
+    },
+    {
+      "id": "pv_0047",
+      "type": "panel",
+      "position": [
+        -15.525,
+        1.25,
+        -22.95
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_02"
+    },
+    {
+      "id": "pv_0048",
+      "type": "panel",
+      "position": [
+        -13.875,
+        1.25,
+        -22.95
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_02"
+    },
+    {
+      "id": "inv_03",
+      "type": "inverter",
+      "position": [
+        -1.2999999999999998,
+        0,
+        -21.4
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "group": "inv_03"
+    },
+    {
+      "id": "pv_0049",
+      "type": "panel",
+      "position": [
+        -10.125,
+        1.25,
+        -31.05
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_03"
+    },
+    {
+      "id": "pv_0050",
+      "type": "panel",
+      "position": [
+        -8.475,
+        1.25,
+        -31.05
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_03"
+    },
+    {
+      "id": "pv_0051",
+      "type": "panel",
+      "position": [
+        -6.825,
+        1.25,
+        -31.05
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_03"
+    },
+    {
+      "id": "pv_0052",
+      "type": "panel",
+      "position": [
+        -5.175,
+        1.25,
+        -31.05
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_03"
+    },
+    {
+      "id": "pv_0053",
+      "type": "panel",
+      "position": [
+        -3.5250000000000004,
+        1.25,
+        -31.05
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_03"
+    },
+    {
+      "id": "pv_0054",
+      "type": "panel",
+      "position": [
+        -1.875,
+        1.25,
+        -31.05
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_03"
+    },
+    {
+      "id": "pv_0055",
+      "type": "panel",
+      "position": [
+        -10.125,
+        1.25,
+        -28.35
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_03"
+    },
+    {
+      "id": "pv_0056",
+      "type": "panel",
+      "position": [
+        -8.475,
+        1.25,
+        -28.35
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_03"
+    },
+    {
+      "id": "pv_0057",
+      "type": "panel",
+      "position": [
+        -6.825,
+        1.25,
+        -28.35
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_03"
+    },
+    {
+      "id": "pv_0058",
+      "type": "panel",
+      "position": [
+        -5.175,
+        1.25,
+        -28.35
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_03"
+    },
+    {
+      "id": "pv_0059",
+      "type": "panel",
+      "position": [
+        -3.5250000000000004,
+        1.25,
+        -28.35
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_03"
+    },
+    {
+      "id": "pv_0060",
+      "type": "panel",
+      "position": [
+        -1.875,
+        1.25,
+        -28.35
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_03"
+    },
+    {
+      "id": "pv_0061",
+      "type": "panel",
+      "position": [
+        -10.125,
+        1.25,
+        -25.65
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_03"
+    },
+    {
+      "id": "pv_0062",
+      "type": "panel",
+      "position": [
+        -8.475,
+        1.25,
+        -25.65
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_03"
+    },
+    {
+      "id": "pv_0063",
+      "type": "panel",
+      "position": [
+        -6.825,
+        1.25,
+        -25.65
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_03"
+    },
+    {
+      "id": "pv_0064",
+      "type": "panel",
+      "position": [
+        -5.175,
+        1.25,
+        -25.65
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_03"
+    },
+    {
+      "id": "pv_0065",
+      "type": "panel",
+      "position": [
+        -3.5250000000000004,
+        1.25,
+        -25.65
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_03"
+    },
+    {
+      "id": "pv_0066",
+      "type": "panel",
+      "position": [
+        -1.875,
+        1.25,
+        -25.65
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_03"
+    },
+    {
+      "id": "pv_0067",
+      "type": "panel",
+      "position": [
+        -10.125,
+        1.25,
+        -22.95
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_03"
+    },
+    {
+      "id": "pv_0068",
+      "type": "panel",
+      "position": [
+        -8.475,
+        1.25,
+        -22.95
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_03"
+    },
+    {
+      "id": "pv_0069",
+      "type": "panel",
+      "position": [
+        -6.825,
+        1.25,
+        -22.95
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_03"
+    },
+    {
+      "id": "pv_0070",
+      "type": "panel",
+      "position": [
+        -5.175,
+        1.25,
+        -22.95
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_03"
+    },
+    {
+      "id": "pv_0071",
+      "type": "panel",
+      "position": [
+        -3.5250000000000004,
+        1.25,
+        -22.95
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_03"
+    },
+    {
+      "id": "pv_0072",
+      "type": "panel",
+      "position": [
+        -1.875,
+        1.25,
+        -22.95
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_03"
+    },
+    {
+      "id": "inv_04",
+      "type": "inverter",
+      "position": [
+        10.7,
+        0,
+        -21.4
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "group": "inv_04"
+    },
+    {
+      "id": "pv_0073",
+      "type": "panel",
+      "position": [
+        1.875,
+        1.25,
+        -31.05
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_04"
+    },
+    {
+      "id": "pv_0074",
+      "type": "panel",
+      "position": [
+        3.5250000000000004,
+        1.25,
+        -31.05
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_04"
+    },
+    {
+      "id": "pv_0075",
+      "type": "panel",
+      "position": [
+        5.175,
+        1.25,
+        -31.05
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_04"
+    },
+    {
+      "id": "pv_0076",
+      "type": "panel",
+      "position": [
+        6.825,
+        1.25,
+        -31.05
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_04"
+    },
+    {
+      "id": "pv_0077",
+      "type": "panel",
+      "position": [
+        8.475,
+        1.25,
+        -31.05
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_04"
+    },
+    {
+      "id": "pv_0078",
+      "type": "panel",
+      "position": [
+        10.125,
+        1.25,
+        -31.05
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_04"
+    },
+    {
+      "id": "pv_0079",
+      "type": "panel",
+      "position": [
+        1.875,
+        1.25,
+        -28.35
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_04"
+    },
+    {
+      "id": "pv_0080",
+      "type": "panel",
+      "position": [
+        3.5250000000000004,
+        1.25,
+        -28.35
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_04"
+    },
+    {
+      "id": "pv_0081",
+      "type": "panel",
+      "position": [
+        5.175,
+        1.25,
+        -28.35
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_04"
+    },
+    {
+      "id": "pv_0082",
+      "type": "panel",
+      "position": [
+        6.825,
+        1.25,
+        -28.35
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_04"
+    },
+    {
+      "id": "pv_0083",
+      "type": "panel",
+      "position": [
+        8.475,
+        1.25,
+        -28.35
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_04"
+    },
+    {
+      "id": "pv_0084",
+      "type": "panel",
+      "position": [
+        10.125,
+        1.25,
+        -28.35
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_04"
+    },
+    {
+      "id": "pv_0085",
+      "type": "panel",
+      "position": [
+        1.875,
+        1.25,
+        -25.65
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_04"
+    },
+    {
+      "id": "pv_0086",
+      "type": "panel",
+      "position": [
+        3.5250000000000004,
+        1.25,
+        -25.65
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_04"
+    },
+    {
+      "id": "pv_0087",
+      "type": "panel",
+      "position": [
+        5.175,
+        1.25,
+        -25.65
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_04"
+    },
+    {
+      "id": "pv_0088",
+      "type": "panel",
+      "position": [
+        6.825,
+        1.25,
+        -25.65
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_04"
+    },
+    {
+      "id": "pv_0089",
+      "type": "panel",
+      "position": [
+        8.475,
+        1.25,
+        -25.65
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_04"
+    },
+    {
+      "id": "pv_0090",
+      "type": "panel",
+      "position": [
+        10.125,
+        1.25,
+        -25.65
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_04"
+    },
+    {
+      "id": "pv_0091",
+      "type": "panel",
+      "position": [
+        1.875,
+        1.25,
+        -22.95
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_04"
+    },
+    {
+      "id": "pv_0092",
+      "type": "panel",
+      "position": [
+        3.5250000000000004,
+        1.25,
+        -22.95
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_04"
+    },
+    {
+      "id": "pv_0093",
+      "type": "panel",
+      "position": [
+        5.175,
+        1.25,
+        -22.95
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_04"
+    },
+    {
+      "id": "pv_0094",
+      "type": "panel",
+      "position": [
+        6.825,
+        1.25,
+        -22.95
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_04"
+    },
+    {
+      "id": "pv_0095",
+      "type": "panel",
+      "position": [
+        8.475,
+        1.25,
+        -22.95
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_04"
+    },
+    {
+      "id": "pv_0096",
+      "type": "panel",
+      "position": [
+        10.125,
+        1.25,
+        -22.95
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_04"
+    },
+    {
+      "id": "inv_05",
+      "type": "inverter",
+      "position": [
+        22.7,
+        0,
+        -21.4
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "group": "inv_05"
+    },
+    {
+      "id": "pv_0097",
+      "type": "panel",
+      "position": [
+        13.875,
+        1.25,
+        -31.05
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_05"
+    },
+    {
+      "id": "pv_0098",
+      "type": "panel",
+      "position": [
+        15.525,
+        1.25,
+        -31.05
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_05"
+    },
+    {
+      "id": "pv_0099",
+      "type": "panel",
+      "position": [
+        17.175,
+        1.25,
+        -31.05
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_05"
+    },
+    {
+      "id": "pv_0100",
+      "type": "panel",
+      "position": [
+        18.825,
+        1.25,
+        -31.05
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_05"
+    },
+    {
+      "id": "pv_0101",
+      "type": "panel",
+      "position": [
+        20.475,
+        1.25,
+        -31.05
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_05"
+    },
+    {
+      "id": "pv_0102",
+      "type": "panel",
+      "position": [
+        22.125,
+        1.25,
+        -31.05
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_05"
+    },
+    {
+      "id": "pv_0103",
+      "type": "panel",
+      "position": [
+        13.875,
+        1.25,
+        -28.35
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_05"
+    },
+    {
+      "id": "pv_0104",
+      "type": "panel",
+      "position": [
+        15.525,
+        1.25,
+        -28.35
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_05"
+    },
+    {
+      "id": "pv_0105",
+      "type": "panel",
+      "position": [
+        17.175,
+        1.25,
+        -28.35
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_05"
+    },
+    {
+      "id": "pv_0106",
+      "type": "panel",
+      "position": [
+        18.825,
+        1.25,
+        -28.35
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_05"
+    },
+    {
+      "id": "pv_0107",
+      "type": "panel",
+      "position": [
+        20.475,
+        1.25,
+        -28.35
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_05"
+    },
+    {
+      "id": "pv_0108",
+      "type": "panel",
+      "position": [
+        22.125,
+        1.25,
+        -28.35
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_05"
+    },
+    {
+      "id": "pv_0109",
+      "type": "panel",
+      "position": [
+        13.875,
+        1.25,
+        -25.65
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_05"
+    },
+    {
+      "id": "pv_0110",
+      "type": "panel",
+      "position": [
+        15.525,
+        1.25,
+        -25.65
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_05"
+    },
+    {
+      "id": "pv_0111",
+      "type": "panel",
+      "position": [
+        17.175,
+        1.25,
+        -25.65
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_05"
+    },
+    {
+      "id": "pv_0112",
+      "type": "panel",
+      "position": [
+        18.825,
+        1.25,
+        -25.65
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_05"
+    },
+    {
+      "id": "pv_0113",
+      "type": "panel",
+      "position": [
+        20.475,
+        1.25,
+        -25.65
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_05"
+    },
+    {
+      "id": "pv_0114",
+      "type": "panel",
+      "position": [
+        22.125,
+        1.25,
+        -25.65
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_05"
+    },
+    {
+      "id": "pv_0115",
+      "type": "panel",
+      "position": [
+        13.875,
+        1.25,
+        -22.95
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_05"
+    },
+    {
+      "id": "pv_0116",
+      "type": "panel",
+      "position": [
+        15.525,
+        1.25,
+        -22.95
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_05"
+    },
+    {
+      "id": "pv_0117",
+      "type": "panel",
+      "position": [
+        17.175,
+        1.25,
+        -22.95
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_05"
+    },
+    {
+      "id": "pv_0118",
+      "type": "panel",
+      "position": [
+        18.825,
+        1.25,
+        -22.95
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_05"
+    },
+    {
+      "id": "pv_0119",
+      "type": "panel",
+      "position": [
+        20.475,
+        1.25,
+        -22.95
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_05"
+    },
+    {
+      "id": "pv_0120",
+      "type": "panel",
+      "position": [
+        22.125,
+        1.25,
+        -22.95
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_05"
+    },
+    {
+      "id": "inv_06",
+      "type": "inverter",
+      "position": [
+        34.7,
+        0,
+        -21.4
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "group": "inv_06"
+    },
+    {
+      "id": "pv_0121",
+      "type": "panel",
+      "position": [
+        25.875,
+        1.25,
+        -31.05
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_06"
+    },
+    {
+      "id": "pv_0122",
+      "type": "panel",
+      "position": [
+        27.525,
+        1.25,
+        -31.05
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_06"
+    },
+    {
+      "id": "pv_0123",
+      "type": "panel",
+      "position": [
+        29.175,
+        1.25,
+        -31.05
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_06"
+    },
+    {
+      "id": "pv_0124",
+      "type": "panel",
+      "position": [
+        30.825,
+        1.25,
+        -31.05
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_06"
+    },
+    {
+      "id": "pv_0125",
+      "type": "panel",
+      "position": [
+        32.475,
+        1.25,
+        -31.05
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_06"
+    },
+    {
+      "id": "pv_0126",
+      "type": "panel",
+      "position": [
+        34.125,
+        1.25,
+        -31.05
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_06"
+    },
+    {
+      "id": "pv_0127",
+      "type": "panel",
+      "position": [
+        25.875,
+        1.25,
+        -28.35
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_06"
+    },
+    {
+      "id": "pv_0128",
+      "type": "panel",
+      "position": [
+        27.525,
+        1.25,
+        -28.35
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_06"
+    },
+    {
+      "id": "pv_0129",
+      "type": "panel",
+      "position": [
+        29.175,
+        1.25,
+        -28.35
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_06"
+    },
+    {
+      "id": "pv_0130",
+      "type": "panel",
+      "position": [
+        30.825,
+        1.25,
+        -28.35
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_06"
+    },
+    {
+      "id": "pv_0131",
+      "type": "panel",
+      "position": [
+        32.475,
+        1.25,
+        -28.35
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_06"
+    },
+    {
+      "id": "pv_0132",
+      "type": "panel",
+      "position": [
+        34.125,
+        1.25,
+        -28.35
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_06"
+    },
+    {
+      "id": "pv_0133",
+      "type": "panel",
+      "position": [
+        25.875,
+        1.25,
+        -25.65
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_06"
+    },
+    {
+      "id": "pv_0134",
+      "type": "panel",
+      "position": [
+        27.525,
+        1.25,
+        -25.65
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_06"
+    },
+    {
+      "id": "pv_0135",
+      "type": "panel",
+      "position": [
+        29.175,
+        1.25,
+        -25.65
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_06"
+    },
+    {
+      "id": "pv_0136",
+      "type": "panel",
+      "position": [
+        30.825,
+        1.25,
+        -25.65
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_06"
+    },
+    {
+      "id": "pv_0137",
+      "type": "panel",
+      "position": [
+        32.475,
+        1.25,
+        -25.65
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_06"
+    },
+    {
+      "id": "pv_0138",
+      "type": "panel",
+      "position": [
+        34.125,
+        1.25,
+        -25.65
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_06"
+    },
+    {
+      "id": "pv_0139",
+      "type": "panel",
+      "position": [
+        25.875,
+        1.25,
+        -22.95
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_06"
+    },
+    {
+      "id": "pv_0140",
+      "type": "panel",
+      "position": [
+        27.525,
+        1.25,
+        -22.95
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_06"
+    },
+    {
+      "id": "pv_0141",
+      "type": "panel",
+      "position": [
+        29.175,
+        1.25,
+        -22.95
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_06"
+    },
+    {
+      "id": "pv_0142",
+      "type": "panel",
+      "position": [
+        30.825,
+        1.25,
+        -22.95
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_06"
+    },
+    {
+      "id": "pv_0143",
+      "type": "panel",
+      "position": [
+        32.475,
+        1.25,
+        -22.95
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_06"
+    },
+    {
+      "id": "pv_0144",
+      "type": "panel",
+      "position": [
+        34.125,
+        1.25,
+        -22.95
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_06"
+    },
+    {
+      "id": "inv_07",
+      "type": "inverter",
+      "position": [
+        -25.3,
+        0,
+        -3.4000000000000004
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "group": "inv_07"
+    },
+    {
+      "id": "pv_0145",
+      "type": "panel",
+      "position": [
+        -34.125,
+        1.25,
+        -13.05
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_07"
+    },
+    {
+      "id": "pv_0146",
+      "type": "panel",
+      "position": [
+        -32.475,
+        1.25,
+        -13.05
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_07"
+    },
+    {
+      "id": "pv_0147",
+      "type": "panel",
+      "position": [
+        -30.825,
+        1.25,
+        -13.05
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_07"
+    },
+    {
+      "id": "pv_0148",
+      "type": "panel",
+      "position": [
+        -29.175,
+        1.25,
+        -13.05
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_07"
+    },
+    {
+      "id": "pv_0149",
+      "type": "panel",
+      "position": [
+        -27.525,
+        1.25,
+        -13.05
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_07"
+    },
+    {
+      "id": "pv_0150",
+      "type": "panel",
+      "position": [
+        -25.875,
+        1.25,
+        -13.05
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_07"
+    },
+    {
+      "id": "pv_0151",
+      "type": "panel",
+      "position": [
+        -34.125,
+        1.25,
+        -10.35
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_07"
+    },
+    {
+      "id": "pv_0152",
+      "type": "panel",
+      "position": [
+        -32.475,
+        1.25,
+        -10.35
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_07"
+    },
+    {
+      "id": "pv_0153",
+      "type": "panel",
+      "position": [
+        -30.825,
+        1.25,
+        -10.35
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_07"
+    },
+    {
+      "id": "pv_0154",
+      "type": "panel",
+      "position": [
+        -29.175,
+        1.25,
+        -10.35
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_07"
+    },
+    {
+      "id": "pv_0155",
+      "type": "panel",
+      "position": [
+        -27.525,
+        1.25,
+        -10.35
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_07"
+    },
+    {
+      "id": "pv_0156",
+      "type": "panel",
+      "position": [
+        -25.875,
+        1.25,
+        -10.35
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_07"
+    },
+    {
+      "id": "pv_0157",
+      "type": "panel",
+      "position": [
+        -34.125,
+        1.25,
+        -7.65
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_07"
+    },
+    {
+      "id": "pv_0158",
+      "type": "panel",
+      "position": [
+        -32.475,
+        1.25,
+        -7.65
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_07"
+    },
+    {
+      "id": "pv_0159",
+      "type": "panel",
+      "position": [
+        -30.825,
+        1.25,
+        -7.65
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_07"
+    },
+    {
+      "id": "pv_0160",
+      "type": "panel",
+      "position": [
+        -29.175,
+        1.25,
+        -7.65
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_07"
+    },
+    {
+      "id": "pv_0161",
+      "type": "panel",
+      "position": [
+        -27.525,
+        1.25,
+        -7.65
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_07"
+    },
+    {
+      "id": "pv_0162",
+      "type": "panel",
+      "position": [
+        -25.875,
+        1.25,
+        -7.65
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_07"
+    },
+    {
+      "id": "pv_0163",
+      "type": "panel",
+      "position": [
+        -34.125,
+        1.25,
+        -4.949999999999999
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_07"
+    },
+    {
+      "id": "pv_0164",
+      "type": "panel",
+      "position": [
+        -32.475,
+        1.25,
+        -4.949999999999999
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_07"
+    },
+    {
+      "id": "pv_0165",
+      "type": "panel",
+      "position": [
+        -30.825,
+        1.25,
+        -4.949999999999999
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_07"
+    },
+    {
+      "id": "pv_0166",
+      "type": "panel",
+      "position": [
+        -29.175,
+        1.25,
+        -4.949999999999999
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_07"
+    },
+    {
+      "id": "pv_0167",
+      "type": "panel",
+      "position": [
+        -27.525,
+        1.25,
+        -4.949999999999999
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_07"
+    },
+    {
+      "id": "pv_0168",
+      "type": "panel",
+      "position": [
+        -25.875,
+        1.25,
+        -4.949999999999999
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_07"
+    },
+    {
+      "id": "inv_08",
+      "type": "inverter",
+      "position": [
+        -13.3,
+        0,
+        -3.4000000000000004
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "group": "inv_08"
+    },
+    {
+      "id": "pv_0169",
+      "type": "panel",
+      "position": [
+        -22.125,
+        1.25,
+        -13.05
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_08"
+    },
+    {
+      "id": "pv_0170",
+      "type": "panel",
+      "position": [
+        -20.475,
+        1.25,
+        -13.05
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_08"
+    },
+    {
+      "id": "pv_0171",
+      "type": "panel",
+      "position": [
+        -18.825,
+        1.25,
+        -13.05
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_08"
+    },
+    {
+      "id": "pv_0172",
+      "type": "panel",
+      "position": [
+        -17.175,
+        1.25,
+        -13.05
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_08"
+    },
+    {
+      "id": "pv_0173",
+      "type": "panel",
+      "position": [
+        -15.525,
+        1.25,
+        -13.05
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_08"
+    },
+    {
+      "id": "pv_0174",
+      "type": "panel",
+      "position": [
+        -13.875,
+        1.25,
+        -13.05
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_08"
+    },
+    {
+      "id": "pv_0175",
+      "type": "panel",
+      "position": [
+        -22.125,
+        1.25,
+        -10.35
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_08"
+    },
+    {
+      "id": "pv_0176",
+      "type": "panel",
+      "position": [
+        -20.475,
+        1.25,
+        -10.35
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_08"
+    },
+    {
+      "id": "pv_0177",
+      "type": "panel",
+      "position": [
+        -18.825,
+        1.25,
+        -10.35
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_08"
+    },
+    {
+      "id": "pv_0178",
+      "type": "panel",
+      "position": [
+        -17.175,
+        1.25,
+        -10.35
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_08"
+    },
+    {
+      "id": "pv_0179",
+      "type": "panel",
+      "position": [
+        -15.525,
+        1.25,
+        -10.35
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_08"
+    },
+    {
+      "id": "pv_0180",
+      "type": "panel",
+      "position": [
+        -13.875,
+        1.25,
+        -10.35
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_08"
+    },
+    {
+      "id": "pv_0181",
+      "type": "panel",
+      "position": [
+        -22.125,
+        1.25,
+        -7.65
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_08"
+    },
+    {
+      "id": "pv_0182",
+      "type": "panel",
+      "position": [
+        -20.475,
+        1.25,
+        -7.65
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_08"
+    },
+    {
+      "id": "pv_0183",
+      "type": "panel",
+      "position": [
+        -18.825,
+        1.25,
+        -7.65
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_08"
+    },
+    {
+      "id": "pv_0184",
+      "type": "panel",
+      "position": [
+        -17.175,
+        1.25,
+        -7.65
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_08"
+    },
+    {
+      "id": "pv_0185",
+      "type": "panel",
+      "position": [
+        -15.525,
+        1.25,
+        -7.65
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_08"
+    },
+    {
+      "id": "pv_0186",
+      "type": "panel",
+      "position": [
+        -13.875,
+        1.25,
+        -7.65
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_08"
+    },
+    {
+      "id": "pv_0187",
+      "type": "panel",
+      "position": [
+        -22.125,
+        1.25,
+        -4.949999999999999
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_08"
+    },
+    {
+      "id": "pv_0188",
+      "type": "panel",
+      "position": [
+        -20.475,
+        1.25,
+        -4.949999999999999
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_08"
+    },
+    {
+      "id": "pv_0189",
+      "type": "panel",
+      "position": [
+        -18.825,
+        1.25,
+        -4.949999999999999
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_08"
+    },
+    {
+      "id": "pv_0190",
+      "type": "panel",
+      "position": [
+        -17.175,
+        1.25,
+        -4.949999999999999
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_08"
+    },
+    {
+      "id": "pv_0191",
+      "type": "panel",
+      "position": [
+        -15.525,
+        1.25,
+        -4.949999999999999
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_08"
+    },
+    {
+      "id": "pv_0192",
+      "type": "panel",
+      "position": [
+        -13.875,
+        1.25,
+        -4.949999999999999
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_08"
+    },
+    {
+      "id": "inv_09",
+      "type": "inverter",
+      "position": [
+        -1.2999999999999998,
+        0,
+        -3.4000000000000004
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "group": "inv_09"
+    },
+    {
+      "id": "pv_0193",
+      "type": "panel",
+      "position": [
+        -10.125,
+        1.25,
+        -13.05
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_09"
+    },
+    {
+      "id": "pv_0194",
+      "type": "panel",
+      "position": [
+        -8.475,
+        1.25,
+        -13.05
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_09"
+    },
+    {
+      "id": "pv_0195",
+      "type": "panel",
+      "position": [
+        -6.825,
+        1.25,
+        -13.05
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_09"
+    },
+    {
+      "id": "pv_0196",
+      "type": "panel",
+      "position": [
+        -5.175,
+        1.25,
+        -13.05
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_09"
+    },
+    {
+      "id": "pv_0197",
+      "type": "panel",
+      "position": [
+        -3.5250000000000004,
+        1.25,
+        -13.05
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_09"
+    },
+    {
+      "id": "pv_0198",
+      "type": "panel",
+      "position": [
+        -1.875,
+        1.25,
+        -13.05
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_09"
+    },
+    {
+      "id": "pv_0199",
+      "type": "panel",
+      "position": [
+        -10.125,
+        1.25,
+        -10.35
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_09"
+    },
+    {
+      "id": "pv_0200",
+      "type": "panel",
+      "position": [
+        -8.475,
+        1.25,
+        -10.35
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_09"
+    },
+    {
+      "id": "pv_0201",
+      "type": "panel",
+      "position": [
+        -6.825,
+        1.25,
+        -10.35
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_09"
+    },
+    {
+      "id": "pv_0202",
+      "type": "panel",
+      "position": [
+        -5.175,
+        1.25,
+        -10.35
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_09"
+    },
+    {
+      "id": "pv_0203",
+      "type": "panel",
+      "position": [
+        -3.5250000000000004,
+        1.25,
+        -10.35
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_09"
+    },
+    {
+      "id": "pv_0204",
+      "type": "panel",
+      "position": [
+        -1.875,
+        1.25,
+        -10.35
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_09"
+    },
+    {
+      "id": "pv_0205",
+      "type": "panel",
+      "position": [
+        -10.125,
+        1.25,
+        -7.65
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_09"
+    },
+    {
+      "id": "pv_0206",
+      "type": "panel",
+      "position": [
+        -8.475,
+        1.25,
+        -7.65
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_09"
+    },
+    {
+      "id": "pv_0207",
+      "type": "panel",
+      "position": [
+        -6.825,
+        1.25,
+        -7.65
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_09"
+    },
+    {
+      "id": "pv_0208",
+      "type": "panel",
+      "position": [
+        -5.175,
+        1.25,
+        -7.65
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_09"
+    },
+    {
+      "id": "pv_0209",
+      "type": "panel",
+      "position": [
+        -3.5250000000000004,
+        1.25,
+        -7.65
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_09"
+    },
+    {
+      "id": "pv_0210",
+      "type": "panel",
+      "position": [
+        -1.875,
+        1.25,
+        -7.65
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_09"
+    },
+    {
+      "id": "pv_0211",
+      "type": "panel",
+      "position": [
+        -10.125,
+        1.25,
+        -4.949999999999999
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_09"
+    },
+    {
+      "id": "pv_0212",
+      "type": "panel",
+      "position": [
+        -8.475,
+        1.25,
+        -4.949999999999999
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_09"
+    },
+    {
+      "id": "pv_0213",
+      "type": "panel",
+      "position": [
+        -6.825,
+        1.25,
+        -4.949999999999999
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_09"
+    },
+    {
+      "id": "pv_0214",
+      "type": "panel",
+      "position": [
+        -5.175,
+        1.25,
+        -4.949999999999999
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_09"
+    },
+    {
+      "id": "pv_0215",
+      "type": "panel",
+      "position": [
+        -3.5250000000000004,
+        1.25,
+        -4.949999999999999
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_09"
+    },
+    {
+      "id": "pv_0216",
+      "type": "panel",
+      "position": [
+        -1.875,
+        1.25,
+        -4.949999999999999
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_09"
+    },
+    {
+      "id": "inv_10",
+      "type": "inverter",
+      "position": [
+        10.7,
+        0,
+        -3.4000000000000004
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "group": "inv_10"
+    },
+    {
+      "id": "pv_0217",
+      "type": "panel",
+      "position": [
+        1.875,
+        1.25,
+        -13.05
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_10"
+    },
+    {
+      "id": "pv_0218",
+      "type": "panel",
+      "position": [
+        3.5250000000000004,
+        1.25,
+        -13.05
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_10"
+    },
+    {
+      "id": "pv_0219",
+      "type": "panel",
+      "position": [
+        5.175,
+        1.25,
+        -13.05
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_10"
+    },
+    {
+      "id": "pv_0220",
+      "type": "panel",
+      "position": [
+        6.825,
+        1.25,
+        -13.05
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_10"
+    },
+    {
+      "id": "pv_0221",
+      "type": "panel",
+      "position": [
+        8.475,
+        1.25,
+        -13.05
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_10"
+    },
+    {
+      "id": "pv_0222",
+      "type": "panel",
+      "position": [
+        10.125,
+        1.25,
+        -13.05
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_10"
+    },
+    {
+      "id": "pv_0223",
+      "type": "panel",
+      "position": [
+        1.875,
+        1.25,
+        -10.35
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_10"
+    },
+    {
+      "id": "pv_0224",
+      "type": "panel",
+      "position": [
+        3.5250000000000004,
+        1.25,
+        -10.35
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_10"
+    },
+    {
+      "id": "pv_0225",
+      "type": "panel",
+      "position": [
+        5.175,
+        1.25,
+        -10.35
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_10"
+    },
+    {
+      "id": "pv_0226",
+      "type": "panel",
+      "position": [
+        6.825,
+        1.25,
+        -10.35
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_10"
+    },
+    {
+      "id": "pv_0227",
+      "type": "panel",
+      "position": [
+        8.475,
+        1.25,
+        -10.35
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_10"
+    },
+    {
+      "id": "pv_0228",
+      "type": "panel",
+      "position": [
+        10.125,
+        1.25,
+        -10.35
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_10"
+    },
+    {
+      "id": "pv_0229",
+      "type": "panel",
+      "position": [
+        1.875,
+        1.25,
+        -7.65
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_10"
+    },
+    {
+      "id": "pv_0230",
+      "type": "panel",
+      "position": [
+        3.5250000000000004,
+        1.25,
+        -7.65
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_10"
+    },
+    {
+      "id": "pv_0231",
+      "type": "panel",
+      "position": [
+        5.175,
+        1.25,
+        -7.65
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_10"
+    },
+    {
+      "id": "pv_0232",
+      "type": "panel",
+      "position": [
+        6.825,
+        1.25,
+        -7.65
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_10"
+    },
+    {
+      "id": "pv_0233",
+      "type": "panel",
+      "position": [
+        8.475,
+        1.25,
+        -7.65
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_10"
+    },
+    {
+      "id": "pv_0234",
+      "type": "panel",
+      "position": [
+        10.125,
+        1.25,
+        -7.65
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_10"
+    },
+    {
+      "id": "pv_0235",
+      "type": "panel",
+      "position": [
+        1.875,
+        1.25,
+        -4.949999999999999
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_10"
+    },
+    {
+      "id": "pv_0236",
+      "type": "panel",
+      "position": [
+        3.5250000000000004,
+        1.25,
+        -4.949999999999999
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_10"
+    },
+    {
+      "id": "pv_0237",
+      "type": "panel",
+      "position": [
+        5.175,
+        1.25,
+        -4.949999999999999
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_10"
+    },
+    {
+      "id": "pv_0238",
+      "type": "panel",
+      "position": [
+        6.825,
+        1.25,
+        -4.949999999999999
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_10"
+    },
+    {
+      "id": "pv_0239",
+      "type": "panel",
+      "position": [
+        8.475,
+        1.25,
+        -4.949999999999999
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_10"
+    },
+    {
+      "id": "pv_0240",
+      "type": "panel",
+      "position": [
+        10.125,
+        1.25,
+        -4.949999999999999
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_10"
+    },
+    {
+      "id": "inv_11",
+      "type": "inverter",
+      "position": [
+        22.7,
+        0,
+        -3.4000000000000004
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "group": "inv_11"
+    },
+    {
+      "id": "pv_0241",
+      "type": "panel",
+      "position": [
+        13.875,
+        1.25,
+        -13.05
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_11"
+    },
+    {
+      "id": "pv_0242",
+      "type": "panel",
+      "position": [
+        15.525,
+        1.25,
+        -13.05
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_11"
+    },
+    {
+      "id": "pv_0243",
+      "type": "panel",
+      "position": [
+        17.175,
+        1.25,
+        -13.05
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_11"
+    },
+    {
+      "id": "pv_0244",
+      "type": "panel",
+      "position": [
+        18.825,
+        1.25,
+        -13.05
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_11"
+    },
+    {
+      "id": "pv_0245",
+      "type": "panel",
+      "position": [
+        20.475,
+        1.25,
+        -13.05
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_11"
+    },
+    {
+      "id": "pv_0246",
+      "type": "panel",
+      "position": [
+        22.125,
+        1.25,
+        -13.05
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_11"
+    },
+    {
+      "id": "pv_0247",
+      "type": "panel",
+      "position": [
+        13.875,
+        1.25,
+        -10.35
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_11"
+    },
+    {
+      "id": "pv_0248",
+      "type": "panel",
+      "position": [
+        15.525,
+        1.25,
+        -10.35
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_11"
+    },
+    {
+      "id": "pv_0249",
+      "type": "panel",
+      "position": [
+        17.175,
+        1.25,
+        -10.35
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_11"
+    },
+    {
+      "id": "pv_0250",
+      "type": "panel",
+      "position": [
+        18.825,
+        1.25,
+        -10.35
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_11"
+    },
+    {
+      "id": "pv_0251",
+      "type": "panel",
+      "position": [
+        20.475,
+        1.25,
+        -10.35
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_11"
+    },
+    {
+      "id": "pv_0252",
+      "type": "panel",
+      "position": [
+        22.125,
+        1.25,
+        -10.35
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_11"
+    },
+    {
+      "id": "pv_0253",
+      "type": "panel",
+      "position": [
+        13.875,
+        1.25,
+        -7.65
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_11"
+    },
+    {
+      "id": "pv_0254",
+      "type": "panel",
+      "position": [
+        15.525,
+        1.25,
+        -7.65
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_11"
+    },
+    {
+      "id": "pv_0255",
+      "type": "panel",
+      "position": [
+        17.175,
+        1.25,
+        -7.65
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_11"
+    },
+    {
+      "id": "pv_0256",
+      "type": "panel",
+      "position": [
+        18.825,
+        1.25,
+        -7.65
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_11"
+    },
+    {
+      "id": "pv_0257",
+      "type": "panel",
+      "position": [
+        20.475,
+        1.25,
+        -7.65
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_11"
+    },
+    {
+      "id": "pv_0258",
+      "type": "panel",
+      "position": [
+        22.125,
+        1.25,
+        -7.65
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_11"
+    },
+    {
+      "id": "pv_0259",
+      "type": "panel",
+      "position": [
+        13.875,
+        1.25,
+        -4.949999999999999
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_11"
+    },
+    {
+      "id": "pv_0260",
+      "type": "panel",
+      "position": [
+        15.525,
+        1.25,
+        -4.949999999999999
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_11"
+    },
+    {
+      "id": "pv_0261",
+      "type": "panel",
+      "position": [
+        17.175,
+        1.25,
+        -4.949999999999999
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_11"
+    },
+    {
+      "id": "pv_0262",
+      "type": "panel",
+      "position": [
+        18.825,
+        1.25,
+        -4.949999999999999
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_11"
+    },
+    {
+      "id": "pv_0263",
+      "type": "panel",
+      "position": [
+        20.475,
+        1.25,
+        -4.949999999999999
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_11"
+    },
+    {
+      "id": "pv_0264",
+      "type": "panel",
+      "position": [
+        22.125,
+        1.25,
+        -4.949999999999999
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_11"
+    },
+    {
+      "id": "inv_12",
+      "type": "inverter",
+      "position": [
+        34.7,
+        0,
+        -3.4000000000000004
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "group": "inv_12"
+    },
+    {
+      "id": "pv_0265",
+      "type": "panel",
+      "position": [
+        25.875,
+        1.25,
+        -13.05
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_12"
+    },
+    {
+      "id": "pv_0266",
+      "type": "panel",
+      "position": [
+        27.525,
+        1.25,
+        -13.05
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_12"
+    },
+    {
+      "id": "pv_0267",
+      "type": "panel",
+      "position": [
+        29.175,
+        1.25,
+        -13.05
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_12"
+    },
+    {
+      "id": "pv_0268",
+      "type": "panel",
+      "position": [
+        30.825,
+        1.25,
+        -13.05
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_12"
+    },
+    {
+      "id": "pv_0269",
+      "type": "panel",
+      "position": [
+        32.475,
+        1.25,
+        -13.05
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_12"
+    },
+    {
+      "id": "pv_0270",
+      "type": "panel",
+      "position": [
+        34.125,
+        1.25,
+        -13.05
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_12"
+    },
+    {
+      "id": "pv_0271",
+      "type": "panel",
+      "position": [
+        25.875,
+        1.25,
+        -10.35
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_12"
+    },
+    {
+      "id": "pv_0272",
+      "type": "panel",
+      "position": [
+        27.525,
+        1.25,
+        -10.35
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_12"
+    },
+    {
+      "id": "pv_0273",
+      "type": "panel",
+      "position": [
+        29.175,
+        1.25,
+        -10.35
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_12"
+    },
+    {
+      "id": "pv_0274",
+      "type": "panel",
+      "position": [
+        30.825,
+        1.25,
+        -10.35
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_12"
+    },
+    {
+      "id": "pv_0275",
+      "type": "panel",
+      "position": [
+        32.475,
+        1.25,
+        -10.35
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_12"
+    },
+    {
+      "id": "pv_0276",
+      "type": "panel",
+      "position": [
+        34.125,
+        1.25,
+        -10.35
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_12"
+    },
+    {
+      "id": "pv_0277",
+      "type": "panel",
+      "position": [
+        25.875,
+        1.25,
+        -7.65
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_12"
+    },
+    {
+      "id": "pv_0278",
+      "type": "panel",
+      "position": [
+        27.525,
+        1.25,
+        -7.65
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_12"
+    },
+    {
+      "id": "pv_0279",
+      "type": "panel",
+      "position": [
+        29.175,
+        1.25,
+        -7.65
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_12"
+    },
+    {
+      "id": "pv_0280",
+      "type": "panel",
+      "position": [
+        30.825,
+        1.25,
+        -7.65
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_12"
+    },
+    {
+      "id": "pv_0281",
+      "type": "panel",
+      "position": [
+        32.475,
+        1.25,
+        -7.65
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_12"
+    },
+    {
+      "id": "pv_0282",
+      "type": "panel",
+      "position": [
+        34.125,
+        1.25,
+        -7.65
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_12"
+    },
+    {
+      "id": "pv_0283",
+      "type": "panel",
+      "position": [
+        25.875,
+        1.25,
+        -4.949999999999999
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_12"
+    },
+    {
+      "id": "pv_0284",
+      "type": "panel",
+      "position": [
+        27.525,
+        1.25,
+        -4.949999999999999
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_12"
+    },
+    {
+      "id": "pv_0285",
+      "type": "panel",
+      "position": [
+        29.175,
+        1.25,
+        -4.949999999999999
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_12"
+    },
+    {
+      "id": "pv_0286",
+      "type": "panel",
+      "position": [
+        30.825,
+        1.25,
+        -4.949999999999999
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_12"
+    },
+    {
+      "id": "pv_0287",
+      "type": "panel",
+      "position": [
+        32.475,
+        1.25,
+        -4.949999999999999
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_12"
+    },
+    {
+      "id": "pv_0288",
+      "type": "panel",
+      "position": [
+        34.125,
+        1.25,
+        -4.949999999999999
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_12"
+    },
+    {
+      "id": "inv_13",
+      "type": "inverter",
+      "position": [
+        -25.3,
+        0,
+        14.6
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "group": "inv_13"
+    },
+    {
+      "id": "pv_0289",
+      "type": "panel",
+      "position": [
+        -34.125,
+        1.25,
+        4.949999999999999
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_13"
+    },
+    {
+      "id": "pv_0290",
+      "type": "panel",
+      "position": [
+        -32.475,
+        1.25,
+        4.949999999999999
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_13"
+    },
+    {
+      "id": "pv_0291",
+      "type": "panel",
+      "position": [
+        -30.825,
+        1.25,
+        4.949999999999999
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_13"
+    },
+    {
+      "id": "pv_0292",
+      "type": "panel",
+      "position": [
+        -29.175,
+        1.25,
+        4.949999999999999
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_13"
+    },
+    {
+      "id": "pv_0293",
+      "type": "panel",
+      "position": [
+        -27.525,
+        1.25,
+        4.949999999999999
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_13"
+    },
+    {
+      "id": "pv_0294",
+      "type": "panel",
+      "position": [
+        -25.875,
+        1.25,
+        4.949999999999999
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_13"
+    },
+    {
+      "id": "pv_0295",
+      "type": "panel",
+      "position": [
+        -34.125,
+        1.25,
+        7.65
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_13"
+    },
+    {
+      "id": "pv_0296",
+      "type": "panel",
+      "position": [
+        -32.475,
+        1.25,
+        7.65
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_13"
+    },
+    {
+      "id": "pv_0297",
+      "type": "panel",
+      "position": [
+        -30.825,
+        1.25,
+        7.65
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_13"
+    },
+    {
+      "id": "pv_0298",
+      "type": "panel",
+      "position": [
+        -29.175,
+        1.25,
+        7.65
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_13"
+    },
+    {
+      "id": "pv_0299",
+      "type": "panel",
+      "position": [
+        -27.525,
+        1.25,
+        7.65
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_13"
+    },
+    {
+      "id": "pv_0300",
+      "type": "panel",
+      "position": [
+        -25.875,
+        1.25,
+        7.65
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_13"
+    },
+    {
+      "id": "pv_0301",
+      "type": "panel",
+      "position": [
+        -34.125,
+        1.25,
+        10.35
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_13"
+    },
+    {
+      "id": "pv_0302",
+      "type": "panel",
+      "position": [
+        -32.475,
+        1.25,
+        10.35
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_13"
+    },
+    {
+      "id": "pv_0303",
+      "type": "panel",
+      "position": [
+        -30.825,
+        1.25,
+        10.35
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_13"
+    },
+    {
+      "id": "pv_0304",
+      "type": "panel",
+      "position": [
+        -29.175,
+        1.25,
+        10.35
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_13"
+    },
+    {
+      "id": "pv_0305",
+      "type": "panel",
+      "position": [
+        -27.525,
+        1.25,
+        10.35
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_13"
+    },
+    {
+      "id": "pv_0306",
+      "type": "panel",
+      "position": [
+        -25.875,
+        1.25,
+        10.35
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_13"
+    },
+    {
+      "id": "pv_0307",
+      "type": "panel",
+      "position": [
+        -34.125,
+        1.25,
+        13.05
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_13"
+    },
+    {
+      "id": "pv_0308",
+      "type": "panel",
+      "position": [
+        -32.475,
+        1.25,
+        13.05
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_13"
+    },
+    {
+      "id": "pv_0309",
+      "type": "panel",
+      "position": [
+        -30.825,
+        1.25,
+        13.05
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_13"
+    },
+    {
+      "id": "pv_0310",
+      "type": "panel",
+      "position": [
+        -29.175,
+        1.25,
+        13.05
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_13"
+    },
+    {
+      "id": "pv_0311",
+      "type": "panel",
+      "position": [
+        -27.525,
+        1.25,
+        13.05
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_13"
+    },
+    {
+      "id": "pv_0312",
+      "type": "panel",
+      "position": [
+        -25.875,
+        1.25,
+        13.05
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_13"
+    },
+    {
+      "id": "inv_14",
+      "type": "inverter",
+      "position": [
+        -13.3,
+        0,
+        14.6
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "group": "inv_14"
+    },
+    {
+      "id": "pv_0313",
+      "type": "panel",
+      "position": [
+        -22.125,
+        1.25,
+        4.949999999999999
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_14"
+    },
+    {
+      "id": "pv_0314",
+      "type": "panel",
+      "position": [
+        -20.475,
+        1.25,
+        4.949999999999999
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_14"
+    },
+    {
+      "id": "pv_0315",
+      "type": "panel",
+      "position": [
+        -18.825,
+        1.25,
+        4.949999999999999
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_14"
+    },
+    {
+      "id": "pv_0316",
+      "type": "panel",
+      "position": [
+        -17.175,
+        1.25,
+        4.949999999999999
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_14"
+    },
+    {
+      "id": "pv_0317",
+      "type": "panel",
+      "position": [
+        -15.525,
+        1.25,
+        4.949999999999999
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_14"
+    },
+    {
+      "id": "pv_0318",
+      "type": "panel",
+      "position": [
+        -13.875,
+        1.25,
+        4.949999999999999
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_14"
+    },
+    {
+      "id": "pv_0319",
+      "type": "panel",
+      "position": [
+        -22.125,
+        1.25,
+        7.65
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_14"
+    },
+    {
+      "id": "pv_0320",
+      "type": "panel",
+      "position": [
+        -20.475,
+        1.25,
+        7.65
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_14"
+    },
+    {
+      "id": "pv_0321",
+      "type": "panel",
+      "position": [
+        -18.825,
+        1.25,
+        7.65
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_14"
+    },
+    {
+      "id": "pv_0322",
+      "type": "panel",
+      "position": [
+        -17.175,
+        1.25,
+        7.65
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_14"
+    },
+    {
+      "id": "pv_0323",
+      "type": "panel",
+      "position": [
+        -15.525,
+        1.25,
+        7.65
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_14"
+    },
+    {
+      "id": "pv_0324",
+      "type": "panel",
+      "position": [
+        -13.875,
+        1.25,
+        7.65
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_14"
+    },
+    {
+      "id": "pv_0325",
+      "type": "panel",
+      "position": [
+        -22.125,
+        1.25,
+        10.35
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_14"
+    },
+    {
+      "id": "pv_0326",
+      "type": "panel",
+      "position": [
+        -20.475,
+        1.25,
+        10.35
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_14"
+    },
+    {
+      "id": "pv_0327",
+      "type": "panel",
+      "position": [
+        -18.825,
+        1.25,
+        10.35
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_14"
+    },
+    {
+      "id": "pv_0328",
+      "type": "panel",
+      "position": [
+        -17.175,
+        1.25,
+        10.35
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_14"
+    },
+    {
+      "id": "pv_0329",
+      "type": "panel",
+      "position": [
+        -15.525,
+        1.25,
+        10.35
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_14"
+    },
+    {
+      "id": "pv_0330",
+      "type": "panel",
+      "position": [
+        -13.875,
+        1.25,
+        10.35
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_14"
+    },
+    {
+      "id": "pv_0331",
+      "type": "panel",
+      "position": [
+        -22.125,
+        1.25,
+        13.05
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_14"
+    },
+    {
+      "id": "pv_0332",
+      "type": "panel",
+      "position": [
+        -20.475,
+        1.25,
+        13.05
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_14"
+    },
+    {
+      "id": "pv_0333",
+      "type": "panel",
+      "position": [
+        -18.825,
+        1.25,
+        13.05
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_14"
+    },
+    {
+      "id": "pv_0334",
+      "type": "panel",
+      "position": [
+        -17.175,
+        1.25,
+        13.05
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_14"
+    },
+    {
+      "id": "pv_0335",
+      "type": "panel",
+      "position": [
+        -15.525,
+        1.25,
+        13.05
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_14"
+    },
+    {
+      "id": "pv_0336",
+      "type": "panel",
+      "position": [
+        -13.875,
+        1.25,
+        13.05
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_14"
+    },
+    {
+      "id": "inv_15",
+      "type": "inverter",
+      "position": [
+        -1.2999999999999998,
+        0,
+        14.6
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "group": "inv_15"
+    },
+    {
+      "id": "pv_0337",
+      "type": "panel",
+      "position": [
+        -10.125,
+        1.25,
+        4.949999999999999
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_15"
+    },
+    {
+      "id": "pv_0338",
+      "type": "panel",
+      "position": [
+        -8.475,
+        1.25,
+        4.949999999999999
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_15"
+    },
+    {
+      "id": "pv_0339",
+      "type": "panel",
+      "position": [
+        -6.825,
+        1.25,
+        4.949999999999999
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_15"
+    },
+    {
+      "id": "pv_0340",
+      "type": "panel",
+      "position": [
+        -5.175,
+        1.25,
+        4.949999999999999
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_15"
+    },
+    {
+      "id": "pv_0341",
+      "type": "panel",
+      "position": [
+        -3.5250000000000004,
+        1.25,
+        4.949999999999999
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_15"
+    },
+    {
+      "id": "pv_0342",
+      "type": "panel",
+      "position": [
+        -1.875,
+        1.25,
+        4.949999999999999
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_15"
+    },
+    {
+      "id": "pv_0343",
+      "type": "panel",
+      "position": [
+        -10.125,
+        1.25,
+        7.65
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_15"
+    },
+    {
+      "id": "pv_0344",
+      "type": "panel",
+      "position": [
+        -8.475,
+        1.25,
+        7.65
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_15"
+    },
+    {
+      "id": "pv_0345",
+      "type": "panel",
+      "position": [
+        -6.825,
+        1.25,
+        7.65
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_15"
+    },
+    {
+      "id": "pv_0346",
+      "type": "panel",
+      "position": [
+        -5.175,
+        1.25,
+        7.65
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_15"
+    },
+    {
+      "id": "pv_0347",
+      "type": "panel",
+      "position": [
+        -3.5250000000000004,
+        1.25,
+        7.65
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_15"
+    },
+    {
+      "id": "pv_0348",
+      "type": "panel",
+      "position": [
+        -1.875,
+        1.25,
+        7.65
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_15"
+    },
+    {
+      "id": "pv_0349",
+      "type": "panel",
+      "position": [
+        -10.125,
+        1.25,
+        10.35
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_15"
+    },
+    {
+      "id": "pv_0350",
+      "type": "panel",
+      "position": [
+        -8.475,
+        1.25,
+        10.35
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_15"
+    },
+    {
+      "id": "pv_0351",
+      "type": "panel",
+      "position": [
+        -6.825,
+        1.25,
+        10.35
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_15"
+    },
+    {
+      "id": "pv_0352",
+      "type": "panel",
+      "position": [
+        -5.175,
+        1.25,
+        10.35
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_15"
+    },
+    {
+      "id": "pv_0353",
+      "type": "panel",
+      "position": [
+        -3.5250000000000004,
+        1.25,
+        10.35
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_15"
+    },
+    {
+      "id": "pv_0354",
+      "type": "panel",
+      "position": [
+        -1.875,
+        1.25,
+        10.35
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_15"
+    },
+    {
+      "id": "pv_0355",
+      "type": "panel",
+      "position": [
+        -10.125,
+        1.25,
+        13.05
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_15"
+    },
+    {
+      "id": "pv_0356",
+      "type": "panel",
+      "position": [
+        -8.475,
+        1.25,
+        13.05
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_15"
+    },
+    {
+      "id": "pv_0357",
+      "type": "panel",
+      "position": [
+        -6.825,
+        1.25,
+        13.05
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_15"
+    },
+    {
+      "id": "pv_0358",
+      "type": "panel",
+      "position": [
+        -5.175,
+        1.25,
+        13.05
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_15"
+    },
+    {
+      "id": "pv_0359",
+      "type": "panel",
+      "position": [
+        -3.5250000000000004,
+        1.25,
+        13.05
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_15"
+    },
+    {
+      "id": "pv_0360",
+      "type": "panel",
+      "position": [
+        -1.875,
+        1.25,
+        13.05
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_15"
+    },
+    {
+      "id": "inv_16",
+      "type": "inverter",
+      "position": [
+        10.7,
+        0,
+        14.6
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "group": "inv_16"
+    },
+    {
+      "id": "pv_0361",
+      "type": "panel",
+      "position": [
+        1.875,
+        1.25,
+        4.949999999999999
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_16"
+    },
+    {
+      "id": "pv_0362",
+      "type": "panel",
+      "position": [
+        3.5250000000000004,
+        1.25,
+        4.949999999999999
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_16"
+    },
+    {
+      "id": "pv_0363",
+      "type": "panel",
+      "position": [
+        5.175,
+        1.25,
+        4.949999999999999
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_16"
+    },
+    {
+      "id": "pv_0364",
+      "type": "panel",
+      "position": [
+        6.825,
+        1.25,
+        4.949999999999999
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_16"
+    },
+    {
+      "id": "pv_0365",
+      "type": "panel",
+      "position": [
+        8.475,
+        1.25,
+        4.949999999999999
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_16"
+    },
+    {
+      "id": "pv_0366",
+      "type": "panel",
+      "position": [
+        10.125,
+        1.25,
+        4.949999999999999
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_16"
+    },
+    {
+      "id": "pv_0367",
+      "type": "panel",
+      "position": [
+        1.875,
+        1.25,
+        7.65
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_16"
+    },
+    {
+      "id": "pv_0368",
+      "type": "panel",
+      "position": [
+        3.5250000000000004,
+        1.25,
+        7.65
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_16"
+    },
+    {
+      "id": "pv_0369",
+      "type": "panel",
+      "position": [
+        5.175,
+        1.25,
+        7.65
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_16"
+    },
+    {
+      "id": "pv_0370",
+      "type": "panel",
+      "position": [
+        6.825,
+        1.25,
+        7.65
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_16"
+    },
+    {
+      "id": "pv_0371",
+      "type": "panel",
+      "position": [
+        8.475,
+        1.25,
+        7.65
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_16"
+    },
+    {
+      "id": "pv_0372",
+      "type": "panel",
+      "position": [
+        10.125,
+        1.25,
+        7.65
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_16"
+    },
+    {
+      "id": "pv_0373",
+      "type": "panel",
+      "position": [
+        1.875,
+        1.25,
+        10.35
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_16"
+    },
+    {
+      "id": "pv_0374",
+      "type": "panel",
+      "position": [
+        3.5250000000000004,
+        1.25,
+        10.35
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_16"
+    },
+    {
+      "id": "pv_0375",
+      "type": "panel",
+      "position": [
+        5.175,
+        1.25,
+        10.35
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_16"
+    },
+    {
+      "id": "pv_0376",
+      "type": "panel",
+      "position": [
+        6.825,
+        1.25,
+        10.35
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_16"
+    },
+    {
+      "id": "pv_0377",
+      "type": "panel",
+      "position": [
+        8.475,
+        1.25,
+        10.35
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_16"
+    },
+    {
+      "id": "pv_0378",
+      "type": "panel",
+      "position": [
+        10.125,
+        1.25,
+        10.35
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_16"
+    },
+    {
+      "id": "pv_0379",
+      "type": "panel",
+      "position": [
+        1.875,
+        1.25,
+        13.05
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_16"
+    },
+    {
+      "id": "pv_0380",
+      "type": "panel",
+      "position": [
+        3.5250000000000004,
+        1.25,
+        13.05
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_16"
+    },
+    {
+      "id": "pv_0381",
+      "type": "panel",
+      "position": [
+        5.175,
+        1.25,
+        13.05
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_16"
+    },
+    {
+      "id": "pv_0382",
+      "type": "panel",
+      "position": [
+        6.825,
+        1.25,
+        13.05
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_16"
+    },
+    {
+      "id": "pv_0383",
+      "type": "panel",
+      "position": [
+        8.475,
+        1.25,
+        13.05
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_16"
+    },
+    {
+      "id": "pv_0384",
+      "type": "panel",
+      "position": [
+        10.125,
+        1.25,
+        13.05
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_16"
+    },
+    {
+      "id": "inv_17",
+      "type": "inverter",
+      "position": [
+        22.7,
+        0,
+        14.6
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "group": "inv_17"
+    },
+    {
+      "id": "pv_0385",
+      "type": "panel",
+      "position": [
+        13.875,
+        1.25,
+        4.949999999999999
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_17"
+    },
+    {
+      "id": "pv_0386",
+      "type": "panel",
+      "position": [
+        15.525,
+        1.25,
+        4.949999999999999
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_17"
+    },
+    {
+      "id": "pv_0387",
+      "type": "panel",
+      "position": [
+        17.175,
+        1.25,
+        4.949999999999999
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_17"
+    },
+    {
+      "id": "pv_0388",
+      "type": "panel",
+      "position": [
+        18.825,
+        1.25,
+        4.949999999999999
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_17"
+    },
+    {
+      "id": "pv_0389",
+      "type": "panel",
+      "position": [
+        20.475,
+        1.25,
+        4.949999999999999
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_17"
+    },
+    {
+      "id": "pv_0390",
+      "type": "panel",
+      "position": [
+        22.125,
+        1.25,
+        4.949999999999999
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_17"
+    },
+    {
+      "id": "pv_0391",
+      "type": "panel",
+      "position": [
+        13.875,
+        1.25,
+        7.65
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_17"
+    },
+    {
+      "id": "pv_0392",
+      "type": "panel",
+      "position": [
+        15.525,
+        1.25,
+        7.65
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_17"
+    },
+    {
+      "id": "pv_0393",
+      "type": "panel",
+      "position": [
+        17.175,
+        1.25,
+        7.65
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_17"
+    },
+    {
+      "id": "pv_0394",
+      "type": "panel",
+      "position": [
+        18.825,
+        1.25,
+        7.65
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_17"
+    },
+    {
+      "id": "pv_0395",
+      "type": "panel",
+      "position": [
+        20.475,
+        1.25,
+        7.65
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_17"
+    },
+    {
+      "id": "pv_0396",
+      "type": "panel",
+      "position": [
+        22.125,
+        1.25,
+        7.65
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_17"
+    },
+    {
+      "id": "pv_0397",
+      "type": "panel",
+      "position": [
+        13.875,
+        1.25,
+        10.35
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_17"
+    },
+    {
+      "id": "pv_0398",
+      "type": "panel",
+      "position": [
+        15.525,
+        1.25,
+        10.35
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_17"
+    },
+    {
+      "id": "pv_0399",
+      "type": "panel",
+      "position": [
+        17.175,
+        1.25,
+        10.35
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_17"
+    },
+    {
+      "id": "pv_0400",
+      "type": "panel",
+      "position": [
+        18.825,
+        1.25,
+        10.35
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_17"
+    },
+    {
+      "id": "pv_0401",
+      "type": "panel",
+      "position": [
+        20.475,
+        1.25,
+        10.35
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_17"
+    },
+    {
+      "id": "pv_0402",
+      "type": "panel",
+      "position": [
+        22.125,
+        1.25,
+        10.35
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_17"
+    },
+    {
+      "id": "pv_0403",
+      "type": "panel",
+      "position": [
+        13.875,
+        1.25,
+        13.05
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_17"
+    },
+    {
+      "id": "pv_0404",
+      "type": "panel",
+      "position": [
+        15.525,
+        1.25,
+        13.05
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_17"
+    },
+    {
+      "id": "pv_0405",
+      "type": "panel",
+      "position": [
+        17.175,
+        1.25,
+        13.05
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_17"
+    },
+    {
+      "id": "pv_0406",
+      "type": "panel",
+      "position": [
+        18.825,
+        1.25,
+        13.05
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_17"
+    },
+    {
+      "id": "pv_0407",
+      "type": "panel",
+      "position": [
+        20.475,
+        1.25,
+        13.05
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_17"
+    },
+    {
+      "id": "pv_0408",
+      "type": "panel",
+      "position": [
+        22.125,
+        1.25,
+        13.05
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_17"
+    },
+    {
+      "id": "inv_18",
+      "type": "inverter",
+      "position": [
+        34.7,
+        0,
+        14.6
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "group": "inv_18"
+    },
+    {
+      "id": "pv_0409",
+      "type": "panel",
+      "position": [
+        25.875,
+        1.25,
+        4.949999999999999
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_18"
+    },
+    {
+      "id": "pv_0410",
+      "type": "panel",
+      "position": [
+        27.525,
+        1.25,
+        4.949999999999999
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_18"
+    },
+    {
+      "id": "pv_0411",
+      "type": "panel",
+      "position": [
+        29.175,
+        1.25,
+        4.949999999999999
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_18"
+    },
+    {
+      "id": "pv_0412",
+      "type": "panel",
+      "position": [
+        30.825,
+        1.25,
+        4.949999999999999
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_18"
+    },
+    {
+      "id": "pv_0413",
+      "type": "panel",
+      "position": [
+        32.475,
+        1.25,
+        4.949999999999999
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_18"
+    },
+    {
+      "id": "pv_0414",
+      "type": "panel",
+      "position": [
+        34.125,
+        1.25,
+        4.949999999999999
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_18"
+    },
+    {
+      "id": "pv_0415",
+      "type": "panel",
+      "position": [
+        25.875,
+        1.25,
+        7.65
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_18"
+    },
+    {
+      "id": "pv_0416",
+      "type": "panel",
+      "position": [
+        27.525,
+        1.25,
+        7.65
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_18"
+    },
+    {
+      "id": "pv_0417",
+      "type": "panel",
+      "position": [
+        29.175,
+        1.25,
+        7.65
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_18"
+    },
+    {
+      "id": "pv_0418",
+      "type": "panel",
+      "position": [
+        30.825,
+        1.25,
+        7.65
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_18"
+    },
+    {
+      "id": "pv_0419",
+      "type": "panel",
+      "position": [
+        32.475,
+        1.25,
+        7.65
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_18"
+    },
+    {
+      "id": "pv_0420",
+      "type": "panel",
+      "position": [
+        34.125,
+        1.25,
+        7.65
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_18"
+    },
+    {
+      "id": "pv_0421",
+      "type": "panel",
+      "position": [
+        25.875,
+        1.25,
+        10.35
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_18"
+    },
+    {
+      "id": "pv_0422",
+      "type": "panel",
+      "position": [
+        27.525,
+        1.25,
+        10.35
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_18"
+    },
+    {
+      "id": "pv_0423",
+      "type": "panel",
+      "position": [
+        29.175,
+        1.25,
+        10.35
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_18"
+    },
+    {
+      "id": "pv_0424",
+      "type": "panel",
+      "position": [
+        30.825,
+        1.25,
+        10.35
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_18"
+    },
+    {
+      "id": "pv_0425",
+      "type": "panel",
+      "position": [
+        32.475,
+        1.25,
+        10.35
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_18"
+    },
+    {
+      "id": "pv_0426",
+      "type": "panel",
+      "position": [
+        34.125,
+        1.25,
+        10.35
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_18"
+    },
+    {
+      "id": "pv_0427",
+      "type": "panel",
+      "position": [
+        25.875,
+        1.25,
+        13.05
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_18"
+    },
+    {
+      "id": "pv_0428",
+      "type": "panel",
+      "position": [
+        27.525,
+        1.25,
+        13.05
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_18"
+    },
+    {
+      "id": "pv_0429",
+      "type": "panel",
+      "position": [
+        29.175,
+        1.25,
+        13.05
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_18"
+    },
+    {
+      "id": "pv_0430",
+      "type": "panel",
+      "position": [
+        30.825,
+        1.25,
+        13.05
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_18"
+    },
+    {
+      "id": "pv_0431",
+      "type": "panel",
+      "position": [
+        32.475,
+        1.25,
+        13.05
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_18"
+    },
+    {
+      "id": "pv_0432",
+      "type": "panel",
+      "position": [
+        34.125,
+        1.25,
+        13.05
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_18"
+    },
+    {
+      "id": "inv_19",
+      "type": "inverter",
+      "position": [
+        -25.3,
+        0,
+        32.6
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "group": "inv_19"
+    },
+    {
+      "id": "pv_0433",
+      "type": "panel",
+      "position": [
+        -34.125,
+        1.25,
+        22.95
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_19"
+    },
+    {
+      "id": "pv_0434",
+      "type": "panel",
+      "position": [
+        -32.475,
+        1.25,
+        22.95
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_19"
+    },
+    {
+      "id": "pv_0435",
+      "type": "panel",
+      "position": [
+        -30.825,
+        1.25,
+        22.95
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_19"
+    },
+    {
+      "id": "pv_0436",
+      "type": "panel",
+      "position": [
+        -29.175,
+        1.25,
+        22.95
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_19"
+    },
+    {
+      "id": "pv_0437",
+      "type": "panel",
+      "position": [
+        -27.525,
+        1.25,
+        22.95
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_19"
+    },
+    {
+      "id": "pv_0438",
+      "type": "panel",
+      "position": [
+        -25.875,
+        1.25,
+        22.95
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_19"
+    },
+    {
+      "id": "pv_0439",
+      "type": "panel",
+      "position": [
+        -34.125,
+        1.25,
+        25.65
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_19"
+    },
+    {
+      "id": "pv_0440",
+      "type": "panel",
+      "position": [
+        -32.475,
+        1.25,
+        25.65
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_19"
+    },
+    {
+      "id": "pv_0441",
+      "type": "panel",
+      "position": [
+        -30.825,
+        1.25,
+        25.65
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_19"
+    },
+    {
+      "id": "pv_0442",
+      "type": "panel",
+      "position": [
+        -29.175,
+        1.25,
+        25.65
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_19"
+    },
+    {
+      "id": "pv_0443",
+      "type": "panel",
+      "position": [
+        -27.525,
+        1.25,
+        25.65
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_19"
+    },
+    {
+      "id": "pv_0444",
+      "type": "panel",
+      "position": [
+        -25.875,
+        1.25,
+        25.65
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_19"
+    },
+    {
+      "id": "pv_0445",
+      "type": "panel",
+      "position": [
+        -34.125,
+        1.25,
+        28.35
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_19"
+    },
+    {
+      "id": "pv_0446",
+      "type": "panel",
+      "position": [
+        -32.475,
+        1.25,
+        28.35
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_19"
+    },
+    {
+      "id": "pv_0447",
+      "type": "panel",
+      "position": [
+        -30.825,
+        1.25,
+        28.35
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_19"
+    },
+    {
+      "id": "pv_0448",
+      "type": "panel",
+      "position": [
+        -29.175,
+        1.25,
+        28.35
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_19"
+    },
+    {
+      "id": "pv_0449",
+      "type": "panel",
+      "position": [
+        -27.525,
+        1.25,
+        28.35
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_19"
+    },
+    {
+      "id": "pv_0450",
+      "type": "panel",
+      "position": [
+        -25.875,
+        1.25,
+        28.35
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_19"
+    },
+    {
+      "id": "pv_0451",
+      "type": "panel",
+      "position": [
+        -34.125,
+        1.25,
+        31.05
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_19"
+    },
+    {
+      "id": "pv_0452",
+      "type": "panel",
+      "position": [
+        -32.475,
+        1.25,
+        31.05
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_19"
+    },
+    {
+      "id": "pv_0453",
+      "type": "panel",
+      "position": [
+        -30.825,
+        1.25,
+        31.05
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_19"
+    },
+    {
+      "id": "pv_0454",
+      "type": "panel",
+      "position": [
+        -29.175,
+        1.25,
+        31.05
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_19"
+    },
+    {
+      "id": "pv_0455",
+      "type": "panel",
+      "position": [
+        -27.525,
+        1.25,
+        31.05
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_19"
+    },
+    {
+      "id": "pv_0456",
+      "type": "panel",
+      "position": [
+        -25.875,
+        1.25,
+        31.05
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_19"
+    },
+    {
+      "id": "inv_20",
+      "type": "inverter",
+      "position": [
+        -13.3,
+        0,
+        32.6
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "group": "inv_20"
+    },
+    {
+      "id": "pv_0457",
+      "type": "panel",
+      "position": [
+        -22.125,
+        1.25,
+        22.95
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_20"
+    },
+    {
+      "id": "pv_0458",
+      "type": "panel",
+      "position": [
+        -20.475,
+        1.25,
+        22.95
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_20"
+    },
+    {
+      "id": "pv_0459",
+      "type": "panel",
+      "position": [
+        -18.825,
+        1.25,
+        22.95
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_20"
+    },
+    {
+      "id": "pv_0460",
+      "type": "panel",
+      "position": [
+        -17.175,
+        1.25,
+        22.95
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_20"
+    },
+    {
+      "id": "pv_0461",
+      "type": "panel",
+      "position": [
+        -15.525,
+        1.25,
+        22.95
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_20"
+    },
+    {
+      "id": "pv_0462",
+      "type": "panel",
+      "position": [
+        -13.875,
+        1.25,
+        22.95
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_20"
+    },
+    {
+      "id": "pv_0463",
+      "type": "panel",
+      "position": [
+        -22.125,
+        1.25,
+        25.65
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_20"
+    },
+    {
+      "id": "pv_0464",
+      "type": "panel",
+      "position": [
+        -20.475,
+        1.25,
+        25.65
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_20"
+    },
+    {
+      "id": "pv_0465",
+      "type": "panel",
+      "position": [
+        -18.825,
+        1.25,
+        25.65
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_20"
+    },
+    {
+      "id": "pv_0466",
+      "type": "panel",
+      "position": [
+        -17.175,
+        1.25,
+        25.65
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_20"
+    },
+    {
+      "id": "pv_0467",
+      "type": "panel",
+      "position": [
+        -15.525,
+        1.25,
+        25.65
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_20"
+    },
+    {
+      "id": "pv_0468",
+      "type": "panel",
+      "position": [
+        -13.875,
+        1.25,
+        25.65
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_20"
+    },
+    {
+      "id": "pv_0469",
+      "type": "panel",
+      "position": [
+        -22.125,
+        1.25,
+        28.35
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_20"
+    },
+    {
+      "id": "pv_0470",
+      "type": "panel",
+      "position": [
+        -20.475,
+        1.25,
+        28.35
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_20"
+    },
+    {
+      "id": "pv_0471",
+      "type": "panel",
+      "position": [
+        -18.825,
+        1.25,
+        28.35
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_20"
+    },
+    {
+      "id": "pv_0472",
+      "type": "panel",
+      "position": [
+        -17.175,
+        1.25,
+        28.35
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_20"
+    },
+    {
+      "id": "pv_0473",
+      "type": "panel",
+      "position": [
+        -15.525,
+        1.25,
+        28.35
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_20"
+    },
+    {
+      "id": "pv_0474",
+      "type": "panel",
+      "position": [
+        -13.875,
+        1.25,
+        28.35
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_20"
+    },
+    {
+      "id": "pv_0475",
+      "type": "panel",
+      "position": [
+        -22.125,
+        1.25,
+        31.05
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_20"
+    },
+    {
+      "id": "pv_0476",
+      "type": "panel",
+      "position": [
+        -20.475,
+        1.25,
+        31.05
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_20"
+    },
+    {
+      "id": "pv_0477",
+      "type": "panel",
+      "position": [
+        -18.825,
+        1.25,
+        31.05
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_20"
+    },
+    {
+      "id": "pv_0478",
+      "type": "panel",
+      "position": [
+        -17.175,
+        1.25,
+        31.05
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_20"
+    },
+    {
+      "id": "pv_0479",
+      "type": "panel",
+      "position": [
+        -15.525,
+        1.25,
+        31.05
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_20"
+    },
+    {
+      "id": "pv_0480",
+      "type": "panel",
+      "position": [
+        -13.875,
+        1.25,
+        31.05
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_20"
+    },
+    {
+      "id": "inv_21",
+      "type": "inverter",
+      "position": [
+        -1.2999999999999998,
+        0,
+        32.6
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "group": "inv_21"
+    },
+    {
+      "id": "pv_0481",
+      "type": "panel",
+      "position": [
+        -10.125,
+        1.25,
+        22.95
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_21"
+    },
+    {
+      "id": "pv_0482",
+      "type": "panel",
+      "position": [
+        -8.475,
+        1.25,
+        22.95
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_21"
+    },
+    {
+      "id": "pv_0483",
+      "type": "panel",
+      "position": [
+        -6.825,
+        1.25,
+        22.95
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_21"
+    },
+    {
+      "id": "pv_0484",
+      "type": "panel",
+      "position": [
+        -5.175,
+        1.25,
+        22.95
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_21"
+    },
+    {
+      "id": "pv_0485",
+      "type": "panel",
+      "position": [
+        -3.5250000000000004,
+        1.25,
+        22.95
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_21"
+    },
+    {
+      "id": "pv_0486",
+      "type": "panel",
+      "position": [
+        -1.875,
+        1.25,
+        22.95
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_21"
+    },
+    {
+      "id": "pv_0487",
+      "type": "panel",
+      "position": [
+        -10.125,
+        1.25,
+        25.65
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_21"
+    },
+    {
+      "id": "pv_0488",
+      "type": "panel",
+      "position": [
+        -8.475,
+        1.25,
+        25.65
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_21"
+    },
+    {
+      "id": "pv_0489",
+      "type": "panel",
+      "position": [
+        -6.825,
+        1.25,
+        25.65
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_21"
+    },
+    {
+      "id": "pv_0490",
+      "type": "panel",
+      "position": [
+        -5.175,
+        1.25,
+        25.65
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_21"
+    },
+    {
+      "id": "pv_0491",
+      "type": "panel",
+      "position": [
+        -3.5250000000000004,
+        1.25,
+        25.65
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_21"
+    },
+    {
+      "id": "pv_0492",
+      "type": "panel",
+      "position": [
+        -1.875,
+        1.25,
+        25.65
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_21"
+    },
+    {
+      "id": "pv_0493",
+      "type": "panel",
+      "position": [
+        -10.125,
+        1.25,
+        28.35
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_21"
+    },
+    {
+      "id": "pv_0494",
+      "type": "panel",
+      "position": [
+        -8.475,
+        1.25,
+        28.35
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_21"
+    },
+    {
+      "id": "pv_0495",
+      "type": "panel",
+      "position": [
+        -6.825,
+        1.25,
+        28.35
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_21"
+    },
+    {
+      "id": "pv_0496",
+      "type": "panel",
+      "position": [
+        -5.175,
+        1.25,
+        28.35
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_21"
+    },
+    {
+      "id": "pv_0497",
+      "type": "panel",
+      "position": [
+        -3.5250000000000004,
+        1.25,
+        28.35
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_21"
+    },
+    {
+      "id": "pv_0498",
+      "type": "panel",
+      "position": [
+        -1.875,
+        1.25,
+        28.35
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_21"
+    },
+    {
+      "id": "pv_0499",
+      "type": "panel",
+      "position": [
+        -10.125,
+        1.25,
+        31.05
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_21"
+    },
+    {
+      "id": "pv_0500",
+      "type": "panel",
+      "position": [
+        -8.475,
+        1.25,
+        31.05
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_21"
+    },
+    {
+      "id": "pv_0501",
+      "type": "panel",
+      "position": [
+        -6.825,
+        1.25,
+        31.05
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_21"
+    },
+    {
+      "id": "pv_0502",
+      "type": "panel",
+      "position": [
+        -5.175,
+        1.25,
+        31.05
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_21"
+    },
+    {
+      "id": "pv_0503",
+      "type": "panel",
+      "position": [
+        -3.5250000000000004,
+        1.25,
+        31.05
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_21"
+    },
+    {
+      "id": "pv_0504",
+      "type": "panel",
+      "position": [
+        -1.875,
+        1.25,
+        31.05
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_21"
+    },
+    {
+      "id": "inv_22",
+      "type": "inverter",
+      "position": [
+        10.7,
+        0,
+        32.6
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "group": "inv_22"
+    },
+    {
+      "id": "pv_0505",
+      "type": "panel",
+      "position": [
+        1.875,
+        1.25,
+        22.95
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_22"
+    },
+    {
+      "id": "pv_0506",
+      "type": "panel",
+      "position": [
+        3.5250000000000004,
+        1.25,
+        22.95
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_22"
+    },
+    {
+      "id": "pv_0507",
+      "type": "panel",
+      "position": [
+        5.175,
+        1.25,
+        22.95
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_22"
+    },
+    {
+      "id": "pv_0508",
+      "type": "panel",
+      "position": [
+        6.825,
+        1.25,
+        22.95
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_22"
+    },
+    {
+      "id": "pv_0509",
+      "type": "panel",
+      "position": [
+        8.475,
+        1.25,
+        22.95
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_22"
+    },
+    {
+      "id": "pv_0510",
+      "type": "panel",
+      "position": [
+        10.125,
+        1.25,
+        22.95
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_22"
+    },
+    {
+      "id": "pv_0511",
+      "type": "panel",
+      "position": [
+        1.875,
+        1.25,
+        25.65
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_22"
+    },
+    {
+      "id": "pv_0512",
+      "type": "panel",
+      "position": [
+        3.5250000000000004,
+        1.25,
+        25.65
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_22"
+    },
+    {
+      "id": "pv_0513",
+      "type": "panel",
+      "position": [
+        5.175,
+        1.25,
+        25.65
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_22"
+    },
+    {
+      "id": "pv_0514",
+      "type": "panel",
+      "position": [
+        6.825,
+        1.25,
+        25.65
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_22"
+    },
+    {
+      "id": "pv_0515",
+      "type": "panel",
+      "position": [
+        8.475,
+        1.25,
+        25.65
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_22"
+    },
+    {
+      "id": "pv_0516",
+      "type": "panel",
+      "position": [
+        10.125,
+        1.25,
+        25.65
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_22"
+    },
+    {
+      "id": "pv_0517",
+      "type": "panel",
+      "position": [
+        1.875,
+        1.25,
+        28.35
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_22"
+    },
+    {
+      "id": "pv_0518",
+      "type": "panel",
+      "position": [
+        3.5250000000000004,
+        1.25,
+        28.35
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_22"
+    },
+    {
+      "id": "pv_0519",
+      "type": "panel",
+      "position": [
+        5.175,
+        1.25,
+        28.35
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_22"
+    },
+    {
+      "id": "pv_0520",
+      "type": "panel",
+      "position": [
+        6.825,
+        1.25,
+        28.35
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_22"
+    },
+    {
+      "id": "pv_0521",
+      "type": "panel",
+      "position": [
+        8.475,
+        1.25,
+        28.35
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_22"
+    },
+    {
+      "id": "pv_0522",
+      "type": "panel",
+      "position": [
+        10.125,
+        1.25,
+        28.35
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_22"
+    },
+    {
+      "id": "pv_0523",
+      "type": "panel",
+      "position": [
+        1.875,
+        1.25,
+        31.05
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_22"
+    },
+    {
+      "id": "pv_0524",
+      "type": "panel",
+      "position": [
+        3.5250000000000004,
+        1.25,
+        31.05
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_22"
+    },
+    {
+      "id": "pv_0525",
+      "type": "panel",
+      "position": [
+        5.175,
+        1.25,
+        31.05
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_22"
+    },
+    {
+      "id": "pv_0526",
+      "type": "panel",
+      "position": [
+        6.825,
+        1.25,
+        31.05
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_22"
+    },
+    {
+      "id": "pv_0527",
+      "type": "panel",
+      "position": [
+        8.475,
+        1.25,
+        31.05
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_22"
+    },
+    {
+      "id": "pv_0528",
+      "type": "panel",
+      "position": [
+        10.125,
+        1.25,
+        31.05
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_22"
+    },
+    {
+      "id": "inv_23",
+      "type": "inverter",
+      "position": [
+        22.7,
+        0,
+        32.6
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "group": "inv_23"
+    },
+    {
+      "id": "pv_0529",
+      "type": "panel",
+      "position": [
+        13.875,
+        1.25,
+        22.95
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_23"
+    },
+    {
+      "id": "pv_0530",
+      "type": "panel",
+      "position": [
+        15.525,
+        1.25,
+        22.95
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_23"
+    },
+    {
+      "id": "pv_0531",
+      "type": "panel",
+      "position": [
+        17.175,
+        1.25,
+        22.95
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_23"
+    },
+    {
+      "id": "pv_0532",
+      "type": "panel",
+      "position": [
+        18.825,
+        1.25,
+        22.95
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_23"
+    },
+    {
+      "id": "pv_0533",
+      "type": "panel",
+      "position": [
+        20.475,
+        1.25,
+        22.95
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_23"
+    },
+    {
+      "id": "pv_0534",
+      "type": "panel",
+      "position": [
+        22.125,
+        1.25,
+        22.95
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_23"
+    },
+    {
+      "id": "pv_0535",
+      "type": "panel",
+      "position": [
+        13.875,
+        1.25,
+        25.65
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_23"
+    },
+    {
+      "id": "pv_0536",
+      "type": "panel",
+      "position": [
+        15.525,
+        1.25,
+        25.65
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_23"
+    },
+    {
+      "id": "pv_0537",
+      "type": "panel",
+      "position": [
+        17.175,
+        1.25,
+        25.65
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_23"
+    },
+    {
+      "id": "pv_0538",
+      "type": "panel",
+      "position": [
+        18.825,
+        1.25,
+        25.65
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_23"
+    },
+    {
+      "id": "pv_0539",
+      "type": "panel",
+      "position": [
+        20.475,
+        1.25,
+        25.65
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_23"
+    },
+    {
+      "id": "pv_0540",
+      "type": "panel",
+      "position": [
+        22.125,
+        1.25,
+        25.65
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_23"
+    },
+    {
+      "id": "pv_0541",
+      "type": "panel",
+      "position": [
+        13.875,
+        1.25,
+        28.35
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_23"
+    },
+    {
+      "id": "pv_0542",
+      "type": "panel",
+      "position": [
+        15.525,
+        1.25,
+        28.35
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_23"
+    },
+    {
+      "id": "pv_0543",
+      "type": "panel",
+      "position": [
+        17.175,
+        1.25,
+        28.35
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_23"
+    },
+    {
+      "id": "pv_0544",
+      "type": "panel",
+      "position": [
+        18.825,
+        1.25,
+        28.35
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_23"
+    },
+    {
+      "id": "pv_0545",
+      "type": "panel",
+      "position": [
+        20.475,
+        1.25,
+        28.35
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_23"
+    },
+    {
+      "id": "pv_0546",
+      "type": "panel",
+      "position": [
+        22.125,
+        1.25,
+        28.35
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_23"
+    },
+    {
+      "id": "pv_0547",
+      "type": "panel",
+      "position": [
+        13.875,
+        1.25,
+        31.05
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_23"
+    },
+    {
+      "id": "pv_0548",
+      "type": "panel",
+      "position": [
+        15.525,
+        1.25,
+        31.05
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_23"
+    },
+    {
+      "id": "pv_0549",
+      "type": "panel",
+      "position": [
+        17.175,
+        1.25,
+        31.05
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_23"
+    },
+    {
+      "id": "pv_0550",
+      "type": "panel",
+      "position": [
+        18.825,
+        1.25,
+        31.05
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_23"
+    },
+    {
+      "id": "pv_0551",
+      "type": "panel",
+      "position": [
+        20.475,
+        1.25,
+        31.05
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_23"
+    },
+    {
+      "id": "pv_0552",
+      "type": "panel",
+      "position": [
+        22.125,
+        1.25,
+        31.05
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_23"
+    },
+    {
+      "id": "inv_24",
+      "type": "inverter",
+      "position": [
+        34.7,
+        0,
+        32.6
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "group": "inv_24"
+    },
+    {
+      "id": "pv_0553",
+      "type": "panel",
+      "position": [
+        25.875,
+        1.25,
+        22.95
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_24"
+    },
+    {
+      "id": "pv_0554",
+      "type": "panel",
+      "position": [
+        27.525,
+        1.25,
+        22.95
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_24"
+    },
+    {
+      "id": "pv_0555",
+      "type": "panel",
+      "position": [
+        29.175,
+        1.25,
+        22.95
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_24"
+    },
+    {
+      "id": "pv_0556",
+      "type": "panel",
+      "position": [
+        30.825,
+        1.25,
+        22.95
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_24"
+    },
+    {
+      "id": "pv_0557",
+      "type": "panel",
+      "position": [
+        32.475,
+        1.25,
+        22.95
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_24"
+    },
+    {
+      "id": "pv_0558",
+      "type": "panel",
+      "position": [
+        34.125,
+        1.25,
+        22.95
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_24"
+    },
+    {
+      "id": "pv_0559",
+      "type": "panel",
+      "position": [
+        25.875,
+        1.25,
+        25.65
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_24"
+    },
+    {
+      "id": "pv_0560",
+      "type": "panel",
+      "position": [
+        27.525,
+        1.25,
+        25.65
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_24"
+    },
+    {
+      "id": "pv_0561",
+      "type": "panel",
+      "position": [
+        29.175,
+        1.25,
+        25.65
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_24"
+    },
+    {
+      "id": "pv_0562",
+      "type": "panel",
+      "position": [
+        30.825,
+        1.25,
+        25.65
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_24"
+    },
+    {
+      "id": "pv_0563",
+      "type": "panel",
+      "position": [
+        32.475,
+        1.25,
+        25.65
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_24"
+    },
+    {
+      "id": "pv_0564",
+      "type": "panel",
+      "position": [
+        34.125,
+        1.25,
+        25.65
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_24"
+    },
+    {
+      "id": "pv_0565",
+      "type": "panel",
+      "position": [
+        25.875,
+        1.25,
+        28.35
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_24"
+    },
+    {
+      "id": "pv_0566",
+      "type": "panel",
+      "position": [
+        27.525,
+        1.25,
+        28.35
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_24"
+    },
+    {
+      "id": "pv_0567",
+      "type": "panel",
+      "position": [
+        29.175,
+        1.25,
+        28.35
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_24"
+    },
+    {
+      "id": "pv_0568",
+      "type": "panel",
+      "position": [
+        30.825,
+        1.25,
+        28.35
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_24"
+    },
+    {
+      "id": "pv_0569",
+      "type": "panel",
+      "position": [
+        32.475,
+        1.25,
+        28.35
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_24"
+    },
+    {
+      "id": "pv_0570",
+      "type": "panel",
+      "position": [
+        34.125,
+        1.25,
+        28.35
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_24"
+    },
+    {
+      "id": "pv_0571",
+      "type": "panel",
+      "position": [
+        25.875,
+        1.25,
+        31.05
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_24"
+    },
+    {
+      "id": "pv_0572",
+      "type": "panel",
+      "position": [
+        27.525,
+        1.25,
+        31.05
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_24"
+    },
+    {
+      "id": "pv_0573",
+      "type": "panel",
+      "position": [
+        29.175,
+        1.25,
+        31.05
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_24"
+    },
+    {
+      "id": "pv_0574",
+      "type": "panel",
+      "position": [
+        30.825,
+        1.25,
+        31.05
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_24"
+    },
+    {
+      "id": "pv_0575",
+      "type": "panel",
+      "position": [
+        32.475,
+        1.25,
+        31.05
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_24"
+    },
+    {
+      "id": "pv_0576",
+      "type": "panel",
+      "position": [
+        34.125,
+        1.25,
+        31.05
+      ],
+      "rotation": [
+        -24,
+        0,
+        0
+      ],
+      "group": "inv_24"
+    },
+    {
+      "id": "trafo_1",
+      "type": "transformer",
+      "position": [
+        45,
+        0,
+        -22
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "group": ""
+    },
+    {
+      "id": "trafo_2",
+      "type": "transformer",
+      "position": [
+        45,
+        0,
+        22
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "group": ""
+    }
+  ]
+}

@@ -1,0 +1,4 @@
+source/*.json text eol=lf
+*.cs text eol=lf
+*.py text eol=lf
+*.ms text eol=lf

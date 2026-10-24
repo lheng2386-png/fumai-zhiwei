@@ -2,6 +2,8 @@
 
 比赛案例操作、参赛材料缺口及工程效果验证方法见 [比赛演示说明](COMPETITION_DEMO.md)。
 
+本轮用户已进一步指定必须使用 **3ds Max → Unity → WebGL/Wasm**，原生工程见 [digital-twin](../digital-twin/README.md)。下文描述既有 Three.js 演示，不能用它代替 Unity 实际构建与验收；原生模型和编辑器准备完成后再切换线上渲染器。
+
 Issue #10；用户确认暂无图纸/勘测/模型，允许自主选择工具。本版采用 Three.js r180 + WebGL2。程序化模型是示意布局，不能作为真实电站坐标、接线拓扑、精度或工程验收成果。
 
 ## 当前交付
