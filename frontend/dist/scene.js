@@ -1,7 +1,7 @@
 'use strict';
 (()=>{
  let generation=0,view=null;
- const render=()=>`<div class="page-intro"><div><span class="eyebrow">SPATIAL OPERATIONS / 空间运维</span><h1>三维电站<span class="scene-beta">交互演示</span></h1><p>从空间位置找到设备，让每一条运维线索回到现场。</p></div><div class="intro-controls"><button class="secondary-button" data-scene-export>下载接入模板 ↗</button><label class="secondary-button scene-import">导入场景<input type="file" accept=".json,application/json" data-scene-import></label></div></div><section id="scene-workbench" class="scene-workbench" aria-label="三维电站工作台"><div class="scene-loading" role="status">正在构建三维场景…</div></section>`;
+ const render=()=>`<div class="page-intro"><div><span class="eyebrow">SPATIAL OPERATIONS / 空间运维</span><h1>三维电站<span class="scene-beta">工程案例</span></h1><p>定位设备、核对证据、记录核查决定，体验完整的工程分析过程。</p></div><div class="intro-controls"><button class="secondary-button" data-scene-export>下载接入模板 ↗</button><label class="secondary-button scene-import">导入场景<input type="file" accept=".json,application/json" data-scene-import></label></div></div><section id="scene-workbench" class="scene-workbench" aria-label="三维电站工作台"><div class="scene-loading" role="status">正在构建三维场景…</div></section>`;
  function dispose(){generation++;view?.dispose();view=null;}
  async function mount(getEvents){
   const token=++generation,host=document.querySelector('#scene-workbench');
