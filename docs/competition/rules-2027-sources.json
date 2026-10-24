@@ -1,0 +1,110 @@
+{
+  "checked_on": "2026-10-24",
+  "edition": "2027年第十届中国大学生工程实践与创新能力大赛",
+  "track": "虚拟仿真赛道 / 工程场景数字化赛项",
+  "homepage": "http://gcxl.edu.cn/new/index.html",
+  "national_notice": "http://gcxl.edu.cn/new/match_news.html?_=aWQjPTE1NQ==",
+  "national_notice_published_on": "2026-05-10",
+  "sources": [
+    {
+      "file": "national-scope.pdf",
+      "url": "http://gcxia.shiyukeji.com:10801/upload/20260512/1778571778824.pdf",
+      "title": "附件3-1 2027年第十届中国大学生工创大赛虚拟仿真赛道命题与运行（发布稿）.pdf",
+      "bytes": 666611,
+      "sha256": "af4248d17a1331068e60b8f09912b23af4adb8d998ab97faf24ffdd0a2ba211e",
+      "pages": 24,
+      "related": [
+        16,
+        17,
+        18,
+        19,
+        20
+      ],
+      "relevant_pages": [
+        16,
+        17,
+        18,
+        19,
+        20,
+        21
+      ],
+      "role": "primary_national_release"
+    },
+    {
+      "file": "national-scoring.pdf",
+      "url": "http://gcxia.shiyukeji.com:10801/upload/20260512/1778571778948.pdf",
+      "title": "附件3-2 2027年第十届中国大学生工创大赛虚拟仿真赛道评分与规则（发布稿）.pdf",
+      "bytes": 1760222,
+      "sha256": "6dcf88b17919e758e5a935bfd14a50793548a49873052c0e06313b9a97bd99a7",
+      "pages": 41,
+      "related": [
+        32,
+        33,
+        34,
+        37
+      ],
+      "relevant_pages": [
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38
+      ],
+      "role": "primary_national_release"
+    },
+    {
+      "title": "官网虚拟仿真赛道命题解析（2026年6月）",
+      "url": "http://gcxl.edu.cn/new/res/virtual_simulation20260617.pdf",
+      "bytes": 16570372,
+      "sha256": "fbd644b007cea3e3d9f3dd218fd6319dcdc224e0949b203eb02c3990b709dec4",
+      "pages": 82,
+      "relevant_pages": [
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        49,
+        50,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61
+      ],
+      "role": "official_interpretation"
+    }
+  ],
+  "template": {
+    "url": "http://gcxia.shiyukeji.com:10801/upload/20260516/1778907093178.doc",
+    "publication_page": "http://gcxl.edu.cn/new/match_news.html?_=aWQjPTE1Ng==",
+    "status": "link_confirmed_in_official_article; template_content_not_reviewed"
+  },
+  "verified_stage_weights": {
+    "preliminary": {
+      "task_document": 30,
+      "project_experience": 70
+    },
+    "final": {
+      "onsite_innovation": 20,
+      "presentation_and_defense": 80
+    },
+    "preliminary_score_carried_to_final": false
+  },
+  "local_review": "PDF page counts, complete download lengths, EOF markers and SHA-256 checked. Relevant national text and rendered scoring composition pages inspected. Interpretation scoring tables visually inspected.",
+  "limitations": [
+    "Provincial and campus arrangements not supplied by the team.",
+    "Later official onsite practice instructions and rule revisions take precedence.",
+    "No assertion that the current synthetic demo meets engineering validation requirements.",
+    "Local copies are reading evidence only; repository records source metadata instead of redistributing full attachments."
+  ]
+}
