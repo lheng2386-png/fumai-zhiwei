@@ -236,11 +236,50 @@ const server = createServer(async (req, res) => {
     if (req.method === 'GET' && path === '/api/operations/status') {
       requireUser(req); return sendJson(res, 200, operations.status());
     }
+    const collectionMatch = path.match(/^\/api\/operations\/(substations|sub-arrays|transformers|inverters|panel-series|equipment|meteorograph|materials|inspections|faults)$/);
+    if (req.method === 'GET' && collectionMatch) {
+      requireUser(req);
+      return sendJson(res, 200, { records: operations.list(collectionMatch[1], {
+        substationId: url.searchParams.get('substation_id'), equipmentId: url.searchParams.get('equipment_id'),
+        status: url.searchParams.get('status'), limit: url.searchParams.get('limit')
+      }) });
+    }
+    if (req.method === 'GET' && path === '/api/operations/iec104/endpoints') {
+      requireUser(req); return sendJson(res, 200, { records: operations.list('iec104-endpoints', {
+        substationId: url.searchParams.get('substation_id'), limit: url.searchParams.get('limit') }) });
+    }
+    if (req.method === 'GET' && path === '/api/operations/iec104/points') {
+      requireUser(req); return sendJson(res, 200, { records: operations.list('iec104-points', { limit: url.searchParams.get('limit') }) });
+    }
     if (req.method === 'POST' && path === '/api/operations/substations') {
       requireUser(req, 'admin'); return sendJson(res, 200, operations.upsertSubstation(await readJson(req)));
     }
     if (req.method === 'POST' && path === '/api/operations/equipment') {
       requireUser(req, 'admin'); return sendJson(res, 200, operations.upsertEquipment(await readJson(req)));
+    }
+    const businessUpserts = new Map([
+      ['/api/operations/sub-arrays', input => operations.upsertSubArray(input)],
+      ['/api/operations/transformers', input => operations.upsertTransformer(input)],
+      ['/api/operations/inverters', input => operations.upsertInverter(input)],
+      ['/api/operations/panel-series', input => operations.upsertPanelSeries(input)],
+      ['/api/operations/meteorograph', input => operations.recordMeteorograph(input)],
+      ['/api/operations/inspections', input => operations.upsertInspection(input)]
+    ]);
+    if (req.method === 'POST' && businessUpserts.has(path)) {
+      const actor = requireUser(req, path === '/api/operations/meteorograph' ? 'operator' : 'admin');
+      const saved = businessUpserts.get(path)(await readJson(req));
+      audit(actor.username, 'save_operations_record', saved.id, { resource: path.split('/').at(-1) });
+      return sendJson(res, 200, saved);
+    }
+    if (req.method === 'POST' && path === '/api/operations/materials') {
+      const actor = requireUser(req, 'operator'); const saved = operations.upsertMaterial(await readJson(req), actor.username);
+      audit(actor.username, 'save_equipment_material', saved.id, { equipment_id: saved.equipment_id });
+      return sendJson(res, 200, saved);
+    }
+    if (req.method === 'POST' && path === '/api/operations/faults') {
+      const actor = requireUser(req, 'operator'); const saved = operations.upsertFault(await readJson(req), actor.username);
+      audit(actor.username, 'save_fault_history', saved.id, { equipment_id: saved.equipment_id, status: saved.status });
+      return sendJson(res, 200, saved);
     }
     if (req.method === 'POST' && path === '/api/operations/iec104/endpoints') {
       requireUser(req, 'admin'); return sendJson(res, 200, operations.upsertEndpoint(await readJson(req)));
@@ -271,6 +310,13 @@ const server = createServer(async (req, res) => {
       const actor = requireUser(req, 'operator');
       const warning = operations.acknowledgeWarning(warningAckMatch[1], actor.username);
       audit(actor.username, 'acknowledge_warning', warning.id, { previous_status: 'active' });
+      return sendJson(res, 200, warning);
+    }
+    const warningClearMatch = path.match(/^\/api\/operations\/warnings\/([^/]+)\/clear$/);
+    if (req.method === 'POST' && warningClearMatch) {
+      const actor = requireUser(req, 'operator');
+      const warning = operations.clearWarning(warningClearMatch[1], actor.username);
+      audit(actor.username, 'clear_warning', warning.id, {});
       return sendJson(res, 200, warning);
     }
     if (req.method === 'POST' && path === '/api/operations/generation') {
@@ -307,6 +353,13 @@ const server = createServer(async (req, res) => {
     }
     if (req.method === 'GET' && path === '/api/operations/agent-bootstrap') {
       requireUser(req); return sendJson(res, 200, operations.agentBootstrap());
+    }
+    const businessDeleteMatch = path.match(/^\/api\/operations\/(substations|sub-arrays|transformers|inverters|panel-series|equipment|meteorograph|materials|inspections|faults)\/([^/]+)$/);
+    if (req.method === 'DELETE' && businessDeleteMatch) {
+      const actor = requireUser(req, 'admin');
+      const result = operations.delete(businessDeleteMatch[1], decodeURIComponent(businessDeleteMatch[2]));
+      audit(actor.username, 'delete_operations_record', result.id, { resource: result.resource });
+      return sendJson(res, 200, result);
     }
     if (req.method === 'GET' && path === '/api/notifications/events') {
       requireUser(req);

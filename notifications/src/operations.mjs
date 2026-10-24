@@ -3,6 +3,14 @@ import { transaction } from './db.mjs';
 
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 const ASSET_TYPES = new Set(['substation','sub_array','transformer','inverter','panel_series','meteorograph','switch','meter','other']);
+const INSPECTION_STATUSES = new Set(['planned','in_progress','passed','issue_found','closed']);
+const FAULT_STATUSES = new Set(['suspected','confirmed','processing','resolved','rejected']);
+const BUSINESS_TABLES = Object.freeze({
+  substations: 'substation_info', 'sub-arrays': 'sub_array_info', transformers: 'transformer_info',
+  inverters: 'inverter_info', 'panel-series': 'panel_series_info', equipment: 'equipment_info',
+  'iec104-endpoints': 'iec104_endpoint', 'iec104-points': 'iec104_point', meteorograph: 'meteorograph_data_info',
+  materials: 'equipment_materials_info', inspections: 'equipment_inspection_info', faults: 'fault_history_info'
+});
 
 function timestamp(value = new Date().toISOString()) {
   const date = new Date(value);
@@ -31,6 +39,42 @@ function parse(value, fallback = {}) { try { return JSON.parse(value); } catch {
 
 export class OperationsService {
   constructor(db) { this.db = db; }
+
+  list(resource, { substationId = null, equipmentId = null, status = null, limit = 500 } = {}) {
+    const table = BUSINESS_TABLES[resource];
+    if (!table) throw new Error('不支持的业务资源');
+    const columns = new Set(this.db.prepare(`PRAGMA table_info(${table})`).all().map(row => row.name));
+    const clauses = [];
+    const params = [];
+    if (substationId && columns.has('substation_id')) { clauses.push('substation_id=?'); params.push(substationId); }
+    if (equipmentId && columns.has('equipment_id')) { clauses.push('equipment_id=?'); params.push(equipmentId); }
+    if (status && columns.has('status')) { clauses.push('status=?'); params.push(status); }
+    const order = columns.has('observed_at') ? 'observed_at DESC' : columns.has('updated_at') ? 'updated_at DESC' :
+      columns.has('created_at') ? 'created_at DESC' : 'id';
+    params.push(Math.min(Math.max(Number(limit) || 500, 1), 2000));
+    return this.db.prepare(`SELECT * FROM ${table}${clauses.length ? ` WHERE ${clauses.join(' AND ')}` : ''} ORDER BY ${order} LIMIT ?`)
+      .all(...params).map(row => {
+        const result = { ...row };
+        for (const field of ['metadata_json','raw_json','result_json']) {
+          if (field in result) { result[field.replace('_json', '')] = parse(result[field]); delete result[field]; }
+        }
+        return result;
+      });
+  }
+
+  delete(resource, id) {
+    const table = BUSINESS_TABLES[resource];
+    if (!table) throw new Error('不支持的业务资源');
+    const key = required(id, '记录 ID');
+    const row = this.db.prepare(`SELECT * FROM ${table} WHERE id=?`).get(key);
+    if (!row) throw new Error('记录不存在');
+    try { this.db.prepare(`DELETE FROM ${table} WHERE id=?`).run(key); }
+    catch (error) {
+      if (String(error.message).includes('FOREIGN KEY')) throw new Error('该记录仍被其他业务数据引用，不能删除');
+      throw error;
+    }
+    return { deleted: true, resource, id: key };
+  }
 
   status() {
     const count = table => this.db.prepare(`SELECT count(*) count FROM ${table}`).get().count;
@@ -65,6 +109,47 @@ export class OperationsService {
         numberOrNull(input.latitude, '纬度'), numberOrNull(input.longitude, '经度'),
         numberOrNull(input.installed_capacity_kw, '装机容量'), input.enabled === false ? 0 : 1, timestamp());
     return this.db.prepare('SELECT * FROM substation_info WHERE id=?').get(id);
+  }
+
+  upsertSubArray(input) {
+    const id = optional(input.id) || randomUUID();
+    this.db.prepare(`INSERT INTO sub_array_info(id,substation_id,code,name,installed_capacity_kw,updated_at)
+      VALUES (?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET substation_id=excluded.substation_id,code=excluded.code,
+      name=excluded.name,installed_capacity_kw=excluded.installed_capacity_kw,updated_at=excluded.updated_at`)
+      .run(id, required(input.substation_id, '场站 ID'), required(input.code, '子阵编码'), required(input.name, '子阵名称'),
+        numberOrNull(input.installed_capacity_kw, '装机容量'), timestamp());
+    return this.db.prepare('SELECT * FROM sub_array_info WHERE id=?').get(id);
+  }
+
+  upsertTransformer(input) {
+    const id = optional(input.id) || randomUUID();
+    this.db.prepare(`INSERT INTO transformer_info(id,sub_array_id,code,name,rated_capacity_kva,voltage_level,updated_at)
+      VALUES (?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET sub_array_id=excluded.sub_array_id,code=excluded.code,
+      name=excluded.name,rated_capacity_kva=excluded.rated_capacity_kva,voltage_level=excluded.voltage_level,updated_at=excluded.updated_at`)
+      .run(id, optional(input.sub_array_id), required(input.code, '箱变编码'), required(input.name, '箱变名称'),
+        numberOrNull(input.rated_capacity_kva, '额定容量'), optional(input.voltage_level), timestamp());
+    return this.db.prepare('SELECT * FROM transformer_info WHERE id=?').get(id);
+  }
+
+  upsertInverter(input) {
+    const id = optional(input.id) || randomUUID();
+    this.db.prepare(`INSERT INTO inverter_info(id,transformer_id,code,name,rated_power_kw,manufacturer,model,updated_at)
+      VALUES (?,?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET transformer_id=excluded.transformer_id,code=excluded.code,
+      name=excluded.name,rated_power_kw=excluded.rated_power_kw,manufacturer=excluded.manufacturer,
+      model=excluded.model,updated_at=excluded.updated_at`)
+      .run(id, optional(input.transformer_id), required(input.code, '逆变器编码'), required(input.name, '逆变器名称'),
+        numberOrNull(input.rated_power_kw, '额定功率'), optional(input.manufacturer), optional(input.model), timestamp());
+    return this.db.prepare('SELECT * FROM inverter_info WHERE id=?').get(id);
+  }
+
+  upsertPanelSeries(input) {
+    const id = optional(input.id) || randomUUID();
+    this.db.prepare(`INSERT INTO panel_series_info(id,inverter_id,code,name,panel_count,rated_power_kw,updated_at)
+      VALUES (?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET inverter_id=excluded.inverter_id,code=excluded.code,
+      name=excluded.name,panel_count=excluded.panel_count,rated_power_kw=excluded.rated_power_kw,updated_at=excluded.updated_at`)
+      .run(id, required(input.inverter_id, '逆变器 ID'), required(input.code, '组串编码'), required(input.name, '组串名称'),
+        input.panel_count == null ? null : integer(input.panel_count, '组件数量'), numberOrNull(input.rated_power_kw, '额定功率'), timestamp());
+    return this.db.prepare('SELECT * FROM panel_series_info WHERE id=?').get(id);
   }
 
   upsertEquipment(input) {
@@ -210,6 +295,87 @@ export class OperationsService {
     return this.db.prepare('SELECT * FROM warning_info WHERE id=?').get(id);
   }
 
+  clearWarning(id, actor) {
+    const at = timestamp();
+    const changed = this.db.prepare(`UPDATE warning_info SET status='cleared',acknowledged_by=coalesce(acknowledged_by,?),
+      acknowledged_at=coalesce(acknowledged_at,?),cleared_at=?,updated_at=? WHERE id=? AND status!='cleared'`)
+      .run(required(actor, '操作人'), at, at, at, id).changes;
+    if (!changed) throw new Error('告警不存在或已清除');
+    return this.db.prepare('SELECT * FROM warning_info WHERE id=?').get(id);
+  }
+
+  recordMeteorograph(input) {
+    const id = optional(input.id) || randomUUID();
+    const observedAt = timestamp(input.observed_at);
+    this.db.prepare(`INSERT INTO meteorograph_data_info(id,substation_id,equipment_id,observed_at,irradiance_wm2,
+      ambient_temperature_c,module_temperature_c,wind_speed_ms,wind_direction_deg,humidity_percent,pressure_hpa,quality,raw_json)
+      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(substation_id,observed_at) DO UPDATE SET
+      equipment_id=excluded.equipment_id,irradiance_wm2=excluded.irradiance_wm2,
+      ambient_temperature_c=excluded.ambient_temperature_c,module_temperature_c=excluded.module_temperature_c,
+      wind_speed_ms=excluded.wind_speed_ms,wind_direction_deg=excluded.wind_direction_deg,
+      humidity_percent=excluded.humidity_percent,pressure_hpa=excluded.pressure_hpa,quality=excluded.quality,raw_json=excluded.raw_json`)
+      .run(id, required(input.substation_id, '场站 ID'), optional(input.equipment_id), observedAt,
+        numberOrNull(input.irradiance_wm2, '辐照度'), numberOrNull(input.ambient_temperature_c, '环境温度'),
+        numberOrNull(input.module_temperature_c, '组件温度'), numberOrNull(input.wind_speed_ms, '风速'),
+        numberOrNull(input.wind_direction_deg, '风向'), numberOrNull(input.humidity_percent, '湿度'),
+        numberOrNull(input.pressure_hpa, '气压'), optional(input.quality) || 'good', json(input.raw));
+    return this.db.prepare('SELECT * FROM meteorograph_data_info WHERE substation_id=? AND observed_at=?')
+      .get(input.substation_id, observedAt);
+  }
+
+  upsertMaterial(input, actor = null) {
+    const id = optional(input.id) || randomUUID();
+    const now = timestamp();
+    this.db.prepare(`INSERT INTO equipment_materials_info(id,equipment_id,material_type,title,file_url,version,checksum,uploaded_by,created_at,updated_at)
+      VALUES (?,?,?,?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET equipment_id=excluded.equipment_id,
+      material_type=excluded.material_type,title=excluded.title,file_url=excluded.file_url,version=excluded.version,
+      checksum=excluded.checksum,uploaded_by=excluded.uploaded_by,updated_at=excluded.updated_at`)
+      .run(id, required(input.equipment_id, '设备 ID'), required(input.material_type, '资料类型'), required(input.title, '资料标题'),
+        required(input.file_url, '文件地址'), optional(input.version), optional(input.checksum), optional(input.uploaded_by) || actor, now, now);
+    return this.db.prepare('SELECT * FROM equipment_materials_info WHERE id=?').get(id);
+  }
+
+  upsertInspection(input) {
+    const id = optional(input.id) || randomUUID();
+    const status = optional(input.status) || 'planned';
+    if (!INSPECTION_STATUSES.has(status)) throw new Error('不支持的巡检状态');
+    const now = timestamp();
+    this.db.prepare(`INSERT INTO equipment_inspection_info(id,equipment_id,inspector_id,inspection_type,status,scheduled_at,
+      started_at,completed_at,result_json,note,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
+      ON CONFLICT(id) DO UPDATE SET equipment_id=excluded.equipment_id,inspector_id=excluded.inspector_id,
+      inspection_type=excluded.inspection_type,status=excluded.status,scheduled_at=excluded.scheduled_at,
+      started_at=excluded.started_at,completed_at=excluded.completed_at,result_json=excluded.result_json,
+      note=excluded.note,updated_at=excluded.updated_at`)
+      .run(id, required(input.equipment_id, '设备 ID'), optional(input.inspector_id), required(input.inspection_type, '巡检类型'),
+        status, input.scheduled_at ? timestamp(input.scheduled_at) : null, input.started_at ? timestamp(input.started_at) : null,
+        input.completed_at ? timestamp(input.completed_at) : null, json(input.result), optional(input.note), now, now);
+    return this.db.prepare('SELECT * FROM equipment_inspection_info WHERE id=?').get(id);
+  }
+
+  upsertFault(input, actor = null) {
+    const id = optional(input.id) || randomUUID();
+    const status = optional(input.status) || 'suspected';
+    if (!FAULT_STATUSES.has(status)) throw new Error('不支持的故障状态');
+    const now = timestamp();
+    const existing = this.db.prepare('SELECT * FROM fault_history_info WHERE id=?').get(id);
+    const discoveredAt = input.discovered_at ? timestamp(input.discovered_at) : existing?.discovered_at || now;
+    const confirmedAt = status === 'confirmed' || status === 'processing' || status === 'resolved'
+      ? (input.confirmed_at ? timestamp(input.confirmed_at) : existing?.confirmed_at || now) : null;
+    const resolvedAt = status === 'resolved' ? (input.resolved_at ? timestamp(input.resolved_at) : existing?.resolved_at || now) : null;
+    this.db.prepare(`INSERT INTO fault_history_info(id,warning_id,equipment_id,fault_code,fault_name,suspected_cause,resolution,
+      status,discovered_at,confirmed_at,resolved_at,confirmed_by,model_result_id,created_at,updated_at)
+      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET warning_id=excluded.warning_id,
+      equipment_id=excluded.equipment_id,fault_code=excluded.fault_code,fault_name=excluded.fault_name,
+      suspected_cause=excluded.suspected_cause,resolution=excluded.resolution,status=excluded.status,
+      discovered_at=excluded.discovered_at,confirmed_at=excluded.confirmed_at,resolved_at=excluded.resolved_at,
+      confirmed_by=excluded.confirmed_by,model_result_id=excluded.model_result_id,updated_at=excluded.updated_at`)
+      .run(id, optional(input.warning_id), required(input.equipment_id, '设备 ID'), required(input.fault_code, '故障编码'),
+        required(input.fault_name, '故障名称'), optional(input.suspected_cause), optional(input.resolution), status,
+        discoveredAt, confirmedAt, resolvedAt, optional(input.confirmed_by) || (confirmedAt ? actor : null),
+        optional(input.model_result_id), existing?.created_at || now, now);
+    return this.db.prepare('SELECT * FROM fault_history_info WHERE id=?').get(id);
+  }
+
   upsertGeneration(input) {
     const id = optional(input.id) || randomUUID();
     const date = required(input.local_date, '业务日期');
@@ -302,14 +468,33 @@ export class OperationsService {
   }
 
   purgeExpired() {
+    const layouts = {
+      telemetry_info: ['id','point_id','equipment_id','observed_at','value','unit','quality','cause','source_sequence','raw_json','ingested_at'],
+      telesignalling_info: ['id','point_id','equipment_id','observed_at','state','value_text','quality','cause','source_sequence','raw_json','ingested_at'],
+      meteorograph_data_info: ['id','substation_id','equipment_id','observed_at','irradiance_wm2','ambient_temperature_c',
+        'module_temperature_c','wind_speed_ms','wind_direction_deg','humidity_percent','pressure_hpa','quality','raw_json']
+    };
     const result = {};
+    const runId = randomUUID();
+    const startedAt = timestamp();
     transaction(this.db, () => {
       for (const policy of this.db.prepare('SELECT * FROM data_retention_policy').all()) {
-        if (!['telemetry_info','telesignalling_info','meteorograph_data_info'].includes(policy.table_name)) continue;
-        result[policy.table_name] = this.db.prepare(`DELETE FROM ${policy.table_name}
-          WHERE observed_at < datetime('now', ? || ' days')`).run(String(-policy.hot_days)).changes;
+        const columns = layouts[policy.table_name];
+        if (!columns) continue;
+        const modifier = `-${policy.hot_days} days`;
+        const cutoff = this.db.prepare("SELECT strftime('%Y-%m-%dT%H:%M:%fZ','now',?) value").get(modifier).value;
+        let archived = 0;
+        if (policy.archive_enabled) {
+          archived = this.db.prepare(`INSERT OR IGNORE INTO ${policy.table_name}_archive(${columns.join(',')},archived_at)
+            SELECT ${columns.join(',')},? FROM ${policy.table_name} WHERE observed_at < ?`).run(startedAt, cutoff).changes;
+        }
+        const deleted = this.db.prepare(`DELETE FROM ${policy.table_name} WHERE observed_at < ?`).run(cutoff).changes;
+        result[policy.table_name] = { cutoff, archived, deleted };
       }
+      const completedAt = timestamp();
+      this.db.prepare(`INSERT INTO operations_maintenance_run(id,task_type,status,result_json,started_at,completed_at)
+        VALUES (?,'rolling_archive','succeeded',?,?,?)`).run(runId, json(result), startedAt, completedAt);
     });
-    return result;
+    return { run_id: runId, tables: result };
   }
 }

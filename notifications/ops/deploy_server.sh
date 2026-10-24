@@ -56,7 +56,7 @@ if [[ $(id -u) -ne 0 ]]; then
 fi
 
 log 'Preflight checks'
-for command in nginx systemctl python3 tar sha256sum grep readlink runuser; do
+for command in nginx systemctl python3 tar sha256sum grep readlink runuser getent groupadd usermod find; do
     command -v "$command" >/dev/null || { echo "Missing required command: $command" >&2; exit 1; }
 done
 systemctl is-active --quiet nginx || { echo 'Nginx is not active.' >&2; exit 1; }
@@ -191,6 +191,7 @@ required = [
     'notifications/package.json', 'notifications/src/server.mjs',
     'notifications/src/run-worker.mjs', 'notifications/src/operations.mjs',
     'notifications/migrations/001_notifications.sql', 'notifications/migrations/002_operations.sql',
+    'notifications/migrations/003_operations_archive.sql',
     'frontend/dist/index.html', 'frontend/dist/auth-guard.js',
     'frontend/dist/login.html', 'frontend/dist/login.js', 'frontend/dist/login.css',
     'frontend/dist/notifications.html', 'frontend/dist/notifications.js',
@@ -218,11 +219,17 @@ ln -sfn "$RELEASE" "$CURRENT"
 }
 
 log 'Create isolated service account and persistent database directory'
+if ! getent group fumai-business-readers >/dev/null 2>&1; then
+    groupadd --system fumai-business-readers
+fi
 if ! id fumai-notify >/dev/null 2>&1; then
     useradd --system --home-dir "$STATE_ROOT" --shell /usr/sbin/nologin fumai-notify
 fi
-chown fumai-notify:fumai-notify "$STATE_ROOT"
-chmod 0750 "$STATE_ROOT"
+usermod -a -G fumai-business-readers fumai-notify
+if id fumai-agent >/dev/null 2>&1; then usermod -a -G fumai-business-readers fumai-agent; fi
+chown -R fumai-notify:fumai-business-readers "$STATE_ROOT"
+chmod 2750 "$STATE_ROOT"
+find "$STATE_ROOT" -type f -exec chmod 0640 {} +
 runuser -u fumai-notify -- test -r "$CURRENT/notifications/src/migrate.mjs" || {
     echo 'The service account cannot read the migration file.' >&2
     namei -l "$CURRENT/notifications/src/migrate.mjs" >&2 || true

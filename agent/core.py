@@ -74,7 +74,8 @@ class Snapshot:
             raise InputError("快照观测时间在未来")
         self.observed_at = observed
         devices, events = document.get("devices"), document.get("events")
-        if not isinstance(devices, list) or not 1 <= len(devices) <= 10000 or not isinstance(events, list) or len(events) > 50000:
+        minimum_devices = 0 if mode == "live" else 1
+        if not isinstance(devices, list) or not minimum_devices <= len(devices) <= 10000 or not isinstance(events, list) or len(events) > 50000:
             raise InputError("设备或事件数量超出数据合同")
         self.devices, self.events = {}, {}
         for device in devices:
