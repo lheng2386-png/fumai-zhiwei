@@ -1,0 +1,328 @@
+[
+  {
+    "question": "你是什么模型？",
+    "intent": "identity"
+  },
+  {
+    "question": "请问你用的是哪款大模型？",
+    "intent": "identity"
+  },
+  {
+    "question": "当前模型叫什么名字？",
+    "intent": "identity"
+  },
+  {
+    "question": "你是谁？",
+    "intent": "identity"
+  },
+  {
+    "question": "模型身份",
+    "intent": "identity"
+  },
+  {
+    "question": "什么模型？",
+    "intent": "identity"
+  },
+  {
+    "question": "你是Qwen吗？",
+    "intent": "identity"
+  },
+  {
+    "question": "What model are you using?",
+    "intent": "identity"
+  },
+  {
+    "question": "你是什么模型？",
+    "context": true,
+    "intent": "identity"
+  },
+  {
+    "question": "你能做什么？",
+    "intent": "capabilities"
+  },
+  {
+    "question": "介绍一下你的功能",
+    "intent": "capabilities"
+  },
+  {
+    "question": "你能分析哪些设备异常？",
+    "intent": "capabilities"
+  },
+  {
+    "question": "What can you do?",
+    "intent": "capabilities"
+  },
+  {
+    "question": "帮助",
+    "intent": "help"
+  },
+  {
+    "question": "怎么使用你？",
+    "intent": "help"
+  },
+  {
+    "question": "HELP",
+    "intent": "help"
+  },
+  {
+    "question": "How do I use this assistant?",
+    "intent": "help"
+  },
+  {
+    "question": "你好！",
+    "intent": "greeting"
+  },
+  {
+    "question": "谢谢",
+    "intent": "greeting"
+  },
+  {
+    "question": "写一首诗",
+    "intent": "out_of_scope"
+  },
+  {
+    "question": "今天天气怎么样",
+    "context": true,
+    "intent": "out_of_scope"
+  },
+  {
+    "question": "分析 inv_07 的异常证据",
+    "intent": "maintenance"
+  },
+  {
+    "question": "帮我核查设备异常",
+    "intent": "maintenance"
+  },
+  {
+    "question": "同群证据不足时应该先查什么？",
+    "intent": "knowledge"
+  },
+  {
+    "question": "功率模型和实际值不一致",
+    "intent": "maintenance"
+  },
+  {
+    "question": "DEMO-2107-001",
+    "intent": "maintenance"
+  },
+  {
+    "question": "Check inverter power",
+    "intent": "maintenance"
+  },
+  {
+    "question": "分析一下",
+    "context": true,
+    "intent": "maintenance"
+  },
+  {
+    "question": "分析一下",
+    "intent": "out_of_scope"
+  },
+  {
+    "question": "你是什么模型？顺便分析 inv_07 的异常",
+    "intent": "maintenance"
+  },
+  {
+    "question": "你是什么模型，帮我分析设备异常",
+    "intent": "maintenance"
+  },
+  {
+    "question": "你能做什么？然后核查设备事件",
+    "intent": "maintenance"
+  },
+  {
+    "question": "列出之前的设备分析记录",
+    "context": true,
+    "intent": "history"
+  },
+  {
+    "question": "刚才是否分析过该设备",
+    "context": true,
+    "intent": "history"
+  },
+  {
+    "question": "查询 inv_07 的历史分析记录",
+    "context": true,
+    "intent": "history"
+  },
+  {
+    "question": "为什么这样判断？",
+    "context": true,
+    "intent": "followup"
+  },
+  {
+    "question": "为什么先核对限发而不是检修？",
+    "context": true,
+    "intent": "followup"
+  },
+  {
+    "question": "刚才通信异常为什么排第一？",
+    "context": true,
+    "intent": "followup"
+  },
+  {
+    "question": "不是这样，你误解了我的意思",
+    "context": true,
+    "intent": "correction"
+  },
+  {
+    "question": "什么是同群证据？",
+    "context": true,
+    "intent": "knowledge"
+  },
+  {
+    "question": "inv_07 实测功率是多少？",
+    "context": true,
+    "intent": "evidence_query"
+  },
+  {
+    "question": "查询设备负责人",
+    "context": true,
+    "intent": "business"
+  },
+  {
+    "question": "实际发电量与预测发电量偏差是多少",
+    "context": true,
+    "intent": "business"
+  },
+  {
+    "question": "告警短信和邮件发送成功了吗？",
+    "context": true,
+    "intent": "business"
+  },
+  {
+    "question": "生成电站运行日报",
+    "context": true,
+    "intent": "business"
+  },
+  {
+    "question": "光伏逆变器出现欠压，一般是什么原因？",
+    "context": false,
+    "intent": "knowledge"
+  },
+  {
+    "question": "逆变器欠压一般有哪些原因",
+    "context": false,
+    "intent": "knowledge"
+  },
+  {
+    "question": "为什么光伏逆变器会欠压？",
+    "context": false,
+    "intent": "knowledge"
+  },
+  {
+    "question": "欠压怎么区分交流侧和直流侧？",
+    "context": false,
+    "intent": "knowledge"
+  },
+  {
+    "question": "如何区分交流侧和直流侧欠压？",
+    "context": true,
+    "intent": "knowledge"
+  },
+  {
+    "question": "什么是 MPPT？",
+    "context": false,
+    "intent": "knowledge"
+  },
+  {
+    "question": "光伏组串一般如何设计？",
+    "context": false,
+    "intent": "knowledge"
+  },
+  {
+    "question": "逆变器过温通常是什么原因？",
+    "context": false,
+    "intent": "knowledge"
+  },
+  {
+    "question": "光伏组件为什么会出现热斑？",
+    "context": false,
+    "intent": "knowledge"
+  },
+  {
+    "question": "判断依据是什么？",
+    "context": true,
+    "intent": "followup"
+  },
+  {
+    "question": "你做出这个判断的依据是什么？",
+    "context": true,
+    "intent": "followup"
+  },
+  {
+    "question": "你是根据什么做出这个判断的？",
+    "context": true,
+    "intent": "followup"
+  },
+  {
+    "question": "为什么这么判断？",
+    "context": true,
+    "intent": "followup"
+  },
+  {
+    "question": "有什么证据？",
+    "context": true,
+    "intent": "followup"
+  },
+  {
+    "question": "有哪些数据支持这个判断？",
+    "context": true,
+    "intent": "followup"
+  },
+  {
+    "question": "你的理由是什么？",
+    "context": true,
+    "intent": "followup"
+  },
+  {
+    "question": "能展开解释一下吗？",
+    "context": true,
+    "intent": "followup"
+  },
+  {
+    "question": "解释一下",
+    "context": true,
+    "intent": "followup"
+  },
+  {
+    "question": "那如果只在清晨出现呢？",
+    "context": true,
+    "intent": "followup"
+  },
+  {
+    "question": "如果只在清晨出现呢？",
+    "context": true,
+    "intent": "followup"
+  },
+  {
+    "question": "告诉我判断依据",
+    "context": true,
+    "intent": "followup"
+  },
+  {
+    "question": "分析 inv_07 的异常证据",
+    "context": true,
+    "intent": "maintenance"
+  },
+  {
+    "question": "这台逆变器欠压的判断依据是什么？",
+    "context": true,
+    "intent": "followup"
+  },
+  {
+    "question": "同群数量能说明什么？",
+    "context": true,
+    "intent": "followup"
+  },
+  {
+    "question": "这个差异有多大？",
+    "context": true,
+    "intent": "followup"
+  },
+  {
+    "question": "参考模型一定准确吗？",
+    "context": true,
+    "intent": "followup"
+  }
+]

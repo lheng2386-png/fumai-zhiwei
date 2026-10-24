@@ -1,0 +1,33 @@
+import assert from 'node:assert/strict';
+import vm from 'node:vm';
+import fs from 'node:fs';
+import {createCase,advanceCase,caseReport,renderCase} from '../dist/scene-case.js';
+const sandbox={window:{}};vm.runInNewContext(fs.readFileSync(new URL('../dist/data.js',import.meta.url),'utf8'),sandbox);
+const events=JSON.parse(JSON.stringify(sandbox.window.FumaiDemo.events));
+const checks=[];
+for(const [id,target,answer] of [['single','inv_07','single'],['quality','inv_22','insufficient']]){
+    const state=createCase(id,events,0);
+    assert.throws(()=>caseReport(state));
+    assert.equal(advanceCase(state,'decision','needs_investigation'),false);
+    state.picked='inv_01';assert.equal(advanceCase(state,'locate'),false);
+    assert.equal(state.stage,0);state.picked=target;assert.ok(advanceCase(state,'locate',null,1000));
+    assert.equal(advanceCase(state,'evidence',answer),false,'Evidence must be opened first');
+    state.evidenceSeen=true;
+    assert.equal(advanceCase(state,'evidence','communication',2000),false);
+    assert.ok(advanceCase(state,'evidence',answer,3000));
+    state.note='短';assert.equal(advanceCase(state,'decision','needs_investigation'),false);
+    state.note='核对同群观测及现场告警、检修记录。';
+    assert.equal(advanceCase(state,'decision','confirmed_fault',4000),false);
+    assert.ok(advanceCase(state,'decision','needs_investigation',5000));
+    const report=caseReport(state,6000);
+    assert.equal(report.elapsed_seconds,5);assert.equal(report.data_kind,'synthetic_demo');
+    assert.equal(report.review.submitted_to_backend,false);assert.equal(report.attempts.length,6);
+    assert.equal(advanceCase(state,'locate',target),false,'Completed record is immutable to further steps');
+    assert.equal(events.find(e=>e.event_id===state.event.event_id).review_status,'unreviewed');
+    state.note='<img src=x onerror=alert(1)>';assert.ok(!renderCase(state).includes('<img'));
+    checks.push(id+': gated evidence, unsupported diagnosis rejected, local report preserves provenance');
+}
+assert.throws(()=>createCase('invalid',events));assert.throws(()=>createCase('single',[]));
+const changed=structuredClone(events);changed[0].evidence='insufficient_peers';assert.throws(()=>createCase('single',changed));
+assert.match(renderCase(null,false),/disabled/);
+console.log(JSON.stringify({checks,invalidCases:3,htmlEscaping:'passed',businessStatePreserved:true}));

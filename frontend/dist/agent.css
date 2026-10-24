@@ -100,3 +100,36 @@ body:has(#main[data-view="agent"]) .app-footer {
     grid-template-columns: minmax(0, 1fr);
     grid-template-rows: minmax(0, 1fr);
 }
+
+.agent-chat-controls { display:flex; align-items:center; gap:12px; margin-left:auto; }
+.agent-chat-controls select { min-width:0; width:94px; padding:5px 6px; border:1px solid #dce5d7; border-radius:6px; background:#fafcf8; color:#536d49; font:inherit; font-size:10px; }
+.agent-question-answer { margin:14px 0; }
+.agent-question-answer h4 { font-size:12px; margin:0 0 7px; color:#35553d; }
+.agent-question-answer p { margin:6px 0; white-space:pre-wrap; overflow-wrap:anywhere; }
+.agent-answer-status { display:inline-block; font-size:9px; color:#8b6b35; background:#faf4e6; padding:2px 7px; border-radius:4px; }
+.agent-answer-facts { border-top:1px dashed #dfe7d9; margin-top:16px; padding-top:12px; color:#718166; }
+.agent-answer-facts summary { cursor:pointer; font-size:10px; }
+.agent-answer-facts p { font-size:11px; line-height:1.9; }
+.agent-answer-facts small { display:block; font:9px monospace; color:#9aa78f; }
+.agent-context-reference { font-size:9px; color:#95a18b; margin-top:14px; display:flex; gap:12px; flex-wrap:wrap; align-items:center; }
+.agent-history-results { border:1px solid #e1e9db; border-radius:8px; padding:4px 12px; margin-top:12px; }
+.agent-history-results .agent-history + .agent-history,.agent-session-list .agent-history + .agent-history { border-top:1px solid #e8eddf; }
+.agent-session-dialog::backdrop { background:#1d372839; backdrop-filter:blur(2px); }
+.agent-session-list { margin-top:18px; }
+.agent-session-list .agent-history { padding:13px 0; }
+.agent-report-explanation { color:#607459; font-size:12px; }
+.agent-reply-limit { margin-top:12px; font-size:10px; color:#8a805d; line-height:1.8; }
+.agent-knowledge-sources { margin-top:14px; border-top:1px solid #edf0e8; padding-top:10px; color:#69805c; font-size:11px; }
+.agent-knowledge-sources summary { cursor:pointer; }
+.agent-knowledge-sources p { margin:9px 0; line-height:1.8; }
+.agent-knowledge-sources small { display:block; color:#8b947f; }
+@media (max-width:760px) {
+    .agent-chat-top { gap:8px; padding-left:14px; padding-right:14px; }
+    .agent-chat-top > span { display:none; }
+    .agent-chat-top strong { font-size:10px; }
+    .agent-chat-top > div { gap:6px; }
+    .agent-chat-controls select { width:80px; font-size:9px; }
+    .agent-chat-controls .agent-link { font-size:10px; }
+}
+/* Knowledge library and read-only MCP tools */
+.agent-knowledge-dialog{width:min(960px,94vw);max-height:90vh;overflow:auto;border:1px solid #dce5e5;border-radius:18px;padding:28px;color:#193939;background:#f9fcfb;box-shadow:0 24px 100px #123b3940}.agent-knowledge-dialog::backdrop{background:#102d3970}.agent-knowledge-dialog header{display:flex;justify-content:space-between;gap:20px;align-items:center}.agent-knowledge-dialog h2{margin:8px 0}.agent-knowledge-dialog p{line-height:1.7}.agent-knowledge-dialog form{display:flex;gap:14px;align-items:end;flex-wrap:wrap;padding:18px;background:#eef5f3;border-radius:12px}.agent-knowledge-dialog label{display:grid;gap:8px;flex:1;min-width:180px;font-size:14px}.agent-knowledge-dialog input{min-height:42px;max-width:100%;border:1px solid #ccdcd8;border-radius:6px;padding:8px;background:white}.agent-kb-document{display:flex;justify-content:space-between;gap:16px;padding:16px 4px;border-bottom:1px solid #dce7e3}.agent-kb-document small,.agent-kb-source small{display:block;margin-top:7px;color:#546c68;overflow-wrap:anywhere}.agent-kb-source{padding:16px;border:1px solid #d7e5df;border-radius:10px;background:#fff;margin:14px 0}.agent-kb-source blockquote{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.75;margin:12px 0;padding-left:14px;border-left:3px solid #5b9b88;max-height:320px;overflow:auto}.agent-kb-entry{display:grid;gap:10px;margin:18px 0}.agent-context #agent-analysis-scope{margin-bottom:18px}.agent-kb-document>div{min-width:0}.agent-kb-document strong{overflow-wrap:anywhere}@media(max-width:640px){.agent-knowledge-dialog{padding:16px}.agent-kb-document{flex-direction:column}.agent-knowledge-dialog form{padding:12px}.agent-knowledge-dialog label{min-width:100%}}

@@ -413,16 +413,6 @@ block = begin + '''    location /api/ {
         proxy_set_header Host $host;
     }
 
-    location = / {
-        proxy_pass http://127.0.0.1:8787;
-        proxy_set_header Host $host;
-    }
-
-    location = /index.html {
-        proxy_pass http://127.0.0.1:8787;
-        proxy_set_header Host $host;
-    }
-
     location ~ ^/(login\.html|login\.js|login\.css|auth-guard\.js)$ {
         proxy_pass http://127.0.0.1:8787;
         proxy_set_header Host $host;

@@ -1,0 +1,24 @@
+[Unit]
+Description=Fumai evidence maintenance agent
+After=network.target
+
+[Service]
+Type=simple
+User=fumai-agent
+Group=fumai-agent
+WorkingDirectory=/srv/fumai-zhiwei/agent/current
+EnvironmentFile=/etc/fumai-agent.env
+ExecStart=/usr/bin/python3 -m agent.server --port 8091 --snapshot /var/lib/fumai-agent/snapshot.json --database /var/lib/fumai-agent/audit.sqlite
+Restart=on-failure
+RestartSec=3
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/fumai-agent
+MemoryMax=384M
+TasksMax=48
+
+[Install]
+WantedBy=multi-user.target
