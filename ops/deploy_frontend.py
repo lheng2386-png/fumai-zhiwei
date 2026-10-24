@@ -89,7 +89,7 @@ def prepare_release(commit: str, releases: Path) -> Path:
                 raise ValueError(f'Required frontend file is missing or empty: {name}')
         marker = {'repository': REPOSITORY, 'commit': commit,
                   'prepared_at_utc': dt.datetime.now(dt.timezone.utc).isoformat(),
-                  'data_mode': 'constructed_demo', 'component': 'frontend'}
+                  'data_mode': 'business_api_with_demo_scene', 'component': 'frontend'}
         (dist / 'deployment.json').write_text(json.dumps(marker, indent=2) + '\n')
         (dist / 'deployment.json').chmod(0o644)
         stage.chmod(0o755)
