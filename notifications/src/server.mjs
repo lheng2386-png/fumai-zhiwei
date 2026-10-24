@@ -139,10 +139,10 @@ async function streamOperations(req, res, substationId) {
   const deadline = Date.now() + 60_000;
   while (!res.destroyed && Date.now() < deadline) {
     const snapshot = operations.snapshot(substationId);
-    const encoded = JSON.stringify(snapshot);
-    if (encoded !== previous) {
-      res.write(`event: snapshot\ndata: ${encoded}\n\n`);
-      previous = encoded;
+    const signature = JSON.stringify(snapshot.values);
+    if (signature !== previous) {
+      res.write(`event: snapshot\ndata: ${JSON.stringify(snapshot)}\n\n`);
+      previous = signature;
     } else res.write(': keep-alive\n\n');
     await new Promise(resolveTimer => setTimeout(resolveTimer, 2000));
   }
@@ -305,7 +305,7 @@ const server = createServer(async (req, res) => {
       const result = operations.purgeExpired(); audit(actor.username, 'purge_operations_history', 'retention', result);
       return sendJson(res, 200, { deleted: result });
     }
-    if (req.method === 'GET' && path === '/agent-api/bootstrap') {
+    if (req.method === 'GET' && path === '/api/operations/agent-bootstrap') {
       requireUser(req); return sendJson(res, 200, operations.agentBootstrap());
     }
     if (req.method === 'GET' && path === '/api/notifications/events') {

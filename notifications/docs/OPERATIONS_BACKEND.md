@@ -12,7 +12,7 @@
 | 报表管理、发电日历 | `power_generation_report_info`；generation、calendar 接口 |
 | 组件诊断 | `model_inference_run/result`；统一模型结果写入和 diagnosis 查询接口 |
 | 图档与巡检 | `equipment_materials_info`、`equipment_inspection_info` |
-| Agent 工具 | `/agent-api/bootstrap` 直接读取业务库中的告警和模型结果，并返回数据来源状态 |
+| Agent 数据适配 | `/api/operations/agent-bootstrap` 读取业务库中的告警和模型结果，并返回数据来源状态 |
 
 ## IEC 60870-5-104 数据边界
 
@@ -46,7 +46,7 @@
 
 ## 当前真实状态
 
-数据库、接口、幂等写入、最新值缓存、告警展开和 Agent 业务库入口已经实现。由于团队尚未提供现场 104 主机、公共地址、IOA 点表，以及三套模型的生产调用命令/模型文件，接口会明确返回 `unconfigured`、`configured_offline` 或 `empty`，不会自动填充演示数据，也不会宣称现场链路已打通。
+数据库、接口、幂等写入、最新值缓存、告警展开和 Agent 业务库入口已经实现。服务器现有 `/agent-api/` 属于独立的 `fumai-agent.service`，本服务不覆盖队友路由；下一步由该服务调用 `/api/operations/agent-bootstrap` 或加入同等数据库适配器。由于团队尚未提供现场 104 主机、公共地址、IOA 点表，以及三套模型的生产调用命令/模型文件，接口会明确返回 `unconfigured`、`configured_offline` 或 `empty`，不会自动填充演示数据，也不会宣称现场链路已打通。
 
 接通现场前需要团队提供：场站/设备台账、104 网关 IP:2404、公共地址、IOA 点表、遥信告警语义、服务器到现场网关的网络通路，以及每套模型的输入文件位置和运行命令。
 
