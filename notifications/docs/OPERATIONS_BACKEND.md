@@ -14,6 +14,12 @@
 | 图档与巡检 | `equipment_materials_info`、`equipment_inspection_info` |
 | Agent 数据适配 | `/api/operations/agent-bootstrap` 读取业务库中的告警和模型结果，并返回数据来源状态 |
 
+资产、气象、图档、巡检和故障表均提供登录后接口。集合支持 `GET`，新增或修改使用 `POST`，管理员可用
+`DELETE /api/operations/{resource}/{id}` 删除未被引用的记录；被外键引用的数据会拒绝删除。资源名包括
+`substations`、`sub-arrays`、`transformers`、`inverters`、`panel-series`、`equipment`、
+`meteorograph`、`materials`、`inspections` 和 `faults`。告警另提供 `ack` 和 `clear` 状态接口，所有写操作按
+viewer/operator/admin 权限控制并写操作审计。
+
 ## IEC 60870-5-104 数据边界
 
 采集进程负责与现场 RTU/网关建立 104 连接、总召唤、时钟同步、断线重连和顺序号管理。本服务不在 HTTP 进程内维持 104 长连接，而是接收采集进程标准化后的 ASDU：
@@ -40,13 +46,13 @@
 ## 性能与存储
 
 - SQLite 开启 WAL，并用 `latest_point_value` 保存页面所需的最新点值，避免每次扫描时序历史。
-- 遥测、遥信和气象表按设备与时间建索引；`data_retention_policy` 定义热数据保留天数，管理员可触发滚动清理。
+- 遥测、遥信和气象表按设备与时间建索引；`data_retention_policy` 定义热数据保留天数。Worker 启动后每六小时执行一次滚动任务，先写入对应 `_archive` 冷表再清理热表，并在 `operations_maintenance_run` 留存结果；管理员也可手工触发。
 - 采集使用批量写入，实时页面使用 SSE，每两秒只在快照变化时推送。
 - 当前部署只有一个 SQLite 文件，不具备真正的主从读写分离。需要读副本时迁移到 PostgreSQL/MySQL，再把查询连接指向只读副本。
 
 ## 当前真实状态
 
-数据库、接口、幂等写入、最新值缓存、告警展开和 Agent 业务库入口已经实现。服务器现有 `/agent-api/` 属于独立的 `fumai-agent.service`，本服务不覆盖队友路由；下一步由该服务调用 `/api/operations/agent-bootstrap` 或加入同等数据库适配器。由于团队尚未提供现场 104 主机、公共地址、IOA 点表，以及三套模型的生产调用命令/模型文件，接口会明确返回 `unconfigured`、`configured_offline` 或 `empty`，不会自动填充演示数据，也不会宣称现场链路已打通。
+数据库、完整业务数据接口、幂等写入、最新值缓存、告警展开、滚动归档和 Agent 业务库适配器已经实现。服务器 `/agent-api/` 仍由独立的 `fumai-agent.service` 提供，但通过只读权限直接读取同一个业务库，并复用网站的 `fumai_session` 登录会话；不再把构造样例作为实测事件。模型结果只有满足版本、质量和完整证据字段合同后才进入 Agent 证据工具，不完整记录仍可在 diagnosis 接口定位。由于团队尚未提供现场 104 主机、公共地址、IOA 点表，以及三套模型的生产调用命令/模型文件，接口会明确返回 `unconfigured`、`configured_offline` 或 `empty`，不会自动填充演示数据，也不会宣称现场链路已打通。
 
 接通现场前需要团队提供：场站/设备台账、104 网关 IP:2404、公共地址、IOA 点表、遥信告警语义、服务器到现场网关的网络通路，以及每套模型的输入文件位置和运行命令。
 
