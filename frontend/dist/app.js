@@ -1,6 +1,7 @@
 'use strict';
 (() => {
     const data = window.FumaiDemo;
+    const operations = window.FumaiOperations;
     const main = document.querySelector('#main');
     const drawer = document.querySelector('#event-dialog');
     const statusNames = { unreviewed: '待复核', needs_investigation: '待进一步调查', expected_operation: '预期运行', data_issue: '数据问题', confirmed_fault: '确认故障' };
@@ -139,16 +140,47 @@
         }
         return `<svg class="solar-illustration" viewBox="0 0 260 170" fill="none" aria-hidden="true"><ellipse cx="140" cy="135" rx="107" ry="23" fill="#b1c6a2" opacity=".20"/><circle cx="208" cy="26" r="12" fill="#d6b96c" opacity=".7"/><path d="M27 37h32m-16-6h27M167 17h11m7 0h22" stroke="#c0ceae" stroke-width="2" stroke-linecap="round"/><path d="M23 126c34-7 28 15 77 15s43-10 84-8 52-1 60-5" stroke="#c0d0b2" stroke-width="1.2"/>${panels}<path d="m28 127-7 2v-9m211-25 5-2v-7" stroke="#8aab7d" stroke-width="2"/></svg>`;
     }
+    function liveUnavailable(title) {
+        const detail = operations?.loading ? '正在读取场站、设备、告警和模型结果。' : operations?.error || '业务库已连接，等待数据写入。';
+        return `${intro(title, 'BUSINESS DATABASE / 业务数据', detail)}<section class="panel">${emptyState(operations?.loading ? '正在加载业务数据' : operations?.error ? '业务数据暂时不可用' : '业务库当前没有记录', detail)}</section>`;
+    }
+    function liveOverview() {
+        if (!operations?.ready) return liveUnavailable('从业务数据库，看见现场状态。');
+        const counts = operations.status?.counts || {};
+        const actual = operations.reports.find(row => row.actual_kwh != null);
+        const source = operations.status?.source_status || 'empty';
+        return `${intro('从业务数据库，看见现场状态。', 'LIVE OPERATIONS / 实时运维', '页面只展示业务库已经接收的数据；空数据不会用演示值补齐。')}
+        <div class="stat-grid"><article class="stat"><div class="stat-label">最近日发电量<span class="stat-icon">${icon('bolt')}</span></div><div class="stat-value">${actual ? number(actual.actual_kwh,1) : '—'}<span>kWh</span></div><div class="stat-foot">${actual ? esc(actual.local_date) : '尚无发电报表'}</div></article>
+        <article class="stat"><div class="stat-label">设备台账<span class="stat-icon">${icon('panel')}</span></div><div class="stat-value">${counts.equipment || 0}<span>台</span></div><div class="stat-foot">数据源状态：${esc(source)}</div></article>
+        <article class="stat warning"><div class="stat-label">活动告警<span class="stat-icon">${icon('alert')}</span></div><div class="stat-value">${counts.active_warnings || 0}<span>条</span></div><div class="stat-foot">需由运维人员确认与处置</div></article>
+        <article class="stat"><div class="stat-label">模型运行<span class="stat-icon">${icon('brain')}</span></div><div class="stat-value">${counts.model_runs || 0}<span>次</span></div><div class="stat-foot">未接入时保持 0，不生成模拟结果</div></article></div>
+        <section class="panel"><div class="panel-heading"><div><h2>接入状态</h2><p>IEC 60870-5-104 标准化入口、最新值缓存与模型结果库。</p></div></div><div class="page-notice">${icon('database')}现场链路：${esc(operations.status?.limitations?.field_gateway || '已配置')}；模型：${esc(operations.status?.limitations?.models || '已有结果')}。</div></section>`;
+    }
+    function liveEventsPage() {
+        if (!operations?.ready) return liveUnavailable('让每条告警，都能追溯来源。');
+        const rows = operations.warnings;
+        return `${intro('让每条告警，都能追溯来源。', 'LIVE WARNINGS / 业务告警', '告警来自业务数据库；疑似异常与确认故障分别存储。')}<div class="page-notice">${icon('database')}共 ${rows.length} 条告警记录，确认、清除与故障处置均由后端留痕。</div><section class="panel">${rows.length ? `<div class="table-scroll"><table class="event-table"><thead><tr><th>设备 / 时间</th><th>告警</th><th>等级</th><th>状态</th><th>来源</th></tr></thead><tbody>${rows.map(row=>`<tr><td><span class="device-code">${esc(row.equipment_name || row.equipment_code || '场站')}</span><span class="event-time">${esc(localTime(row.occurred_at))}</span></td><td><strong>${esc(row.title)}</strong><span class="event-time">${esc(row.warning_code)}</span></td><td>${esc(row.severity)}</td><td>${esc(row.status)}</td><td>${esc(row.source_type)}</td></tr>`).join('')}</tbody></table></div>` : emptyState('当前没有告警记录','业务库已连接；没有记录不等于设备一定正常。')}</section>`;
+    }
+    function liveDevicesPage() {
+        if (!operations?.ready) return liveUnavailable('用设备台账组织每一个测点。');
+        const latest = new Map();
+        operations.snapshot.forEach(value => { const list=latest.get(value.equipment_id)||[]; list.push(value); latest.set(value.equipment_id,list); });
+        const rows = operations.equipment;
+        return `${intro('用设备台账组织每一个测点。', 'LIVE DEVICE MONITOR / 设备监测', '设备状态和最新点值来自业务库，不显示构造功率。')}<div class="page-notice">${icon('clock')}设备 ${rows.length} 台，最新点值 ${operations.snapshot.length} 个。</div>${rows.length ? `<div class="device-grid">${rows.map(device=>{const values=latest.get(device.id)||[];return `<article class="device-card"><div class="device-card-top"><strong>${icon('panel')}${esc(device.code)}</strong><span class="status-pill ${device.status==='fault'?'candidate-alert':'expected_operation'}">${esc(device.status)}</span></div><p>${esc(device.name)} · ${esc(device.equipment_type)}</p><div class="device-measures"><div><small>最新测点</small><strong>${values.length}<span>个</span></strong></div><div><small>最近采样</small><strong>${values[0]?.observed_at ? esc(localTime(values[0].observed_at)) : '—'}</strong></div></div></article>`}).join('')}</div>` : `<section class="panel">${emptyState('尚无设备台账','录入场站和设备后，这里将展示真实设备及最新测点。')}</section>`}`;
+    }
     function overview() {
+        if (operations) return liveOverview();
         return `${intro('每一度电，都有迹可循。', 'STATION OVERVIEW / 电站概览', '掌握场站表现，让值得关注的变化先被看见。', `<span class="date-chip">${icon('calendar')}2023 年 07 月 18 日</span><button class="primary-button" data-action="export-events">${icon('download')}导出事件</button>`)}
             ${stats()}<div class="dashboard-top"><section class="panel"><div class="panel-heading"><div><h2>发电功率趋势 <span class="subtle" id="chart-period-label">POWER TREND</span></h2><p>实测与同一时刻的天气参考对比 · 样例曲线</p></div><div class="segmented" aria-label="趋势时间范围"><button data-range="day" class="${state.range === 'day' ? 'active' : ''}" aria-pressed="${state.range === 'day'}">日</button><button data-range="week" class="${state.range === 'week' ? 'active' : ''}" aria-pressed="${state.range === 'week'}">周</button><button data-range="month" class="${state.range === 'month' ? 'active' : ''}" aria-pressed="${state.range === 'month'}">月</button></div></div><div class="chart-legend" style="margin-top:19px"><span class="legend-item"><i></i>样例实测</span><span class="legend-item reference"><i></i>模型参考</span><span class="legend-item candidate"><i></i>候选区间</span></div>${powerChart('overview', overviewSeries(), { unit: state.range === 'day' ? 'kW' : 'kWh', label: state.range === 'day' ? '样例日功率曲线，5 分钟间隔，单位千瓦' : '构造的样例日发电量，单位千瓦时' })}<div class="chart-bottom"><span><b>10:40–11:05</b> · inv_07 出现单机偏离线索</span><button class="table-link" data-event="DEMO-2107-001">查看证据 ${icon('arrow-up-right')}</button></div></section>
             <section class="station-card"><span class="station-label">SELECTED STATION</span><div class="station-heading"><h2>PVDAQ 2107</h2><button class="icon-button" data-action="open-models" aria-label="查看场站数据说明">${icon('arrow-up-right')}</button></div><div class="station-location">${icon('pin')}光伏场站 · 历史回放样例</div><span class="station-status"><i></i>样例场站</span>${solarIllustration()}<div class="station-specs"><div><small>设备数量</small><strong>24 <span>台</span></strong></div><div><small>数据粒度</small><strong>5 <span>分钟</span></strong></div><div><small>回放范围</small><strong>1 <span>日</span></strong></div></div></section></div>
             <div class="dashboard-bottom"><section class="panel"><div class="panel-heading panel-table-heading"><div><h2>值得先看的事件 <span class="subtle">REVIEW QUEUE</span></h2><p>优先查看偏离线索，结合现场记录完成人工判断。</p></div><button class="table-link" data-action="view-all">全部事件 ${icon('arrow')}</button></div>${eventTable(getEvents().filter(e => e.review_status === 'unreviewed').slice(0, 4), true)}</section><section class="panel fleet-panel"><div class="panel-heading"><h2>设备一览</h2><span class="subtle">24 台</span></div><div class="device-matrix">${data.devices.map((d, i) => `<button class="device-cell ${d.signal}" data-device="${d.id}" title="${esc(d.name)} · ${d.signal === 'attention' ? '存在候选线索' : '查看设备'}" aria-label="查看 ${esc(d.id)} 的候选事件">${String(i + 1).padStart(2, '0')}</button>`).join('')}</div><div class="fleet-legend"><span><i></i>参考范围示例</span><span><i class="alert"></i>候选关注</span></div><div class="fleet-footer"><span>颜色仅表示样例监测线索</span><button class="table-link" data-action="open-devices">查看设备 →</button></div></section></div>`;
     }
     function eventsPage() {
+        if (operations) return liveEventsPage();
         return `${intro('把异常，变成可追溯的线索。', 'EVENT EXPLORER / 异常事件', '候选筛查 ≠ 故障结论。结合曲线、同群和现场记录再判断。', `<button class="primary-button" data-action="export-events">${icon('download')}导出筛选结果</button>`)}<div class="page-notice">${icon('help')}当前共 ${data.events.length} 条构造样例；时间沿用场站本地墙上时钟 PST8PDT，未转换为北京时间。</div><section class="panel"><div class="filter-bar"><label class="search-field">${icon('search')}<input id="event-query" aria-label="搜索事件、设备或复核说明" value="${esc(state.query)}" placeholder="搜索事件、设备或复核说明"></label><select id="status-filter" aria-label="复核状态"><option value="all">全部复核状态</option>${Object.entries(statusNames).map(([value, label]) => `<option value="${value}" ${state.status === value ? 'selected' : ''}>${label}</option>`).join('')}</select><select id="evidence-filter" aria-label="候选证据"><option value="all">全部证据类型</option>${Object.entries(evidenceNames).map(([value, label]) => `<option value="${value}" ${state.evidence === value ? 'selected' : ''}>${label}</option>`).join('')}</select><select id="device-filter" aria-label="设备"><option value="all">全部设备</option>${data.devices.map(d => `<option value="${d.id}" ${state.device === d.id ? 'selected' : ''}>${d.id}</option>`).join('')}</select></div><div id="events-results">${eventTable(filteredEvents())}</div><div class="filters-footer"><span id="event-result-count">共 ${filteredEvents().length} 条匹配事件</span><button class="table-link" data-action="reset-filters">清除筛选</button></div></section>`;
     }
     function devicesPage() {
+        if (operations) return liveDevicesPage();
         const devices = data.devices.filter(d => state.deviceFilter === 'all' || d.signal === 'attention');
         return `${intro('每台设备，都有自己的参照。', 'DEVICE MONITOR / 设备监测', '对比本机参考与同群表现，定位值得进一步查看的设备。')}<div class="page-notice">${icon('clock')}设备功率为统一的演示快照，与事件列表中的历史时段分别展示。点击设备查看它的样例候选事件。</div><section class="panel" style="margin-bottom:18px"><div class="filter-bar"><span style="font-size:11px;color:#728668">PVDAQ 2107 · 24 台设备</span><div class="segmented" style="margin-left:auto"><button data-device-filter="all" class="${state.deviceFilter === 'all' ? 'active' : ''}" aria-pressed="${state.deviceFilter === 'all'}">全部设备</button><button data-device-filter="attention" class="${state.deviceFilter === 'attention' ? 'active' : ''}" aria-pressed="${state.deviceFilter === 'attention'}">候选关注 · 3</button></div></div></section><div class="device-grid">${devices.map(d => `<button class="device-card" data-device="${d.id}" aria-label="查看 ${d.id} 的候选事件"><div class="device-card-top"><strong>${icon('panel')}${d.id}</strong><span class="status-pill ${d.signal === 'attention' ? 'candidate-alert' : 'expected_operation'}">${d.signal === 'attention' ? '候选关注' : '参考范围'}</span></div><p>${d.name} · 2107 暂定同群</p><div class="device-measures"><div><small>样例实测</small><strong>${number(d.actual_kw, 1)}<span>kW</span></strong></div><div><small>样例参考</small><strong>${number(d.expected_kw, 1)}<span>kW</span></strong></div></div><div class="device-card-footer"><span>查看历史候选与证据</span>${icon('arrow-up-right')}</div></button>`).join('')}</div>`;
     }
@@ -209,11 +241,15 @@
         document.querySelector('#breadcrumb-title').textContent = pageNames[state.page];
         document.title = `${pageNames[state.page]} · 伏脉智维`;
         updateNavigation(state.page);
-        const waiting = getEvents().filter(e => e.review_status === 'unreviewed').length;
+        const waiting = operations?.ready ? operations.warnings.filter(e => e.status === 'active').length : getEvents().filter(e => e.review_status === 'unreviewed').length;
         const bubble = document.querySelector('#nav-count');
         bubble.textContent = waiting;
         bubble.hidden = waiting === 0;
         document.querySelector('#nav-count-label').textContent = waiting ? `${waiting} 条异常候选待复核` : '当前没有待复核异常候选';
+        const badge=document.querySelector('.demo-badge');
+        if (badge && operations) badge.innerHTML=`<i></i>${state.page==='scene'?'三维演示':operations.ready?'业务数据':operations.loading?'连接中':'数据异常'}`;
+        const footerState=document.querySelector('.app-footer span:last-child');
+        if (footerState && operations) footerState.innerHTML=state.page==='scene'?'三维场景演示 <i></i> 设备模型保留':'业务数据库 <i></i> 空数据不使用样例补齐';
         bindCharts(main);
         if(state.page==='scene') void window.FumaiScene.mount(getEvents);
     }
@@ -414,6 +450,7 @@
         if (event.target === dialog && (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom)) dialog.close();
     });
     window.addEventListener('hashchange', () => route(true));
+    window.addEventListener('fumai-operations-ready', () => { if (state.page !== 'scene') render(); });
     mobileLayout.addEventListener('change', () => {
         clearTimeout(sidebarMotionTimer);
         document.body.classList.remove('sidebar-animating');
