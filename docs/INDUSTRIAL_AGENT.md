@@ -89,7 +89,7 @@ AGENT_ORIGIN=http://127.0.0.1:4178 python -m agent.server \
 
 保留其他成员服务与 `/api/` 路由；智能体独占回环 `8091` 和 `/agent-api/`。首次由管理员创建专用无登录账号 `fumai-agent`，建立 `/var/lib/fumai-agent`（归其所有，0700），复制 `ops/fumai-agent.service` 到 systemd，使用 `ops/agent-location.conf` 在现有 server 块内添加代理。检查 8091 未占用、`nginx -t` 成功后 reload。运行目录为 `/srv/fumai-zhiwei/agent/current`；不要运行 PyTorch 训练或本地大模型挤占这台小内存服务器。
 
-`/etc/fumai-agent.env` 仅 root 可读（0600），演练初始配置：
+`/etc/fumai-agent.env` 仅 root 可读（0600）。构造样例演练配置：
 
 ```text
 AGENT_MODE=demo
@@ -97,6 +97,10 @@ AGENT_ORIGIN=http://your-authorized-host
 ```
 
 首次演练可复制 `agent/demo-snapshot.json` 到 `/var/lib/fumai-agent/snapshot.json`，归 `fumai-agent` 所有。后续部署不能覆盖已有快照、数据库或环境配置。
+
+业务部署使用 `ops/fumai-agent.service` 中的 `--business-database`，通过只读组访问通知/运维 SQLite。此模式从
+`equipment_info` 和满足证据合同的 `model_inference_result` 动态生成实测快照，并用网站 `fumai_session` 验证账号，
+不再要求用户另填 Agent 令牌。`fumai-notify` 对数据库目录保留写权限，`fumai-agent` 只有读取权限。
 
 模型接入只作用于 `/agent-api/` 运维证据助手，其他业务后端由各模块负责人接入。当前 Qwen 使用学校 GPUStack 的 Chat Completions 接口，服务器配置：
 
@@ -136,7 +140,7 @@ AGENT_RESPONSES_URL=https://api.openai.com/v1/responses
 
 服务重启后未完成任务标记为 `failed/interrupted`，需要重新提交，不自动重放可能已计费的请求。任务状态与结果持久化至同一数据库；每个数据库仅运行一个服务实例。nginx 必须关闭 `proxy_buffering` 与 `proxy_cache`，配置见 `ops/agent-location.conf`。旧 `POST /agent-api/analyze` 保留兼容，共用并发限制；新页面不再依赖该同步接口。
 
-模型端点仅由管理员配置，要求 HTTPS，禁止重定向。模型分析成功时返回 `engine=chat_completions`（或 `responses`）、`model_status=connected` 和实际配置模型名；`model_configured=true` 仅说明配置存在，不能代表真实调用成功。输入是当前事件证据与用户问题；当前部署使用构造样例，尚未接入真实电站采集系统。
+模型端点仅由管理员配置，要求 HTTPS，禁止重定向。模型分析成功时返回 `engine=chat_completions`（或 `responses`）、`model_status=connected` 和实际配置模型名；`model_configured=true` 仅说明配置存在，不能代表真实调用成功。输入是当前事件证据与用户问题。业务库模式已经部署，但在现场采集和三套模型实际写入前会显示空数据，不用构造事件冒充实测结果。
 
 实测模式另需：
 

@@ -1,0 +1,17 @@
+[Unit]
+Description=Fumai notification delivery worker
+After=network.target fumai-notification-api.service
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/fumai-zhiwei/notifications
+EnvironmentFile=/etc/fumai-zhiwei/notification.env
+ExecStart=/usr/bin/node src/run-worker.mjs
+Restart=always
+RestartSec=3
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
+

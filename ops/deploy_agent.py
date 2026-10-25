@@ -86,7 +86,7 @@ def deploy(commit):
                         with archive.extractfile(member) as src,target.open('xb') as dst:
                             shutil.copyfileobj(src,dst)
                         target.chmod(0o644)
-                for required in ('core.py','server.py','store.py','model.py','demo-snapshot.json'):
+                for required in ('core.py','server.py','store.py','model.py','business_snapshot.py','demo-snapshot.json'):
                     if not (stage/'agent'/required).is_file():
                         raise ValueError('Required agent file missing')
                 subprocess.run(['/usr/bin/python3','-m','unittest','discover','-s','agent/tests','-v'],cwd=stage,check=True,timeout=60)

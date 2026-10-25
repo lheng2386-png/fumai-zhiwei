@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import argparse
 import copy
+import hashlib
 import hmac
 import json
 import os
@@ -12,6 +13,7 @@ import threading
 import time
 import uuid
 from collections import defaultdict, deque
+from datetime import datetime, timezone
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import urlsplit
@@ -42,7 +44,8 @@ class Application:
         self.rates = defaultdict(deque)
         if urlsplit(self.origin).scheme not in {"http", "https"} or not urlsplit(self.origin).netloc:
             raise ValueError("AGENT_ORIGIN must be an exact origin")
-        if snapshot.mode == "live" and (not self.origin.startswith("https://") or not self.users):
+        self.business_database = getattr(snapshot, "path", None)
+        if snapshot.mode == "live" and not self.business_database and (not self.origin.startswith("https://") or not self.users):
             raise ValueError("Live mode requires HTTPS origin and server-configured users")
         for token, user in self.users.items():
             if len(token) < 32 or not isinstance(user, dict) or user.get("role") not in {"viewer", "operator"} or not re.fullmatch(r"[A-Za-z0-9_.-]{1,64}", user.get("id", "")):
@@ -57,6 +60,8 @@ class Application:
         return 'site:'+self.snapshot.meta['site_id'] if self.snapshot.mode=='live' else owner
 
     def tool_client(self,owner):
+        if self.business_database:
+            return MCPClient(self.mcp_endpoint,{},transport=lambda body:self.mcp.handle(self.knowledge_owner(owner),body))
         headers={'Origin':self.origin,'X-Forwarded-Proto':'https'}
         if self.snapshot.mode=='demo' and owner.startswith(('demo:','browser:')):
             headers['X-Fumai-Session']=str(uuid.uuid4()) if owner.startswith('browser:') else owner.removeprefix('demo:')
@@ -66,6 +71,29 @@ class Application:
                 if user['id']==owner:headers['Authorization']='Bearer '+token;break
             else:raise InputError('当前身份无法连接 MCP。')
         return MCPClient(self.mcp_endpoint,headers,transport=None if self.mcp_endpoint else lambda body:self.mcp.handle(self.knowledge_owner(owner),body))
+
+    def business_identity(self, headers, write=False):
+        cookies={}
+        for item in headers.get('Cookie','').split(';'):
+            if '=' in item:
+                key,value=item.strip().split('=',1);cookies[key]=value
+        token=cookies.get('fumai_session','')
+        if not token:
+            raise HTTPError(401,'请先登录网站账号')
+        digest=hashlib.sha256(token.encode()).hexdigest()
+        try:
+            connection=sqlite3.connect(f'file:{Path(self.business_database).as_posix()}?mode=ro',uri=True,timeout=3)
+            connection.row_factory=sqlite3.Row
+            row=connection.execute("""SELECT u.id,u.role FROM auth_session s JOIN app_user u ON u.id=s.user_id
+                WHERE s.token_hash=? AND s.expires_at>? AND u.enabled=1""",(digest,datetime.now(timezone.utc).isoformat())).fetchone()
+            connection.close()
+        except sqlite3.Error as error:
+            raise HTTPError(503,'业务账号数据库暂时不可用') from error
+        if not row:
+            raise HTTPError(401,'登录已过期，请重新登录')
+        if write and row['role'] not in {'operator','admin'}:
+            raise HTTPError(403,'当前账号没有草稿确认权限')
+        return row['id']
 
     def rag_query(self,owner,body):
         message=body['message']
@@ -223,6 +251,8 @@ class Application:
         origin = headers.get("Origin")
         if origin and origin != self.origin:
             raise HTTPError(403, "来源不匹配")
+        if self.business_database:
+            return self.business_identity(headers,write)
         bearer=headers.get('Authorization','')
         if self.snapshot.mode == "live" or bearer:
             if headers.get("X-Forwarded-Proto") != "https":
@@ -311,14 +341,16 @@ class Application:
         conversation_id=headers.get('X-Fumai-Session') or self.store.default_conversation(owner)
         conversation_id=self.store.ensure_conversation(owner,conversation_id)
         if method == "GET" and path == "/agent-api/bootstrap":
+            account_owner = bool(self.business_database) or owner in [u['id'] for u in self.users.values()]
             return {"metadata": snapshot.meta, "mode": snapshot.mode, "model_configured": self.model is not None,
                     "stale": snapshot.stale, "devices": list(snapshot.devices.values()), "events": snapshot.list_events(limit=12)["events"],
                     "history": self.store.history(owner,analysis_only=True), "device_control": False, "release": self.release,"knowledge":self.knowledge.list(kb_owner),"mcp_tools":5,
                     'conversation_id':conversation_id,'conversations':self.store.conversations(owner),
                     'turns':self.store.turns(owner,conversation_id),
-                    'identity':{'kind':'account' if owner in [u['id'] for u in self.users.values()] else 'browser_guest',
-                                'history_scope':'account' if owner in [u['id'] for u in self.users.values()] else 'current_browser'},
-                    'capabilities':{'history':True,'context':True,'shared_business_data':False,'generation_forecast':False,'notifications':False}}
+                    'identity':{'kind':'account' if account_owner else 'browser_guest',
+                                'history_scope':'account' if account_owner else 'current_browser'},
+                    'capabilities':{'history':True,'context':True,'shared_business_data':bool(self.business_database),
+                                    'generation_forecast':False,'notifications':bool(self.business_database)}}
         if method=='POST' and path=='/agent-api/history':
             if set(body)-{'device_id','conversation_only','limit','offset'}:raise InputError('未知历史查询参数')
             return {'records':self.store.history(owner,conversation_id=conversation_id if body.get('conversation_only') is True else None,
@@ -496,11 +528,17 @@ class Handler(BaseHTTPRequestHandler):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--port", type=int, default=8091)
-    parser.add_argument("--snapshot", required=True)
+    source = parser.add_mutually_exclusive_group(required=True)
+    source.add_argument("--snapshot")
+    source.add_argument("--business-database")
     parser.add_argument("--database", required=True)
     parser.add_argument("--static-root", help="Only for local development")
     args = parser.parse_args()
-    snapshot = Snapshot.load(args.snapshot, os.getenv("AGENT_MODE", "demo"))
+    if args.business_database:
+        from .business_snapshot import BusinessDatabaseSnapshot
+        snapshot = BusinessDatabaseSnapshot(args.business_database)
+    else:
+        snapshot = Snapshot.load(args.snapshot, os.getenv("AGENT_MODE", "demo"))
     model = configured_model()
     marker = Path(".agent-release")
     release = os.getenv("AGENT_RELEASE") or (marker.read_text().strip() if marker.is_file() else "development")
