@@ -4,10 +4,11 @@
     "private": true,
     "description": "伏脉智维光伏运维前端交互原型",
     "scripts": {
-        "check": "node --check dist/app.js && node --check dist/data.js && node --check dist/scene.js && node --check dist/scene-runtime.js && node --check dist/scene-models.js && node --check dist/scene-case.js && node --check dist/scene-equipment.js && node --check dist/scene-equipment-data.js && node --check dist/scene-landscape.js",
+        "check": "node --check dist/app.js && node --check dist/data.js && node --check dist/scene.js && node --check dist/scene-runtime.js && node --check dist/scene-models.js && node --check dist/scene-case.js && node --check dist/scene-equipment.js && node --check dist/scene-equipment-data.js && node --check dist/scene-landscape.js && node --check dist/scene-navigation.js",
         "test:scene": "node tests/scene.test.mjs",
         "test:case": "node tests/scene-case.test.mjs",
         "start": "node serve.mjs",
-        "test:equipment": "node tests/scene-equipment.test.mjs"
+        "test:equipment": "node tests/scene-equipment.test.mjs",
+        "test:navigation": "node tests/scene-navigation.browser.cjs"
     }
 }

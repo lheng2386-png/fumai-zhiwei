@@ -79,3 +79,11 @@ node frontend/serve.mjs
 仅本地回归用拦截的测试身份，不更改应用认证代码。公网可显式设置 FUMAI_SCENE_REGISTER_VIEWER=1，走已有正常注册 API 创建一次无设备绑定的 viewer 测试账号，验收后注销会话；使用保留的 example.invalid 邮箱，不发通知。生产登录重定向另行验证，不通过拦截模拟公网身份。
 
 原理与许可证：[InstancedMesh](https://threejs.org/docs/pages/InstancedMesh.html)、[GLTFLoader](https://threejs.org/docs/pages/GLTFLoader.html)、[Meshoptimizer 解码器](https://github.com/zeux/meshoptimizer/tree/v0.22/js)、`frontend/THIRD_PARTY_NOTICES.md`。
+
+## 全屏与自由站位
+
+“全屏”展开整个三维工作台，保留工具栏、设备参数与退出入口；浏览器不支持原生全屏时铺满页面。“设备面板”可收起索引，移动端全屏默认收起，按需展开。
+
+“自由漫游”支持 WASD 或方向键前后/左右移动、Q/E 升降、Shift 加速、拖动鼠标或触屏调整朝向、R 回到 1.65 m 示意站高。屏幕方向按钮也可移动。退出漫游后恢复轨道观察。自由站位下选择设备只更新详情；点击“设备近览”才定位镜头。
+
+输入设备搜索、输入框获得焦点、窗口失焦、页面隐藏及路由退出时停止移动输入。视点有最低高度和布局周边范围限制；当前未依据工程数据构建物理碰撞，不作为真实通行性验证。

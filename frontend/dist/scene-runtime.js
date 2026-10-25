@@ -4,6 +4,7 @@ import {demoManifest,validateManifest,TYPES,assetEvents,pendingEvents} from './s
 import {createCase,advanceCase,caseReport,renderCase} from './scene-case.js';
 import {createEquipmentKit} from './scene-equipment.js';
 import {addLandscape,createAtmosphere} from './scene-landscape.js';
+import {createNavigation} from './scene-navigation.js';
 
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const rad=v=>v*Math.PI/180;
@@ -12,9 +13,9 @@ function disposeTree(root){const geometries=new Set(),materials=new Set(),textur
 export function createSceneView(host,{devices,getEvents,openAgent}){
  let manifest=validateManifest(demoManifest(devices)),events=getEvents(),selected='inv_07',type='all',onlyAlerts=false,query='',labels=true,disposed=false,renderer,controls,scene,camera,world,panelMesh,panelAssets=[],light,ring,observer,raf=0,transition=null,draws=0,frames=0,quality='standard',lighting='day',renderReady=false,importVersion=0;
  const assetRoots=new Map(),pickables=[],markers=new Map(),modelStates=new Map(),listeners=[];
- let caseState=null,walkthroughAvailable=true,equipment,landscape,atmosphere;
+ let caseState=null,walkthroughAvailable=true,equipment,landscape,atmosphere,navigation,expanded=false,nativeFullscreen=false,panelHidden=false,savedPanelHidden=false,oldBodyOverflow='';
  const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
- host.innerHTML=`<div class="scene-bar"><button data-camera="overview" class="active">全站视角</button><button data-camera="top">俯视</button><button data-camera="focus">设备近览</button><button data-camera="walk">巡检视角</button><span class="scene-bar-spacer"></span><select data-scene-type aria-label="设备类型"><option value="all">全部设备</option>${Object.entries(TYPES).map(([k,v])=>`<option value="${k}">${v}</option>`).join('')}</select><button data-scene-alerts aria-pressed="false">仅待核查</button><button data-scene-labels aria-pressed="true">标注开</button><select data-scene-light aria-label="场景光照"><option value="day">日间光照</option><option value="dusk">傍晚光照</option></select><select data-scene-quality aria-label="画质"><option value="standard">标准画质</option><option value="low">低功耗</option></select><button data-scene-fullscreen aria-label="全屏场景">⛶</button></div><div class="scene-message" role="status" hidden></div><div class="scene-layout"><div class="scene-viewport"><div class="scene-overlays"></div><div class="scene-head"><strong data-scene-name></strong><span>设备空间分布 / 点击设备查看线索</span></div><div class="scene-source" data-scene-source></div><div class="scene-compass" aria-label="示意坐标北向"><b>N</b><i>↑</i></div></div><aside class="scene-inspector"><div class="scene-inspector-head"><small>ASSET EXPLORER</small><h2>设备索引</h2><p>在列表或场景中选择设备</p></div><div class="scene-search"><input data-scene-search aria-label="搜索三维设备" placeholder="设备编号 / 分区…"></div><div class="scene-assets" aria-label="设备列表"></div><div class="scene-selection" aria-live="polite"></div></aside></div><div class="scene-stats"><span><b data-count-panel></b>组件</span><span><b data-count-inverter></b>逆变器</span><span><b data-count-transformer></b>箱变</span><span><b data-count-alert></b>待核查设备</span><span class="scene-help">拖拽旋转 · 滚轮缩放 · 右键平移 · 触屏双指缩放</span></div>`;
+ host.innerHTML=`<div class="scene-bar"><button data-camera="overview" class="active">全站视角</button><button data-camera="top">俯视</button><button data-camera="focus">设备近览</button><button data-camera="walk">巡检视角</button><button data-camera="free" aria-pressed="false">自由漫游</button><span class="scene-bar-spacer"></span><select data-scene-type aria-label="设备类型"><option value="all">全部设备</option>${Object.entries(TYPES).map(([k,v])=>`<option value="${k}">${v}</option>`).join('')}</select><button data-scene-alerts aria-pressed="false">仅待核查</button><button data-scene-labels aria-pressed="true">标注开</button><select data-scene-light aria-label="场景光照"><option value="day">日间光照</option><option value="dusk">傍晚光照</option></select><select data-scene-quality aria-label="画质"><option value="standard">标准画质</option><option value="low">低功耗</option></select><button data-scene-panel aria-expanded="true">设备面板</button><button data-scene-fullscreen aria-label="全屏场景" aria-pressed="false">⛶ 全屏</button></div><div class="scene-message" role="status" hidden></div><div class="scene-layout"><div class="scene-viewport"><div class="scene-overlays"></div><div class="scene-head"><strong data-scene-name></strong><span>设备空间分布 / 点击设备查看线索</span></div><div class="scene-source" data-scene-source></div><div class="scene-compass" aria-label="示意坐标北向"><b>N</b><i>↑</i></div></div><aside class="scene-inspector"><div class="scene-inspector-head"><small>ASSET EXPLORER</small><h2>设备索引</h2><p>在列表或场景中选择设备</p></div><div class="scene-search"><input data-scene-search aria-label="搜索三维设备" placeholder="设备编号 / 分区…"></div><div class="scene-assets" aria-label="设备列表"></div><div class="scene-selection" aria-live="polite"></div></aside></div><div class="scene-stats"><span><b data-count-panel></b>组件</span><span><b data-count-inverter></b>逆变器</span><span><b data-count-transformer></b>箱变</span><span><b data-count-alert></b>待核查设备</span><span class="scene-help">拖拽旋转 · 滚轮缩放 · 右键平移 · 触屏双指缩放</span></div>`;
  const viewport=host.querySelector('.scene-viewport'),overlay=host.querySelector('.scene-overlays'),selection=host.querySelector('.scene-selection'),assetList=host.querySelector('.scene-assets');
  const casePanel=document.createElement('section');casePanel.className='scene-case';casePanel.setAttribute('aria-label','工程案例演练');host.prepend(casePanel);
  function renderWalkthrough(focus=false){casePanel.innerHTML=renderCase(caseState,walkthroughAvailable);host.classList.toggle('scene-case-active',!!caseState);if(focus){const heading=casePanel.querySelector('h3');if(heading){heading.tabIndex=-1;heading.focus({preventScroll:true});}}}
@@ -41,7 +42,7 @@ export function createSceneView(host,{devices,getEvents,openAgent}){
   const linked=assetEvents(a,events,manifest.source),device=devices.find(d=>d.id===a.id),showPower=manifest.source==='constructed_demo'&&device;
   selection.innerHTML=`<h3>${esc(a.name)}</h3><p>${esc(a.id)} · ${esc(TYPES[a.type])}</p><dl class="scene-kv"><div><dt>所在区域</dt><dd>${esc(a.zone)}</dd></div><div><dt>线索状态</dt><dd>${alertFor(a)?'候选事件待核查':manifest.source==='constructed_demo'?'未挂接待核查线索':'业务数据未接入'}</dd></div><div><dt>场景坐标 / m</dt><dd>${a.position.map(n=>n.toFixed(1)).join(' / ')}</dd></div><div><dt>空间来源</dt><dd>${manifest.source==='constructed_demo'?'构造示意':'用户导入 / 待验收'}</dd></div>${showPower?`<div><dt>样例实测功率</dt><dd>${esc(device.actual_kw)} kW</dd></div><div><dt>样例参考功率</dt><dd>${esc(device.expected_kw)} kW</dd></div>`:''}</dl>${a.group&&a.type==='panel'?`<p>示意关联：${esc(a.group)}；非工程接线确认。</p>`:''}<p class="scene-model-state">${esc(modelStates.get(a.id)||(a.model?'模型等待加载':'精细化示意模型 · 尺寸待核对'))}</p><div class="scene-event-list">${linked.length?'<strong>关联样例事件</strong>'+linked.map(e=>`<article><strong>${esc(e.event_id)}</strong><p>${esc(e.start_local)}<br>事件观测 ${esc(e.mean_actual_kw)} / 参考 ${esc(e.mean_reference_kw)} kW</p><button data-scene-event="${esc(e.event_id)}">查看证据 ↗</button>　<button data-scene-agent="${esc(e.event_id)}">询问智能体 ↗</button></article>`).join(''):'<p>当前没有挂接业务事件，不能据此判断设备正常。</p>'}</div>`;
  }
- function choose(id,focus=false){if(!manifest.assets.some(a=>a.id===id))return;selected=id;if(caseState?.stage===0){caseState.picked=id;caseState.feedback='';renderWalkthrough();}renderAssets();renderSelection();updateRing();if(focus)moveCamera('focus');invalidate();host.dispatchEvent(new CustomEvent('fumai-scene-select',{bubbles:true,detail:{id,source:manifest.source}}));}
+ function choose(id,focus=false){if(!manifest.assets.some(a=>a.id===id))return;selected=id;if(caseState?.stage===0){caseState.picked=id;caseState.feedback='';renderWalkthrough();}renderAssets();renderSelection();updateRing();if(focus&&!navigation?.enabled)moveCamera('focus');invalidate();host.dispatchEvent(new CustomEvent('fumai-scene-select',{bubbles:true,detail:{id,source:manifest.source}}));}
  function updateRing(){if(!ring)return;const a=manifest.assets.find(a=>a.id===selected);ring.visible=!!a&&allowed(a);if(a){ring.position.set(a.position[0],.06,a.position[2]);ring.scale.setScalar(a.type==='panel'?1.2:a.type==='transformer'?3:1.5);}}
  function updateFilters(){
   if(world){for(const a of manifest.assets){const root=assetRoots.get(a.id);if(root)root.visible=allowed(a);}
@@ -64,6 +65,7 @@ export function createSceneView(host,{devices,getEvents,openAgent}){
   for(const a of manifest.assets.filter(a=>a.type!=='panel'||a.model)){addPrimitive(a);if(a.model)void loadModel(a,version);}
   for(const a of manifest.assets.filter(a=>a.type==='inverter'&&alertFor(a))){const marker=document.createElement('button');marker.className='scene-marker';marker.dataset.sceneSelect=a.id;marker.setAttribute('aria-label',`${a.name}，${alertFor(a)} 条候选事件待核查`);marker.innerHTML=`${esc(a.id)} <b>${alertFor(a)}</b>`;overlay.append(marker);markers.set(a.id,marker);}
   ring=new T.Mesh(new T.RingGeometry(.8,1,48),new T.MeshBasicMaterial({color:'#d4a74d',side:T.DoubleSide,transparent:true,opacity:.9}));ring.rotation.x=-Math.PI/2;world.add(ring);
+  const navBounds=new T.Box3();for(const a of manifest.assets)navBounds.expandByPoint(new T.Vector3(...a.position));navigation?.setBounds(navBounds);
   updateFilters();info();renderSelection();moveCamera('overview',true);
  }
  async function loadModel(a,version){
@@ -77,6 +79,12 @@ export function createSceneView(host,{devices,getEvents,openAgent}){
  }
  function moveCamera(mode,instant=false){
   if(!camera||!controls)return;
+  if(mode==='free'){
+   if(navigation.enabled){navigation.setEnabled(false);return;}
+   if(camera.position.y>12)moveCamera('walk',true);
+   transition=null;navigation.setEnabled(true);host.querySelectorAll('[data-camera]').forEach(b=>b.classList.toggle('active',b.dataset.camera==='free'));return;
+  }
+  navigation?.setEnabled(false);
   const bounds=new T.Box3();for(const a of manifest.assets)bounds.expandByPoint(new T.Vector3(...a.position));const center=bounds.getCenter(new T.Vector3()),extent=Math.max(30,bounds.getSize(new T.Vector3()).length());
   let target=center.clone().setY(0),position;
   if(mode==='focus'||mode==='walk'){
@@ -96,18 +104,19 @@ export function createSceneView(host,{devices,getEvents,openAgent}){
  function tick(now){
   raf=0;if(disposed||!renderer||!renderReady||document.hidden)return;
   if(transition){const t=Math.min(1,(now-transition.time)/650),ease=1-(1-t)**3;camera.position.lerpVectors(transition.from,transition.to,ease);controls.target.lerpVectors(transition.start,transition.target,ease);if(t===1)transition=null;}
-  const moving=controls.update();equipment?.update(camera,selected,quality);renderer.render(scene,camera);frames++;draws=renderer.info.render.calls;drawMarkers();
-  if(transition||moving)invalidate();
+  const walking=navigation?.update(now);const moving=navigation?.enabled?false:controls.update();equipment?.update(camera,selected,quality);renderer.render(scene,camera);frames++;draws=renderer.info.render.calls;drawMarkers();
+  if(transition||moving||walking||navigation?.moving())invalidate();
  }
  function invalidate(){if(!disposed&&renderer&&renderReady&&!raf)raf=requestAnimationFrame(tick);}
  function resize(){if(!renderer)return;const w=viewport.clientWidth,h=viewport.clientHeight;if(!w||!h)return;camera.aspect=w/h;camera.updateProjectionMatrix();renderer.setPixelRatio(quality==='low'?1:Math.min(devicePixelRatio||1,innerWidth<650?1.25:1.75));renderer.setSize(w,h,false);const active=host.querySelector('[data-camera].active')?.dataset.camera;if(active==='overview'||active==='top')moveCamera(active,true);invalidate();}
- function fallback(){viewport.insertAdjacentHTML('beforeend','<div class="scene-fallback"><h3>当前浏览器未能启用三维显示</h3><p>可继续使用右侧设备索引查看详情与事件。<br>启用浏览器图形加速后刷新可重试。</p><a class="secondary-button" href="#devices">查看设备列表 ↗</a></div>');host.dataset.sceneReady='fallback';}
+ function fallback(){host.querySelector('[data-camera=free]').disabled=true;viewport.insertAdjacentHTML('beforeend','<div class="scene-fallback"><h3>当前浏览器未能启用三维显示</h3><p>可继续使用右侧设备索引查看详情与事件。<br>启用浏览器图形加速后刷新可重试。</p><a class="secondary-button" href="#devices">查看设备列表 ↗</a></div>');host.dataset.sceneReady='fallback';}
  try{
   renderer=new T.WebGLRenderer({antialias:true,powerPreference:'high-performance',alpha:false});renderer.setClearColor('#e7eee7');renderer.shadowMap.enabled=true;renderer.shadowMap.type=T.PCFSoftShadowMap;renderer.outputColorSpace=T.SRGBColorSpace;renderer.toneMapping=T.ACESFilmicToneMapping;renderer.toneMappingExposure=1.08;renderer.domElement.tabIndex=0;renderer.domElement.setAttribute('aria-label','三维电站场景；也可使用设备索引选择');viewport.prepend(renderer.domElement);
   scene=new T.Scene();scene.fog=new T.Fog('#cedad8',130,500);camera=new T.PerspectiveCamera(43,1,.1,1200);atmosphere=createAtmosphere(scene,renderer);
   scene.add(new T.HemisphereLight('#e5f1fa','#78845c',1.15));light=new T.DirectionalLight('#fff6dc',3.2);light.position.set(-25,60,-25);light.castShadow=true;light.shadow.mapSize.set(2048,2048);Object.assign(light.shadow.camera,{left:-75,right:75,top:75,bottom:-75,near:1,far:150});light.shadow.bias=-.0001;light.shadow.normalBias=.035;scene.add(light);
   controls=new OrbitControls(camera,renderer.domElement);controls.enableDamping=true;controls.dampingFactor=.12;controls.maxPolarAngle=Math.PI*.48;controls.minDistance=1.3;on(controls,'change',invalidate);on(controls,'start',()=>{transition=null;});
-  on(renderer.domElement,'webglcontextlost',e=>{e.preventDefault();renderReady=false;if(raf)cancelAnimationFrame(raf);raf=0;fallback();});
+  navigation=createNavigation({camera,controls,canvas:renderer.domElement,host,invalidate,onChange:active=>{host.querySelector('[data-camera=free]').classList.toggle('active',active);host.querySelector('[data-camera=free]').setAttribute('aria-pressed',String(active));host.querySelector('.scene-help').textContent=active?'WASD / 方向键移动 · Q/E 升降 · Shift 加速 · 拖动转头 · R 站高复位 · Esc 退出漫游':'拖拽旋转 · 滚轮缩放 · 右键平移 · 触屏双指缩放';}});
+  on(renderer.domElement,'webglcontextlost',e=>{e.preventDefault();navigation?.setEnabled(false);renderReady=false;if(raf)cancelAnimationFrame(raf);raf=0;fallback();});
   const raycaster=new T.Raycaster();let down=null;
   on(renderer.domElement,'pointerdown',e=>{down=[e.clientX,e.clientY];});
   on(renderer.domElement,'pointerup',e=>{if(!down||Math.hypot(e.clientX-down[0],e.clientY-down[1])>5)return;const rect=renderer.domElement.getBoundingClientRect();raycaster.setFromCamera(new T.Vector2((e.clientX-rect.left)/rect.width*2-1,-(e.clientY-rect.top)/rect.height*2+1),camera);const hit=raycaster.intersectObjects(pickables,false).find(h=>{const id=h.object===panelMesh?panelAssets[h.instanceId]?.id:h.object.userData.assetId;const asset=manifest.assets.find(a=>a.id===id);return h.object.visible&&asset&&allowed(asset);});if(hit){const id=hit.object===panelMesh?panelAssets[hit.instanceId]?.id:hit.object.userData.assetId;if(id)choose(id);}});
@@ -127,7 +136,8 @@ export function createSceneView(host,{devices,getEvents,openAgent}){
   const agent=e.target.closest('[data-scene-agent]');if(agent){openAgent(agent.dataset.sceneAgent);return;}
   if(e.target.closest('[data-scene-alerts]')){onlyAlerts=!onlyAlerts;e.target.closest('button').classList.toggle('active',onlyAlerts);e.target.closest('button').setAttribute('aria-pressed',String(onlyAlerts));updateFilters();}
   if(e.target.closest('[data-scene-labels]')){labels=!labels;e.target.closest('button').textContent=labels?'标注开':'标注关';e.target.closest('button').setAttribute('aria-pressed',String(labels));if(camera&&controls)drawMarkers();invalidate();}
-  if(e.target.closest('[data-scene-fullscreen]')){if(document.fullscreenElement)void document.exitFullscreen();else viewport.requestFullscreen?.().catch(()=>message('浏览器暂不支持全屏，可使用全站视角。'));}
+  if(e.target.closest('[data-scene-panel]')){panelHidden=!panelHidden;syncPanel();}
+  if(e.target.closest('[data-scene-fullscreen]'))void toggleFullscreen();
  });
  on(host,'input',e=>{if(e.target.matches('[data-scene-search]')){query=e.target.value.trim().toLowerCase();renderAssets();}});
  on(host,'input',e=>{if(e.target.id==='scene-case-note'&&caseState)caseState.note=e.target.value;});
@@ -136,9 +146,21 @@ export function createSceneView(host,{devices,getEvents,openAgent}){
   if(e.target.matches('[data-scene-quality]')){quality=e.target.value;if(renderer){renderer.shadowMap.enabled=quality==='standard';landscape?.quality(quality);resize();}}
   if(e.target.matches('[data-scene-light]')){lighting=e.target.value;atmosphere?.lighting(lighting);if(light){light.color.set(lighting==='dusk'?'#ffb26f':'#fff6dc');light.intensity=lighting==='dusk'?2:3.2;light.position.set(lighting==='dusk'?-65:-25,lighting==='dusk'?18:60,-25);renderer.toneMappingExposure=lighting==='dusk'?.85:1.08;invalidate();}}
  });
+ function syncPanel(){host.classList.toggle('scene-panel-hidden',panelHidden);host.querySelector('[data-scene-panel]').setAttribute('aria-expanded',String(!panelHidden));resize();}
+ function setExpanded(value){
+  if(expanded===value)return;expanded=value;if(value){savedPanelHidden=panelHidden;oldBodyOverflow=document.body.style.overflow;document.body.style.overflow='hidden';if(innerWidth<650){panelHidden=true;syncPanel();}}else{document.body.style.overflow=oldBodyOverflow;panelHidden=savedPanelHidden;syncPanel();navigation?.clear();}
+  host.classList.toggle('scene-expanded',value);host.dataset.sceneExpanded=String(value);const button=host.querySelector('[data-scene-fullscreen]');button.textContent=value?'退出全屏':'⛶ 全屏';button.setAttribute('aria-label',value?'退出全屏':'全屏场景');button.setAttribute('aria-pressed',String(value));resize();
+ }
+ async function toggleFullscreen(){
+  if(expanded){if(document.fullscreenElement===host)await document.exitFullscreen().catch(()=>{});setExpanded(false);nativeFullscreen=false;return;}
+  setExpanded(true);
+  try{if(host.requestFullscreen){await host.requestFullscreen();nativeFullscreen=document.fullscreenElement===host;}else nativeFullscreen=false;}catch(error){nativeFullscreen=false;}
+ }
+ on(document,'fullscreenchange',()=>{if(document.fullscreenElement===host){nativeFullscreen=true;setExpanded(true);}else if(nativeFullscreen){nativeFullscreen=false;navigation?.setEnabled(false);setExpanded(false);}});
+ on(window,'keydown',event=>{if(event.code==='Escape'&&expanded&&!document.fullscreenElement){setExpanded(false);navigation?.setEnabled(false);}});
  on(document,'visibilitychange',invalidate);
  const exportButton=document.querySelector('[data-scene-export]'),importInput=document.querySelector('[data-scene-import]');
  on(exportButton,'click',()=>{const url=URL.createObjectURL(new Blob([JSON.stringify(manifest,null,2)],{type:'application/json'}));const a=document.createElement('a');a.href=url;a.download='fumai-scene-template.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);});
  on(importInput,'change',async()=>{const file=importInput.files?.[0];if(!file)return;try{if(file.size>2*1024*1024)throw Error('场景 JSON 不得超过 2 MB。');const parsed=validateManifest(JSON.parse(await file.text()));if(disposed)return;manifest=parsed;caseState=null;walkthroughAvailable=false;renderWalkthrough();events=getEvents();selected=manifest.assets[0].id;type='all';onlyAlerts=false;query='';host.querySelector('[data-scene-type]').value='all';host.querySelector('[data-scene-alerts]').classList.remove('active');host.querySelector('[data-scene-alerts]').setAttribute('aria-pressed','false');host.querySelector('[data-scene-search]').value='';message('已在当前浏览器载入场景，坐标和模型精度待工程验收；未写入服务器。');if(renderer)build();info();renderAssets();renderSelection();}catch(error){message(error.message||'场景格式无效，保留原场景。');}finally{importInput.value='';}});
- return {dispose(){disposed=true;importVersion++;if(raf)cancelAnimationFrame(raf);observer?.disconnect();for(const off of listeners)off();controls?.dispose();if(scene)disposeTree(scene);equipment?.dispose();atmosphere?.dispose();renderer?.dispose();renderer?.forceContextLoss();host.dataset.sceneDisposed='true';},stats(){return {frames,drawCalls:draws,assets:manifest.assets.length,backend:'webgl',quality,...equipment?.stats(),active:!disposed};}};
+ return {dispose(){disposed=true;navigation?.dispose();if(document.fullscreenElement===host)void document.exitFullscreen().catch(()=>{});setExpanded(false);importVersion++;if(raf)cancelAnimationFrame(raf);observer?.disconnect();for(const off of listeners)off();controls?.dispose();if(scene)disposeTree(scene);equipment?.dispose();atmosphere?.dispose();renderer?.dispose();renderer?.forceContextLoss();host.dataset.sceneDisposed='true';},stats(){return {frames,drawCalls:draws,assets:manifest.assets.length,backend:'webgl',quality,expanded,navigation:navigation?.stats(),...equipment?.stats(),active:!disposed};}};
 }
