@@ -94,7 +94,7 @@ const out = process.env.FUMAI_TEST_OUTPUT || path.resolve('outputs');
         checks.push('fullscreen roaming and daylight playback work together');
 
         await page.setViewportSize({width: 390, height: 844});
-        if (await page.locator('[data-scene-panel]').getAttribute('aria-expanded') === 'true') await page.locator('[data-scene-panel]').click();
+        if (await page.locator('.scene-bar [data-scene-panel]').getAttribute('aria-expanded') === 'true') await page.locator('.scene-bar [data-scene-panel]').click();
         await page.locator('[data-sun-reset]').click();
         const mobile = await page.locator('.scene-daylight').boundingBox();
         const canvas = await page.locator('.scene-viewport').boundingBox();

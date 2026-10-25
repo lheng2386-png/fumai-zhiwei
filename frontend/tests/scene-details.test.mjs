@@ -1,0 +1,16 @@
+import assert from 'node:assert/strict';
+import {demoManifest,validateManifest} from '../dist/scene-data.js';
+import {renderAssetDetails} from '../dist/scene-details.js';
+const manifest=validateManifest(demoManifest([]));
+const devices=[{id:'inv_07',actual_kw:9.4,expected_kw:27.4}];
+const events=[{event_id:'event_1',inverter:'inv_07',review_status:'needs_investigation',evidence:'device_specific_candidate',note:'<script>private()</script>'}];
+const render=(id,overrides={})=>renderAssetDetails({asset:manifest.assets.find(a=>a.id===id),manifest,devices,events,...overrides});
+assert.match(render('inv_07'),/-18\.0/);assert.match(render('inv_07'),/-65\.7/);assert.match(render('inv_07'),/待现场核查/);
+assert.match(render('inv_07'),/关联 光伏组件 <strong>96/);assert.match(render('trafo_1'),/关联 逆变器 <strong>12/);
+assert.match(render('pv_0001'),/inv_01/);assert.match(render('inv_48'),/未接入监测数据/);assert.doesNotMatch(render('inv_48'),/class="scene-power-cards"/);
+const imported=render('inv_07',{manifest:{...manifest,source:'field_survey'}});assert.doesNotMatch(imported,/9\.4|event_1/);assert.match(imported,/未接入/);
+assert.match(render('inv_07'),/&lt;script&gt;/);assert.doesNotMatch(render('inv_07'),/<script>/);
+assert.match(render('inv_07',{devices:[{id:'inv_07',actual_kw:Infinity,expected_kw:27.4}]}),/未接入监测数据/);
+const zero=render('inv_07',{devices:[{id:'inv_07',actual_kw:0,expected_kw:0}]});assert.doesNotMatch(zero,/NaN|Infinity/);
+assert.ok(Math.max(...manifest.assets.map(a=>a.position[0]))-Math.min(...manifest.assets.map(a=>a.position[0]))>200);
+console.log(JSON.stringify({checks:['power deviation is descriptive','96 modules and 12 inverters derive from layout','new assets have no invented telemetry','imported layouts cannot inherit fixture data','untrusted notes escape HTML','invalid and zero reference measurements remain explicit','expanded site spans over 200m'],status:'passed'}));

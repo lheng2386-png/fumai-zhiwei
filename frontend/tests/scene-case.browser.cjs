@@ -16,7 +16,7 @@ const base=process.env.FUMAI_CHECK_URL||'http://127.0.0.1:4198',out=process.env.
     const ready=()=>page.waitForFunction(()=>document.querySelector('#scene-workbench')?.dataset.sceneReady==='webgl');
     const step=async number=>assert.match(await page.locator('.scene-case-heading [aria-current=step]').textContent(),new RegExp('^'+number));
     try{
-        await page.goto(base+'/#scene');await ready();
+        await page.goto(base+'/#scene');await ready();await page.locator('[data-scene-case]').click();
         await page.locator('[data-case-start=single]').click();await step(1);
         await page.locator('[data-case-action=locate]').click();assert.match(await page.locator('.scene-case-feedback').textContent(),/请在场景/);
         await page.locator('.scene-assets [data-scene-select=inv_01]').click();await page.locator('[data-case-action=locate]').click();await step(1);
@@ -42,7 +42,7 @@ const base=process.env.FUMAI_CHECK_URL||'http://127.0.0.1:4198',out=process.env.
         await page.evaluate(()=>location.hash='overview');await page.waitForSelector('#main[data-view=overview]');await page.evaluate(()=>location.hash='scene');await ready();assert.equal(await page.locator('[data-case-start]:not([disabled])').count(),2);checks.push('route exit clears rehearsal state and restores demo on return');
         const fallback=await browser.newPage({viewport:{width:1200,height:900},storageState:await page.context().storageState()});if(local)await auth(fallback);
         await fallback.addInitScript(()=>{const get=HTMLCanvasElement.prototype.getContext;HTMLCanvasElement.prototype.getContext=function(type,...args){return /webgl/.test(type)?null:get.call(this,type,...args);};});
-        await fallback.goto(base+'/#scene');await fallback.waitForSelector('#scene-workbench[data-scene-ready=fallback]');await fallback.locator('[data-case-start=single]').click();await fallback.locator('.scene-assets [data-scene-select=inv_07]').click();await fallback.locator('[data-case-action=locate]').click();assert.match(await fallback.locator('.scene-case-heading [aria-current=step]').textContent(),/^2/);await fallback.close();checks.push('without WebGL, equipment index can complete location step');
+        await fallback.goto(base+'/#scene');await fallback.waitForSelector('#scene-workbench[data-scene-ready=fallback]');await fallback.locator('[data-scene-case]').click();await fallback.locator('[data-case-start=single]').click();await fallback.locator('.scene-assets [data-scene-select=inv_07]').click();await fallback.locator('[data-case-action=locate]').click();assert.match(await fallback.locator('.scene-case-heading [aria-current=step]').textContent(),/^2/);await fallback.close();checks.push('without WebGL, equipment index can complete location step');
         assert.deepEqual(writes,[],'Rehearsal must not issue business writes or model requests');assert.deepEqual(errors,[]);
         const result={base,checks,pageErrors:errors,businessWrites:writes,exportDataKind:report.data_kind};fs.writeFileSync(path.join(out,'fumai-case-validation.json'),JSON.stringify(result,null,2));console.log(JSON.stringify(result));
     }finally{if(registered)await page.request.post(base+'/api/auth/logout',{headers:{Origin:base}}).catch(()=>{});await browser.close();}

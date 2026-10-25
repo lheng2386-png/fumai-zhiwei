@@ -1,13 +1,14 @@
 export const TYPES={panel:'光伏组件',inverter:'逆变器',transformer:'箱式变压器'};
 export function demoManifest(devices){
  const assets=[];
- for(let i=0;i<24;i++){
-  const x=(i%6-2.5)*12,z=(Math.floor(i/6)-1.5)*18;
+ for(let i=0;i<48;i++){
+  const x=(i%8-3.5)*25,z=(Math.floor(i/8)-2.5)*29;
   const inverter=devices[i]?.id||`inv_${String(i+1).padStart(2,'0')}`;
-  assets.push({id:inverter,type:'inverter',name:devices[i]?.name||inverter,position:[x+4.7,0,z+5.6],zone:`${String.fromCharCode(65+Math.floor(i/6))} 区`,group:inverter});
-  for(let row=0;row<4;row++)for(let col=0;col<6;col++)assets.push({id:`pv_${String(i*24+row*6+col+1).padStart(4,'0')}`,type:'panel',name:`组件 ${i*24+row*6+col+1}`,position:[x+(col-2.5)*1.65,1.25,z+(row-1.5)*2.7],zone:`${String.fromCharCode(65+Math.floor(i/6))} 区`,group:inverter,rotation:[-24,0,0]});
+  const zone=`${String.fromCharCode(65+Math.floor(i/8))} 区`;
+  assets.push({id:inverter,type:'inverter',name:devices[i]?.name||`逆变器 ${String(i+1).padStart(2,'0')}`,position:[x+11,0,z+11.6],zone,group:`trafo_${Math.floor(i/12)+1}`});
+  for(let row=0;row<8;row++)for(let col=0;col<12;col++)assets.push({id:`pv_${String(i*96+row*12+col+1).padStart(4,'0')}`,type:'panel',name:`组件 ${i*96+row*12+col+1}`,position:[x+(col-5.5)*1.65,1.25,z+(row-3.5)*2.7],zone,group:inverter,rotation:[-24,0,0]});
  }
- for(let i=0;i<2;i++)assets.push({id:`trafo_${i+1}`,type:'transformer',name:`箱变 ${String(i+1).padStart(2,'0')}`,position:[45,0,i?22:-22],zone:'配电区域'});
+ for(let i=0;i<4;i++)assets.push({id:`trafo_${i+1}`,type:'transformer',name:`箱变 ${String(i+1).padStart(2,'0')}`,position:[118,0,(i-1.5)*48],zone:'配电区域'});
  return {version:1,source:'constructed_demo',name:'伏脉 · 光伏电站示意场景',units:'m',up:'Y',coordinateSystem:'local_demo',origin:[0,0,0],assets};
 }
 export function validateManifest(input){

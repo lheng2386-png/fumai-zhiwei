@@ -3,8 +3,8 @@ import fs from 'node:fs';
 import {demoManifest,validateManifest,assetEvents,pendingEvents} from '../dist/scene-data.js';
 import {MeshoptDecoder} from '../dist/vendor/three-r180/meshopt_decoder.module.js';
 const scene=validateManifest(demoManifest([]));
-assert.equal(scene.assets.length,602);assert.equal(scene.assets.filter(a=>a.type==='panel').length,576);
-assert.equal(new Set(scene.assets.map(a=>a.id)).size,602);
+assert.equal(scene.assets.length,4660);assert.equal(scene.assets.filter(a=>a.type==='panel').length,4608);
+assert.equal(new Set(scene.assets.map(a=>a.id)).size,4660);
 for(const mutate of [s=>s.assets.push(s.assets[0]),s=>s.assets[0].position[1]=NaN,s=>s.assets[0].model='https://example.test/model.glb',s=>s.assets[0].model='./models/../x.glb',s=>s.assets[0].group='missing',s=>s.units='mm',s=>s.assets[0].scale=[0,1,1]]){
  const value=structuredClone(scene);mutate(value);assert.throws(()=>validateManifest(value));
 }

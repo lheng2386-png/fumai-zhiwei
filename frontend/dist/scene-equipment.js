@@ -5,7 +5,7 @@ import {equipmentRecipe} from './scene-equipment-data.js';
 // All dimensions are illustrative metres, not manufacturer or survey data.
 export function createEquipmentKit(){
     const geometries=new Set(),textures=new Set(),materials=new Map(),prototypes=new Map(),devices=[];
-    let panelAssets=[],panelVisuals=[],panelProxy=null,closePanel=null,closeId='',visibleIds=new Set(),alertIds=new Set();
+    let panelAssets=[],panelVisuals=[],rackVisuals=[],panelProxy=null,closePanel=null,closeId='',visibleIds=new Set(),alertIds=new Set();
     const dummy=new T.Object3D(),matrix=new T.Matrix4(),zero=new T.Matrix4().makeScale(0,0,0);
     const canvas=document.createElement('canvas');canvas.width=384;canvas.height=768;const ctx=canvas.getContext('2d');
     ctx.fillStyle='#102937';ctx.fillRect(0,0,384,768);
@@ -41,15 +41,17 @@ export function createEquipmentKit(){
         const proxyGeometry=new T.BoxGeometry(1.5,.09,2.2),proxyMaterial=new T.MeshBasicMaterial({visible:false});geometries.add(proxyGeometry);materials.set('pick-proxy',proxyMaterial);
         panelProxy=new T.InstancedMesh(proxyGeometry,proxyMaterial,assets.length);panelProxy.userData.panelInstances=true;parent.add(panelProxy);
         for(const part of prototype('panel','base')){const mesh=new T.InstancedMesh(part.geometry,part.material,assets.length);mesh.castShadow=true;mesh.receiveShadow=true;parent.add(mesh);panelVisuals.push(mesh);}
-        for(const part of prototype('rack','base')){const mesh=new T.InstancedMesh(part.geometry,part.material,assets.length);mesh.castShadow=true;mesh.receiveShadow=true;for(let i=0;i<assets.length;i++){dummy.position.set(assets[i].position[0],0,assets[i].position[2]);dummy.rotation.set(0,0,0);dummy.scale.set(1,1,1);dummy.updateMatrix();mesh.setMatrixAt(i,dummy.matrix);}parent.add(mesh);}
+        for(const part of prototype('rack','base')){const mesh=new T.InstancedMesh(part.geometry,part.material,assets.length);mesh.castShadow=true;mesh.receiveShadow=true;for(let i=0;i<assets.length;i++){dummy.position.set(assets[i].position[0],0,assets[i].position[2]);dummy.rotation.set(0,0,0);dummy.scale.set(1,1,1);dummy.updateMatrix();mesh.setMatrixAt(i,dummy.matrix);}parent.add(mesh);rackVisuals.push(mesh);}
         closePanel=meshes('panel','all');closePanel.visible=false;parent.add(closePanel);syncPanels();return panelProxy;
     }
     function syncPanels(){
         if(!panelProxy)return;
         for(let i=0;i<panelAssets.length;i++){
             const asset=panelAssets[i],show=visibleIds.has(asset.id);matrix.copy(show?pose(asset):zero);panelProxy.setMatrixAt(i,matrix);
+            for(const mesh of rackVisuals){if(show){dummy.position.set(asset.position[0],0,asset.position[2]);dummy.rotation.set(0,0,0);dummy.scale.set(1,1,1);dummy.updateMatrix();mesh.setMatrixAt(i,dummy.matrix);}else mesh.setMatrixAt(i,zero);}
             for(const mesh of panelVisuals){mesh.setMatrixAt(i,show&&asset.id!==closeId?matrix:zero);mesh.setColorAt(i,new T.Color(alertIds.has(asset.id)?'#e9c1b7':'#ffffff'));}
         }
+        for(const mesh of rackVisuals){mesh.instanceMatrix.needsUpdate=true;mesh.computeBoundingSphere();}
         panelProxy.instanceMatrix.needsUpdate=true;panelProxy.computeBoundingSphere();
         for(const mesh of panelVisuals){mesh.instanceMatrix.needsUpdate=true;mesh.instanceColor.needsUpdate=true;mesh.computeBoundingSphere();}
     }
