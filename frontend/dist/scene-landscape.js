@@ -2,19 +2,40 @@ import * as T from './vendor/three-r180/three.module.min.js';
 
 function seeded(seed){return()=>{seed=(seed*1664525+1013904223)>>>0;return seed/4294967296;};}
 export function createAtmosphere(scene,renderer){
-    const maps=new Map(),generator=new T.PMREMGenerator(renderer);let current='';
-    function lighting(mode){
-        if(mode===current)return;current=mode;
-        if(!maps.has(mode)){
-            const dusk=mode==='dusk',canvas=document.createElement('canvas');canvas.width=1024;canvas.height=512;const ctx=canvas.getContext('2d'),gradient=ctx.createLinearGradient(0,0,0,512),random=seeded(7407);
-            for(const [stop,color]of(dusk?[[0,'#42546c'],[.4,'#b4a9aa'],[.53,'#e8c5a0'],[1,'#64745b']]:[[0,'#3b84b6'],[.4,'#a3c8da'],[.53,'#e4e7dd'],[1,'#879477']]))gradient.addColorStop(stop,color);
-            ctx.fillStyle=gradient;ctx.fillRect(0,0,1024,512);
-            for(let i=0;i<55;i++){const x=random()*1024,y=120+random()*80,r=12+random()*45,g=ctx.createRadialGradient(x,y,0,x,y,r);g.addColorStop(0,'#ffffff20');g.addColorStop(1,'#ffffff00');ctx.fillStyle=g;ctx.fillRect(x-r,y-r,r*2,r*2);}
-            const sky=new T.CanvasTexture(canvas);sky.colorSpace=T.SRGBColorSpace;sky.mapping=T.EquirectangularReflectionMapping;const environment=generator.fromEquirectangular(sky);maps.set(mode,{sky,environment});
-        }
-        const entry=maps.get(mode);scene.background=entry.sky;scene.environment=entry.environment.texture;scene.environmentIntensity=.65;scene.fog.color.set(mode==='dusk'?'#baaca3':'#cedad8');
-    }
-    lighting('day');return {lighting,dispose(){for(const entry of maps.values()){entry.sky.dispose();entry.environment.dispose();}generator.dispose();}};
+    const generator=new T.PMREMGenerator(renderer),canvas=document.createElement('canvas');
+    canvas.width=512;canvas.height=256;
+    const ctx=canvas.getContext('2d'),gradient=ctx.createLinearGradient(0,0,0,256);
+    for(const [stop,color] of [[0,'#5b9fc9'],[.5,'#dce3d6'],[1,'#879477']])gradient.addColorStop(stop,color);
+    ctx.fillStyle=gradient;ctx.fillRect(0,0,512,256);
+    const map=new T.CanvasTexture(canvas);map.colorSpace=T.SRGBColorSpace;map.mapping=T.EquirectangularReflectionMapping;
+    const environment=generator.fromEquirectangular(map);scene.environment=environment.texture;
+    // One cached environment; sky colours and sun direction use uniforms during playback.
+    const material=new T.ShaderMaterial({
+        side:T.BackSide,depthWrite:false,fog:false,
+        uniforms:{zenith:{value:new T.Color()},horizon:{value:new T.Color()},ground:{value:new T.Color('#879477')},sunDirection:{value:new T.Vector3()},sunColor:{value:new T.Color()}},
+        vertexShader:`varying vec3 skyDirection;void main(){skyDirection=position;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}`,
+        fragmentShader:`uniform vec3 zenith,horizon,ground,sunDirection,sunColor;varying vec3 skyDirection;
+            void main(){vec3 direction=normalize(skyDirection);vec3 sky=mix(horizon,zenith,smoothstep(0.0,.85,max(direction.y,0.0)));
+            sky=mix(sky,ground,smoothstep(0.0,.6,max(-direction.y,0.0)));
+            float alignment=max(dot(direction,sunDirection),0.0);sky+=sunColor*(pow(alignment,500.0)*1.6+pow(alignment,24.0)*.18);
+            gl_FragColor=vec4(sky,1.0);
+            #include <tonemapping_fragment>
+            #include <colorspace_fragment>
+            }`
+    });
+    const geometry=new T.SphereGeometry(900,32,16),sky=new T.Mesh(geometry,material);sky.frustumCulled=false;sky.renderOrder=-1;scene.add(sky);
+    return {
+        center(position){sky.position.copy(position);},
+        sunlight(sample){
+            material.uniforms.zenith.value.set('#3b84b6').lerp(new T.Color('#42546c'),sample.warmth);
+            material.uniforms.horizon.value.set('#e4e7dd').lerp(new T.Color('#e8b18b'),sample.warmth);
+            material.uniforms.sunColor.value.set('#fff6dc').lerp(new T.Color('#ffb26f'),sample.warmth);
+            material.uniforms.sunDirection.value.fromArray(sample.sunPosition).normalize();
+            scene.environmentIntensity=.5+(1-sample.warmth)*.15;
+            scene.fog.color.set('#cedad8').lerp(new T.Color('#baaca3'),sample.warmth);
+        },
+        dispose(){scene.remove(sky);geometry.dispose();material.dispose();map.dispose();environment.dispose();generator.dispose();}
+    };
 }
 export function addLandscape(parent,renderer,{demonstration=true}={}){
     const random=seeded(3287),groundCanvas=document.createElement('canvas');groundCanvas.width=groundCanvas.height=256;const ctx=groundCanvas.getContext('2d'),pixels=ctx.createImageData(256,256);
