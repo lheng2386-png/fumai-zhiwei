@@ -20,7 +20,7 @@ export function createNavigation({camera,controls,canvas,host,invalidate,onChang
     on(window,'keydown',event=>{
         if(!enabled)return;
         if(event.code==='Escape'){setEnabled(false);return;}
-        if(editable(event.target)||!host.contains(document.activeElement))return;
+        if(event.ctrlKey||event.metaKey||event.altKey||editable(event.target)||!host.contains(document.activeElement))return;
         if(event.code==='KeyR'){event.preventDefault();resetHeight();return;}
         const action=mapping[event.code];if(!action)return;event.preventDefault();actions.set('key:'+event.code,action);invalidate();
     });

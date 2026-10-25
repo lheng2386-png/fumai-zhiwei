@@ -99,7 +99,7 @@ export function createSceneView(host,{devices,getEvents,openAgent}){
  function drawMarkers(){
   const occupied=[];
   for(const [id,marker]of [...markers].sort(([a],[b])=>Number(b===selected)-Number(a===selected))){const a=manifest.assets.find(a=>a.id===id),v=new T.Vector3(...a.position);v.y+=3;v.project(camera);const x=(v.x*.5+.5)*viewport.clientWidth,y=(-v.y*.5+.5)*viewport.clientHeight;let visible=labels&&allowed(a)&&v.z>-1&&v.z<1&&Math.abs(v.x)<1.05&&Math.abs(v.y)<1.05&&y>75;if(visible&&occupied.some(p=>Math.abs(p[0]-x)<78&&Math.abs(p[1]-y)<31))visible=false;marker.hidden=!visible;if(visible){marker.style.left=`${x}px`;marker.style.top=`${y}px`;occupied.push([x,y]);}marker.classList.toggle('selected',id===selected);}
-  host.querySelector('.scene-compass i').style.transform=`rotate(${Math.atan2(camera.position.x-controls.target.x,camera.position.z-controls.target.z)}rad)`;
+  const heading=camera.getWorldDirection(new T.Vector3());host.querySelector('.scene-compass i').style.transform=`rotate(${Math.atan2(-heading.x,-heading.z)}rad)`;
  }
  function tick(now){
   raf=0;if(disposed||!renderer||!renderReady||document.hidden)return;
