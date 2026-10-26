@@ -11,11 +11,11 @@ export function createEquipmentKit(){
     ctx.fillStyle='#102937';ctx.fillRect(0,0,384,768);
     for(let row=0;row<12;row++)for(let col=0;col<6;col++){
         const x=col*64+3,y=row*64+3;ctx.fillStyle=(row+col)%4?'#183d53':'#204a62';ctx.fillRect(x,y,58,58);
-        ctx.fillStyle='#b8cad077';for(let bus=0;bus<3;bus++)ctx.fillRect(x+10+bus*18,y,1,58);
-        ctx.strokeStyle='#46637c55';for(let line=0;line<6;line++){ctx.beginPath();ctx.moveTo(x,y+5+line*9);ctx.lineTo(x+58,y+5+line*9);ctx.stroke();}
+        ctx.fillStyle='#6f87923a';for(let bus=0;bus<3;bus++)ctx.fillRect(x+10+bus*18,y,1,58);
+        ctx.strokeStyle='#35566b50';for(let line=0;line<6;line++){ctx.beginPath();ctx.moveTo(x,y+5+line*9);ctx.lineTo(x+58,y+5+line*9);ctx.stroke();}
     }
     const cellMap=new T.CanvasTexture(canvas);cellMap.colorSpace=T.SRGBColorSpace;textures.add(cellMap);
-    for(const spec of equipmentRecipe.materials){const m=new T.MeshStandardMaterial({color:new T.Color(...spec.color),metalness:spec.metallic,roughness:spec.roughness});if(spec.id==='glass'){m.map=cellMap;m.color.set('#ffffff');m.roughness=.28;}materials.set(spec.id,m);}
+    for(const spec of equipmentRecipe.materials){const m=new T.MeshStandardMaterial({color:new T.Color(...spec.color),metalness:spec.metallic,roughness:spec.roughness});if(['glass','cell','cellAlt'].includes(spec.id)){m.metalness=.02;m.roughness=.84;m.envMapIntensity=.12;}if(spec.id==='glass'){m.map=cellMap;m.color.set('#99adba');}if(['cell','cellAlt'].includes(spec.id))m.color.multiplyScalar(.35);if(['aluminium','steel','busbar'].includes(spec.id)){m.metalness=.3;m.roughness=.72;m.envMapIntensity=.25;if(spec.id==='aluminium')m.color.set('#607178');if(spec.id==='busbar')m.color.set('#6d8792');}materials.set(spec.id,m);}
     function geometry(part){
         let g;
         if(part.shape==='box'){
@@ -61,5 +61,5 @@ export function createEquipmentKit(){
         const asset=panelAssets.find(a=>a.id===selected),next=quality==='standard'&&asset&&visibleIds.has(asset.id)&&camera.position.distanceTo(new T.Vector3(...asset.position))<12?asset.id:'';
         if(next!==closeId){closeId=next;if(closePanel){closePanel.visible=!!next;if(next){closePanel.position.fromArray(asset.position);closePanel.rotation.set(...asset.rotation.map(n=>n*Math.PI/180));}}syncPanels();}
     }
-    return {createDevice,addPanels,filterPanels,update,stats:()=>({profile:'browser-detail-v1',closePanel:closeId,nearDevices:devices.filter(d=>d.detail.visible&&d.root.visible).length}),dispose(){for(const g of geometries)g.dispose();for(const t of textures)t.dispose();for(const m of materials.values())m.dispose();}};
+    return {createDevice,addPanels,filterPanels,update,stats:()=>({profile:'browser-detail-v1',surface:{style:'matte-pv-v1',glassRoughness:materials.get('glass').roughness,glassMetalness:materials.get('glass').metalness,glassEnvironment:materials.get('glass').envMapIntensity,frameRoughness:materials.get('aluminium').roughness},closePanel:closeId,nearDevices:devices.filter(d=>d.detail.visible&&d.root.visible).length}),dispose(){for(const g of geometries)g.dispose();for(const t of textures)t.dispose();for(const m of materials.values())m.dispose();}};
 }

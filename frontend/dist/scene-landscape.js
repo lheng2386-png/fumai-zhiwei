@@ -1,4 +1,5 @@
 import * as T from './vendor/three-r180/three.module.min.js';
+import {addIndustrialContext} from './scene-context.js';
 
 function seeded(seed){return()=>{seed=(seed*1664525+1013904223)>>>0;return seed/4294967296;};}
 export function createAtmosphere(scene,renderer){
@@ -13,12 +14,19 @@ export function createAtmosphere(scene,renderer){
     const material=new T.ShaderMaterial({
         side:T.BackSide,depthWrite:false,fog:false,
         uniforms:{zenith:{value:new T.Color()},horizon:{value:new T.Color()},ground:{value:new T.Color('#879477')},sunDirection:{value:new T.Vector3()},sunColor:{value:new T.Color()}},
-        vertexShader:`varying vec3 skyDirection;void main(){skyDirection=position;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}`,
+        vertexShader:`varying vec3 skyDirection;
+            #include <common>
+            #include <logdepthbuf_pars_vertex>
+            void main(){skyDirection=position;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);
+            #include <logdepthbuf_vertex>
+            }`,
         fragmentShader:`uniform vec3 zenith,horizon,ground,sunDirection,sunColor;varying vec3 skyDirection;
+            #include <logdepthbuf_pars_fragment>
             void main(){vec3 direction=normalize(skyDirection);vec3 sky=mix(horizon,zenith,smoothstep(0.0,.85,max(direction.y,0.0)));
             sky=mix(sky,ground,smoothstep(0.0,.6,max(-direction.y,0.0)));
             float alignment=max(dot(direction,sunDirection),0.0);sky+=sunColor*(pow(alignment,500.0)*1.6+pow(alignment,24.0)*.18);
             gl_FragColor=vec4(sky,1.0);
+            #include <logdepthbuf_fragment>
             #include <tonemapping_fragment>
             #include <colorspace_fragment>
             }`
@@ -39,10 +47,10 @@ export function createAtmosphere(scene,renderer){
 }
 export function addLandscape(parent,renderer,{demonstration=true,bounds}={}){
     const random=seeded(3287),groundCanvas=document.createElement('canvas');groundCanvas.width=groundCanvas.height=256;const ctx=groundCanvas.getContext('2d'),pixels=ctx.createImageData(256,256);
-    for(let y=0;y<256;y++)for(let x=0;x<256;x++){const n=random(),i=(y*256+x)*4;pixels.data[i]=163+n*40;pixels.data[i+1]=154+n*36;pixels.data[i+2]=127+n*30;pixels.data[i+3]=255;}ctx.putImageData(pixels,0,0);
+    for(let y=0;y<256;y++)for(let x=0;x<256;x++){const n=random(),i=(y*256+x)*4;pixels.data[i]=130+n*30;pixels.data[i+1]=132+n*27;pixels.data[i+2]=109+n*24;pixels.data[i+3]=255;}ctx.putImageData(pixels,0,0);
     const map=new T.CanvasTexture(groundCanvas);map.colorSpace=T.SRGBColorSpace;map.wrapS=map.wrapT=T.RepeatWrapping;map.repeat.set(100,100);map.anisotropy=Math.min(8,renderer.capabilities.getMaxAnisotropy());
     const ground=new T.Mesh(new T.PlaneGeometry(Math.max(1200,bounds?bounds.getSize(new T.Vector3()).length()+200:1200),Math.max(1200,bounds?bounds.getSize(new T.Vector3()).length()+200:1200)),new T.MeshStandardMaterial({map,roughness:.98}));ground.rotation.x=-Math.PI/2;if(bounds)ground.position.copy(bounds.getCenter(new T.Vector3()));ground.position.y=-.04;ground.receiveShadow=true;parent.add(ground);
-    const natural=new T.Group();parent.add(natural);if(!demonstration)return {quality(){}};
+    const natural=new T.Group();parent.add(natural);if(!demonstration)return {quality(){},stats:()=>({source:'none',buildings:0,trees:0,crownInstances:0,fineVisible:false})};
     const concrete=new T.MeshStandardMaterial({color:'#b9bdb2',roughness:.93}),metal=new T.MeshStandardMaterial({color:'#71877d',metalness:.7,roughness:.43}),roof=new T.MeshStandardMaterial({color:'#526f65',metalness:.35,roughness:.45});
     function box(size,position,material){const mesh=new T.Mesh(new T.BoxGeometry(...size),material);mesh.position.fromArray(position);mesh.castShadow=true;mesh.receiveShadow=true;parent.add(mesh);return mesh;}
     const minX=bounds.min.x-14,maxX=bounds.max.x+14,minZ=bounds.min.z-14,maxZ=bounds.max.z+14,cx=(minX+maxX)/2,cz=(minZ+maxZ)/2,width=maxX-minX,depth=maxZ-minZ,roadX=maxX-20;
@@ -59,5 +67,6 @@ export function addLandscape(parent,renderer,{demonstration=true,bounds}={}){
     for(let i=0;i<20;i++){const x=random()*64;gc.fillStyle=['#718444','#8a9957','#aaa477'][i%3];gc.beginPath();gc.moveTo(x,128);gc.quadraticCurveTo(x+(random()-.5)*35,55,x+(random()-.5)*30,12+random()*60);gc.lineTo(x+3,128);gc.fill();}
     const grassMap=new T.CanvasTexture(grassCanvas);grassMap.colorSpace=T.SRGBColorSpace;const grass=new T.InstancedMesh(new T.PlaneGeometry(.8,.55),new T.MeshStandardMaterial({map:grassMap,alphaTest:.4,side:T.DoubleSide,roughness:1}),2300);
     for(let i=0;i<2300;i++){let x=minX-8+random()*(width+16),z=minZ-8+random()*(depth+16);if([0,-58,-29,29,58].some(road=>Math.abs(z-road)<2.5))z+=3.5;if(Math.abs(x-roadX)<2.8)x+=4;dummy.position.set(x,.24,z);dummy.rotation.set(0,random()*Math.PI,0);dummy.scale.setScalar(.45+random()*.75);dummy.updateMatrix();grass.setMatrixAt(i,dummy.matrix);}natural.add(grass);
-    return {quality(mode){natural.visible=mode!=='low';}};
+    const context=addIndustrialContext(parent,bounds);
+    return {quality(mode){natural.visible=mode!=='low';context.quality(mode);},stats:()=>context.stats()};
 }
