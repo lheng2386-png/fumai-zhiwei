@@ -36,7 +36,7 @@ export function addIndustrialContext(parent,bounds) {
         for(const side of[-1,1]){
             box([w/2+1.1,.18,d+1.4],[x+side*w/4,h+rise/2,z],materials.roof,false,-side*angle);
             const shape=new T.Shape();shape.moveTo(-w/2,0);shape.lineTo(w/2,0);shape.lineTo(0,rise);shape.closePath();
-            const geometry=new T.ShapeGeometry(shape);if(side>0)geometry.rotateY(Math.PI);geometry.translate(x,h,z+side*(d/2+.015));batch(geometry,materials.wall);
+            const geometry=new T.ShapeGeometry(shape);if(side<0)geometry.rotateY(Math.PI);geometry.translate(x,h,z+side*(d/2+.015));batch(geometry,materials.wall);
         }
         box([.25,.22,d+1.6],[x,h+rise,z],materials.trim);
         for(let dx=-w/2+5;dx<w/2-3;dx+=9){
