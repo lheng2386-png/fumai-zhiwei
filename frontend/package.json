@@ -4,7 +4,7 @@
     "private": true,
     "description": "伏脉智维光伏运维前端交互原型",
     "scripts": {
-        "check": "node --check dist/app.js && node --check dist/data.js && node --check dist/scene.js && node --check dist/scene-runtime.js && node --check dist/scene-models.js && node --check dist/scene-case.js && node --check dist/scene-equipment.js && node --check dist/scene-equipment-data.js && node --check dist/scene-landscape.js && node --check dist/scene-navigation.js && node --check dist/scene-daylight.js && node --check dist/scene-details.js && node --check dist/scene-context.js && node --check dist/scene-context-data.js",
+        "check": "node --check dist/app.js && node --check dist/data.js && node --check dist/scene.js && node --check dist/scene-runtime.js && node --check dist/scene-models.js && node --check dist/scene-case.js && node --check dist/scene-equipment.js && node --check dist/scene-equipment-data.js && node --check dist/scene-landscape.js && node --check dist/scene-navigation.js && node --check dist/scene-daylight.js && node --check dist/scene-details.js && node --check dist/scene-context.js && node --check dist/scene-context-data.js && node --check dist/scene-panel-mount.js",
         "test:scene": "node tests/scene.test.mjs",
         "test:case": "node tests/scene-case.test.mjs",
         "start": "node serve.mjs",
@@ -14,6 +14,8 @@
         "test:workspace": "node tests/scene-workspace.browser.cjs",
         "test:details": "node tests/scene-details.test.mjs",
         "test:context": "node tests/scene-context.test.mjs",
-        "test:environment": "node tests/scene-environment.browser.cjs"
+        "test:environment": "node tests/scene-environment.browser.cjs",
+        "test:mount": "node tests/scene-panel-mount.test.mjs",
+        "test:mount-browser": "node tests/scene-panel-mount.browser.cjs"
     }
 }
